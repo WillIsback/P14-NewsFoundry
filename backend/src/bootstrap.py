@@ -27,11 +27,8 @@ Exit Codes:
 
 import argparse
 import os
-from pathlib import Path
 import sys
 
-from alembic import command
-from alembic.config import Config
 from dotenv import load_dotenv
 from sqlmodel import Session, create_engine, select
 
@@ -40,15 +37,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from core.config import ADMIN_EMAIL, ADMIN_PASSWORD, DATABASE_URL
 from core.security import hash_password
+from database.database import run_migrations
 from database.models import User, UserRole
-
-ALEMBIC_INI_PATH = Path(__file__).resolve().parents[1] / "alembic.ini"
-
-
-def run_migrations() -> None:
-    alembic_cfg = Config(str(ALEMBIC_INI_PATH))
-    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
-    command.upgrade(alembic_cfg, "head")
 
 
 def bootstrap_admin(email: str, password: str) -> bool:

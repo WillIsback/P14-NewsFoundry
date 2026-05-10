@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 
 from alembic import command
 from alembic.config import Config
@@ -28,13 +29,39 @@ if not DATABASE_URL:
 
 print(f"Using database URL: {DATABASE_URL}")
 engine = create_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
-ALEMBIC_INI_PATH = Path(__file__).resolve().parents[2] / "alembic.ini"
+
+
+def _get_alembic_ini_path() -> Path:
+    """Resolve path to alembic.ini, robust to different calling contexts.
+
+    Works from src/database/database.py (parents[2]) or via sys.path.
+    """
+    db_dir = Path(__file__).resolve().parent
+    backend_root = db_dir.parents[1]
+    alembic_ini = backend_root / "alembic.ini"
+    if alembic_ini.exists():
+        return alembic_ini
+    raise FileNotFoundError(f"alembic.ini not found at {alembic_ini}")
 
 
 def run_migrations() -> None:
-    alembic_cfg = Config(str(ALEMBIC_INI_PATH))
-    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
-    command.upgrade(alembic_cfg, "head")
+    """Apply pending Alembic migrations to the database.
+
+    Raises:
+        FileNotFoundError: If alembic.ini is not found.
+        Exception: If migration fails.
+    """
+    try:
+        alembic_ini_path = _get_alembic_ini_path()
+        alembic_cfg = Config(str(alembic_ini_path))
+        alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+        command.upgrade(alembic_cfg, "head")
+    except Exception as e:
+        print(
+            f"✗ Migration failed: {e}",
+            file=sys.stderr,
+        )
+        raise
 
 
 class Database:

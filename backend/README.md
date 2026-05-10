@@ -47,11 +47,11 @@ Le backend applique aussi `alembic upgrade head` au démarrage via `init_db()`.
 
 ## Pre-commit (backend seulement)
 
-Le workflow `pre-commit` est configure a la racine du repo mais cible uniquement `backend/`:
+Le workflow `pre-commit` est configuré à la racine du repo mais cible uniquement `backend/`:
 
 - `ruff-format` pour formatter automatiquement
 - `ruff --fix` pour lint + corrections automatiques
-- `bandit` pour detecter des problemes de securite potentiels
+- `bandit` pour détecter des problèmes de sécurité potentiels
 
 Installation et execution:
 
