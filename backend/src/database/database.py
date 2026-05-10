@@ -8,7 +8,7 @@ from core.config import (
     DEFAULT_USER_EMAIL,
     SEED_DEFAULT_USER,
 )
-from core.security import hash_password, verify_password
+from core.security import hash_password
 from database.models import User
 
 # load_dotenv() loads a .env file if present (local dev), but never overrides

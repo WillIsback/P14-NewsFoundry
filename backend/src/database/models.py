@@ -31,4 +31,3 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     hashed_password: str = Field()
     role: UserRole = Field(default=UserRole.USER, index=True)
-

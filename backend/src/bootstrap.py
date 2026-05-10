@@ -35,7 +35,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.config import ADMIN_EMAIL, ADMIN_PASSWORD, BOOTSTRAP_ENABLED, DATABASE_URL
+from core.config import ADMIN_EMAIL, ADMIN_PASSWORD, DATABASE_URL
 from core.security import hash_password
 from database.models import User, UserRole
 
@@ -71,7 +71,9 @@ def bootstrap_admin(email: str, password: str) -> bool:
             ).first()
 
             if existing_admin:
-                print(f"ℹ Admin already exists ({existing_admin.email}), skipping creation")
+                print(
+                    f"ℹ Admin already exists ({existing_admin.email}), skipping creation"
+                )
                 return True
 
             # Create the admin user

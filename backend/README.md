@@ -37,6 +37,21 @@ docker run \
 uv run --env-file .env src/main.py
 ```
 
+## Pre-commit (backend seulement)
+
+Le workflow `pre-commit` est configure a la racine du repo mais cible uniquement `backend/`:
+
+- `ruff-format` pour formatter automatiquement
+- `ruff --fix` pour lint + corrections automatiques
+- `bandit` pour detecter des problemes de securite potentiels
+
+Installation et execution:
+
+```bash
+uvx pre-commit install
+uvx pre-commit run --all-files
+```
+
 ---
 
 ## Admin Bootstrap (Production One-Shot)

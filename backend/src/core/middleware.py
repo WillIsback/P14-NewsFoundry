@@ -60,6 +60,7 @@ def _resolve_client_ip(request: Request) -> str:
 
     return "unknown"
 
+
 def _extract_bearer_token(request: Request) -> str:
     auth_header = request.headers.get("authorization", "")
     scheme, _, token = auth_header.partition(" ")
@@ -188,8 +189,8 @@ def register_middlewares(app: FastAPI) -> None:
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
 
         return response
-
-    
