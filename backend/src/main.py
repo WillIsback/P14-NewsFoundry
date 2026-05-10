@@ -1,3 +1,4 @@
+
 from contextlib import asynccontextmanager
 import os
 import traceback
@@ -14,7 +15,7 @@ from api.models import (
     success_response,
 )
 from api.router import setup_routers
-from core.config import CORS_ORIGINS, DEBUG_MODE
+from core.config import CORS_ORIGINS, DEBUG_MODE, APP_ENV
 from core.middleware import register_middlewares
 from database.database import Database
 
@@ -25,7 +26,9 @@ db = Database()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    db.init_db()
+    # N'exécute db.init_db() (migrations) qu'en dev/local, jamais en production Railway
+    if APP_ENV != "production":
+        db.init_db()
     yield
 
 
