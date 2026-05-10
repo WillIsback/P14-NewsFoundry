@@ -163,3 +163,31 @@ uv run src/bootstrap.py --email noop@noop.com --password noop
 - Endpoint de rotation de mot de passe admin (POST /admin/change-password)
 - CLI Typer interactif pour multi-user bootstrap (dev seulement)
 - Metrics: enregistrer chaque bootstrap attempt dans logs structurés
+
+---
+
+## Documentation (MkDocs)
+
+Le site de documentation est dans `backend/docs/`.
+
+### Développement local
+
+```bash
+# Lancer le serveur de documentation (live reload)
+cd backend && uv run mkdocs serve --config-file docs/mkdocs.yml --dev-addr 0.0.0.0:8001
+```
+
+Ouvrir http://localhost:8001. Le Swagger UI sur la page "Référence API" nécessite le backend lancé sur le port 8000.
+
+### Build statique
+
+```bash
+cd backend && uv run mkdocs build --config-file docs/mkdocs.yml
+# → génère backend/docs/site/
+```
+
+### Déploiement GitHub Pages
+
+```bash
+cd backend && uv run mkdocs gh-deploy --config-file docs/mkdocs.yml --force
+```
