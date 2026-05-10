@@ -1,5 +1,7 @@
 import os
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
@@ -8,8 +10,12 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
+# Add backend/src to sys.path to resolve relative imports correctly
+backend_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(backend_dir / "src"))
+
 # Import model modules so SQLModel metadata is fully populated for autogenerate.
-from src.database import models  # noqa: F401
+from database import models  
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
