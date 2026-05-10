@@ -39,6 +39,8 @@ app = FastAPI(
     title="NewsFoundry backend API",
     description="Backend API for NewsFoundry application",
     version="1.0.0",
+    docs_url=None if APP_ENV == "production" else "/api/docs",
+    redoc_url=None if APP_ENV == "production" else "/api/redoc",
 )
 
 # --- CONFIGURATION CORS ---
