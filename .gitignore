@@ -10,3 +10,6 @@ wheels/
 .venv
 
 .env
+.dev-prod.md
+.github/agents
+actions-runner/

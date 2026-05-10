@@ -1,16 +1,122 @@
-from database import init_db
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+import os
+import traceback
+
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from api.models import (
+    ApiResponse,
+    MessageData,
+    error_response,
+    success_response,
+)
+from api.router import setup_routers
+from core.config import CORS_ORIGINS, DEBUG_MODE
+from core.middleware import register_middlewares
+from database.database import Database
+
 import uvicorn
 
-app = FastAPI()
+db = Database()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db.init_db()
+    yield
+
+
+app = FastAPI(
+    lifespan=lifespan,
+    title="NewsFoundry backend API",
+    description="Backend API for NewsFoundry application",
+    version="1.0.0",
+)
+
+# --- CONFIGURATION CORS ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+register_middlewares(app)
+
+setup_routers(app, db)
 
 
 @app.get("/")
-async def hello():
-    return {"message": "👋"}
+async def hello() -> ApiResponse[MessageData]:
+    """Handle the root endpoint of the API.
+
+    Returns:
+        dict: A greeting message with a wave emoji.
+
+    Example:
+        Response: {"message": "👋"}
+    """
+    return success_response(
+        status=status.HTTP_200_OK,
+        message="API reachable",
+        data=MessageData(message="👋"),
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    detail = exc.detail if isinstance(exc.detail, str) else "HTTP error"
+    payload = error_response(
+        status=exc.status_code,
+        code="HTTP_EXCEPTION",
+        message=detail,
+        details=exc.detail,
+    )
+    return JSONResponse(status_code=exc.status_code, content=payload.model_dump())
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    payload = error_response(
+        status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        code="VALIDATION_ERROR",
+        message="Request validation failed",
+        details=exc.errors(),
+    )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=payload.model_dump(),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    details = (
+        {"type": type(exc).__name__, "trace": traceback.format_exc()}
+        if DEBUG_MODE
+        else {"type": type(exc).__name__}
+    )
+    payload = error_response(
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        code="INTERNAL_SERVER_ERROR",
+        message="An unexpected error occurred",
+        details=details,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=payload.model_dump(),
+    )
 
 
 if __name__ == "__main__":
-    init_db()
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app,
+        host=os.getenv("HOST", "127.0.0.1"),
+        port=int(os.getenv("PORT", "8000")),
+    )
