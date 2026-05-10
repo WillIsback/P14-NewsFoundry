@@ -18,10 +18,9 @@ Cette page affiche la référence interactive complète de l'API NewsFoundry, g�
       dom_id: '#swagger-ui',
       deepLinking: true,
       presets: [
-        SwaggerUIBundle.presets.apis,
-        SwaggerUIBundle.SwaggerUIStandalonePreset
+        SwaggerUIBundle.presets.apis
       ],
-      layout: "StandaloneLayout"
+      layout: "BaseLayout"
     });
   };
 </script>
