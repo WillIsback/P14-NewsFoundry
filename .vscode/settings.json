@@ -1,0 +1,11 @@
+{
+    "biome.lsp.trace.server": "verbose",
+    "biome.lsp.watcher.kind": "recommended",
+    "biome.configurationPath": ".config/biome.json",
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.biome": "explicit",
+        "source.organizeImports.biome": "explicit"
+    }
+}

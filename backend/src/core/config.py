@@ -4,11 +4,16 @@ Manages environment variables, API settings, authentication, and CORS.
 """
 
 import os
-from typing import Literal
+from typing import cast, Literal
+from dotenv import load_dotenv
+
+# Load .env in local/dev contexts before reading any env variables.
+load_dotenv()
 
 # Environment
-ENVIRONMENT: Literal["development", "testing", "production"] = os.getenv(
-    "ENVIRONMENT", "development"
+ENVIRONMENT: Literal["development", "testing", "production"] = cast(
+    Literal["development", "testing", "production"],
+    os.getenv("ENVIRONMENT", "development")
 )
 DEBUG_MODE = ENVIRONMENT in ("development", "testing")
 
@@ -42,6 +47,7 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")
+SQL_ECHO = os.getenv("SQL_ECHO", "false").lower() == "true"
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 SEED_DEFAULT_USER = os.getenv("SEED_DEFAULT_USER", "false").lower() == "true"
 DEFAULT_USER_EMAIL: str | None = os.getenv("DEFAULT_USER_EMAIL")
@@ -52,3 +58,28 @@ BOOTSTRAP_ENABLED = os.getenv("BOOTSTRAP_ENABLED", "false").lower() == "true"
 ADMIN_EMAIL: str | None = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD: str | None = os.getenv("ADMIN_PASSWORD")
 CI = os.getenv("CI", "false").lower() == "true"
+
+
+def validate_runtime_config() -> list[str]:
+    """Return a list of missing environment variables for runtime startup."""
+    missing_vars: list[str] = []
+
+    # Required for application runtime (except during pytest where sqlite is used).
+    if not DATABASE_URL and not os.getenv("PYTEST_VERSION"):
+        missing_vars.append("DATABASE_URL")
+
+    # If default user seeding is enabled, credentials must be fully configured.
+    if SEED_DEFAULT_USER:
+        if not DEFAULT_USER_EMAIL:
+            missing_vars.append("DEFAULT_USER_EMAIL")
+        if not DEFAULT_USER_CREDENTIALS:
+            missing_vars.append("DEFAULT_USER_PASSWORD")
+
+    # If bootstrap is enabled, admin credentials are mandatory.
+    if BOOTSTRAP_ENABLED:
+        if not ADMIN_EMAIL:
+            missing_vars.append("ADMIN_EMAIL")
+        if not ADMIN_PASSWORD:
+            missing_vars.append("ADMIN_PASSWORD")
+
+    return missing_vars
