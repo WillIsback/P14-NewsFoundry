@@ -1,0 +1,53 @@
+name: AI Code Review on PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/**"
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  ai-review-skipped:
+    name: AI Review Guardrails
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        !contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+        && !contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+      }}
+    steps:
+      - name: Explain why AI review is skipped
+        run: |
+          echo "AI review skipped by policy."
+          echo "Allowed automatically for internal contributors (OWNER/MEMBER/COLLABORATOR)."
+          echo "For external PRs/forks, a maintainer must add the 'safe-to-test' label to run manually."
+
+  ai-review:
+    name: AI Code Review
+    runs-on: self-hosted
+    timeout-minutes: 10
+    if: >-
+      ${{
+        contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+        || contains(github.event.pull_request.labels.*.name, 'safe-to-test')
+      }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: AI Code Review
+        uses: WillIsback/ai-devops-toolkit/code-review@main
+        with:
+          vllm-url: ${{ vars.VLLM_BASE_URL }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vllm-model: ${{ vars.VLLM_MODEL || '' }}
+          vllm-timeout: ${{ vars.VLLM_TIMEOUT || '120' }}
+          vllm-retries: ${{ vars.VLLM_RETRIES || '2' }}
