@@ -1,5 +1,11 @@
+from pathlib import Path
+import os
+import sys
+
+from alembic import command
+from alembic.config import Config
 from dotenv import load_dotenv
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import Session, create_engine, select
 
 from core.config import (
     APP_ENV,
@@ -8,7 +14,7 @@ from core.config import (
     DEFAULT_USER_EMAIL,
     SEED_DEFAULT_USER,
 )
-from core.security import hash_password, verify_password
+from core.security import hash_password
 from database.models import User
 
 # load_dotenv() loads a .env file if present (local dev), but never overrides
@@ -16,10 +22,46 @@ from database.models import User
 load_dotenv()
 
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set.")
+    if os.getenv("PYTEST_VERSION"):
+        DATABASE_URL = "sqlite://"
+    else:
+        raise ValueError("DATABASE_URL environment variable is not set.")
 
 print(f"Using database URL: {DATABASE_URL}")
 engine = create_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+
+
+def _get_alembic_ini_path() -> Path:
+    """Resolve path to alembic.ini, robust to different calling contexts.
+
+    Works from src/database/database.py (parents[2]) or via sys.path.
+    """
+    db_dir = Path(__file__).resolve().parent
+    backend_root = db_dir.parents[1]
+    alembic_ini = backend_root / "alembic.ini"
+    if alembic_ini.exists():
+        return alembic_ini
+    raise FileNotFoundError(f"alembic.ini not found at {alembic_ini}")
+
+
+def run_migrations() -> None:
+    """Apply pending Alembic migrations to the database.
+
+    Raises:
+        FileNotFoundError: If alembic.ini is not found.
+        Exception: If migration fails.
+    """
+    try:
+        alembic_ini_path = _get_alembic_ini_path()
+        alembic_cfg = Config(str(alembic_ini_path))
+        alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+        command.upgrade(alembic_cfg, "head")
+    except Exception as e:
+        print(
+            f"✗ Migration failed: {e}",
+            file=sys.stderr,
+        )
+        raise
 
 
 class Database:
@@ -27,8 +69,8 @@ class Database:
         self.engine = engine
 
     def init_db(self):
-        SQLModel.metadata.create_all(self.engine)
-        print("Database initialized successfully")
+        run_migrations()
+        print("Database migrations applied successfully")
 
         if not SEED_DEFAULT_USER:
             print(f"Skipping default user seed (APP_ENV={APP_ENV})")

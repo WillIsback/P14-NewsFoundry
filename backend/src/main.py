@@ -66,6 +66,7 @@ async def hello() -> ApiResponse[MessageData]:
         data=MessageData(message="👋"),
     )
 
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     detail = exc.detail if isinstance(exc.detail, str) else "HTTP error"

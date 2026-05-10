@@ -61,7 +61,7 @@ def build_authentication_router(db: Database) -> APIRouter:
             message="Current user retrieved",
             data=UserPublic(id=current_user.id, email=current_user.email),
         )
-    
+
     ### Register function not implemented.
 
     return router

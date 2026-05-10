@@ -32,7 +32,6 @@ TRUSTED_HOSTS = [host.strip() for host in os.getenv("TRUSTED_HOSTS", "*").split(
 ENABLE_HTTPS_REDIRECT = os.getenv("ENABLE_HTTPS_REDIRECT", "false").lower() == "true"
 
 
-
 # Authentication
 SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_change_in_prod")
 ALGORITHM = "HS256"
