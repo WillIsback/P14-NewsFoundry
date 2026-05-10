@@ -19,6 +19,12 @@ En production, définis plutôt `APP_ENV=production` et mets `SEED_DEFAULT_USER=
 uv sync
 ```
 
+- Appliquer les migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
 - Démarrer la base de données:
 
 ```bash
@@ -36,6 +42,8 @@ docker run \
 ```bash
 uv run --env-file .env src/main.py
 ```
+
+Le backend applique aussi `alembic upgrade head` au démarrage via `init_db()`.
 
 ## Pre-commit (backend seulement)
 
@@ -76,13 +84,13 @@ buildCommand = "uv sync"
 
 [deploy]
 startCommand = "uv run src/main.py"
-releaseCommand = "uv run src/bootstrap.py"
+releaseCommand = "uv run alembic upgrade head && uv run src/bootstrap.py"
 ```
 
 Ou via Railway Dashboard:
 
 - Service → Settings → Deploy → Release Command
-- Entrer: `uv run src/bootstrap.py`
+- Entrer: `uv run alembic upgrade head && uv run src/bootstrap.py`
 
 ### Configuration des Secrets (Bitwarden → Railway)
 

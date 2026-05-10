@@ -1,5 +1,10 @@
+from pathlib import Path
+import os
+
+from alembic import command
+from alembic.config import Config
 from dotenv import load_dotenv
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import Session, create_engine, select
 
 from core.config import (
     APP_ENV,
@@ -16,10 +21,20 @@ from database.models import User
 load_dotenv()
 
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set.")
+    if os.getenv("PYTEST_VERSION"):
+        DATABASE_URL = "sqlite://"
+    else:
+        raise ValueError("DATABASE_URL environment variable is not set.")
 
 print(f"Using database URL: {DATABASE_URL}")
 engine = create_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+ALEMBIC_INI_PATH = Path(__file__).resolve().parents[2] / "alembic.ini"
+
+
+def run_migrations() -> None:
+    alembic_cfg = Config(str(ALEMBIC_INI_PATH))
+    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+    command.upgrade(alembic_cfg, "head")
 
 
 class Database:
@@ -27,8 +42,8 @@ class Database:
         self.engine = engine
 
     def init_db(self):
-        SQLModel.metadata.create_all(self.engine)
-        print("Database initialized successfully")
+        run_migrations()
+        print("Database migrations applied successfully")
 
         if not SEED_DEFAULT_USER:
             print(f"Skipping default user seed (APP_ENV={APP_ENV})")
