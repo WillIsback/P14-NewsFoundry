@@ -5,9 +5,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
-COPY alembic.ini ./
-COPY alembic/ ./alembic/
-COPY src/ ./src/
+COPY backend/alembic.ini ./
+COPY backend/alembic/ ./alembic/
+COPY backend/src/ ./src/
 
 EXPOSE 8000
 
