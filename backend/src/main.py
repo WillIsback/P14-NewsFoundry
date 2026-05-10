@@ -15,7 +15,7 @@ from api.models import (
     success_response,
 )
 from api.router import setup_routers
-from core.config import CORS_ORIGINS, DEBUG_MODE, APP_ENV
+from core.config import CORS_ORIGINS, DEBUG_MODE, APP_ENV, ENVIRONMENT
 from core.middleware import register_middlewares
 from database.database import Database
 
@@ -39,8 +39,8 @@ app = FastAPI(
     title="NewsFoundry backend API",
     description="Backend API for NewsFoundry application",
     version="1.0.0",
-    docs_url=None if APP_ENV == "production" else "/api/docs",
-    redoc_url=None if APP_ENV == "production" else "/api/redoc",
+    docs_url=None if ENVIRONMENT == "production" else "/api/docs",
+    redoc_url=None if ENVIRONMENT == "production" else "/api/redoc",
 )
 
 # --- CONFIGURATION CORS ---
