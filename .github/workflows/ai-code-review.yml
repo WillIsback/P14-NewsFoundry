@@ -46,7 +46,7 @@ jobs:
       - name: AI Code Review
         uses: WillIsback/ai-devops-toolkit/code-review@main
         with:
-          vllm-url: ${{ vars.VLLM_BASE_URL }}
+          vllm-url: ${{ secrets.VLLM_URL }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vllm-model: ${{ vars.VLLM_MODEL || '' }}
           vllm-timeout: ${{ vars.VLLM_TIMEOUT || '120' }}
