@@ -13,3 +13,4 @@ wheels/
 .dev-prod.md
 .github/agents
 actions-runner/
+docs/superpowers
