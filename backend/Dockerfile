@@ -2,12 +2,12 @@ FROM ghcr.io/astral-sh/uv:python3.13-bookworm
 
 WORKDIR /app
 
-COPY backend/pyproject.toml backend/uv.lock ./
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
-COPY backend/alembic.ini ./
-COPY backend/alembic/ ./alembic/
-COPY backend/src/ ./src/
+COPY alembic.ini ./
+COPY alembic/ ./alembic/
+COPY src/ ./src/
 
 EXPOSE 8000
 
