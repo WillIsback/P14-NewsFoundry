@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 """
-One-shot admin bootstrap script for production.
+DB init + admin bootstrap script for production and local dev.
 
-This script is designed to be run once via a Railway deploy hook or manually.
-It creates an admin user if one doesn't exist, making it safe to run multiple times
-(idempotent).
+This script always applies pending Alembic migrations first, then optionally
+creates an admin user if credentials are provided. It is idempotent and safe
+to run multiple times.
 
 Usage:
+    # Migrations only (no admin creation):
+    uv run src/bootstrap.py
+
     # Via env vars (Railway/production):
     uv run src/bootstrap.py
 
@@ -14,15 +17,13 @@ Usage:
     uv run src/bootstrap.py --email admin@example.com --password secret123
 
 Environment Variables:
-    BOOTSTRAP_ENABLED: If "true", enables admin creation (default: false)
-    ADMIN_EMAIL: Email for admin account (required if BOOTSTRAP_ENABLED=true)
-    ADMIN_PASSWORD: Password for admin account (required if BOOTSTRAP_ENABLED=true)
+    ADMIN_EMAIL: Email for admin account (optional)
+    ADMIN_PASSWORD: Password for admin account (optional)
     DATABASE_URL: Database connection string (required)
-    CI: If "true", indicates CI/production environment (Railway sets this)
 
 Exit Codes:
-    0: Success (admin created or already exists)
-    1: Error (missing required vars, DB connection failed, etc.)
+    0: Success (migrations applied; admin created or skipped)
+    1: Error (DB connection failed, migration failed, etc.)
 """
 
 import argparse
@@ -60,7 +61,6 @@ def bootstrap_admin(email: str, password: str) -> bool:
         raise ValueError("DATABASE_URL environment variable is not set.")
 
     try:
-        run_migrations()
         engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 
         with Session(engine) as session:
@@ -98,55 +98,39 @@ def main():
     Main entry point for the bootstrap script.
 
     Supports both environment variable and CLI argument modes.
+    Always runs migrations first, then optionally creates the admin user.
     """
     parser = argparse.ArgumentParser(
-        description="One-shot admin bootstrap for production",
+        description="DB init + one-shot admin bootstrap for production and local dev",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  Migrations only (no admin creation):
+    uv run src/bootstrap.py
+
   Via environment variables (production/Railway):
-    export BOOTSTRAP_ENABLED=true
     export ADMIN_EMAIL=admin@example.com
-        export ADMIN_PASSWORD=<your-password>
+    export ADMIN_PASSWORD=<your-password>
     uv run src/bootstrap.py
 
   Via CLI arguments (local/manual):
-        uv run src/bootstrap.py --email admin@example.com --password <your-password>
+    uv run src/bootstrap.py --email admin@example.com --password <your-password>
         """,
     )
 
     parser.add_argument(
         "--email",
-        help="Admin email address (overrides ADMIN_EMAIL env var if provided)",
+        help="Admin email address (overrides ADMIN_EMAIL env var)",
     )
     parser.add_argument(
         "--password",
-        help="Admin password (overrides ADMIN_PASSWORD env var if provided)",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force admin creation even if one already exists (WARNING: will fail due to unique email constraint)",
+        help="Admin password (overrides ADMIN_PASSWORD env var)",
     )
 
     args = parser.parse_args()
 
     # Load .env if present (local development)
     load_dotenv()
-
-    # Determine email and password source
-    email = args.email or ADMIN_EMAIL
-    password = args.password or ADMIN_PASSWORD
-
-    # Validation
-    if not email or not password:
-        print(
-            "✗ Error: ADMIN_EMAIL and ADMIN_PASSWORD must be provided\n"
-            "  Via env vars: export ADMIN_EMAIL=... ADMIN_PASSWORD=...\n"
-            "  Via CLI args: --email ... --password ...",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
     if not DATABASE_URL:
         print(
@@ -155,7 +139,23 @@ Examples:
         )
         sys.exit(1)
 
-    # Run bootstrap
+    # Always run migrations first (local dev + production)
+    print("📦 Applying database migrations...")
+    try:
+        run_migrations()
+        print("✓ Migrations applied")
+    except Exception as e:
+        print(f"✗ Migration failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Admin creation is optional: only if credentials are provided
+    email = args.email or ADMIN_EMAIL
+    password = args.password or ADMIN_PASSWORD
+
+    if not email or not password:
+        print("ℹ No admin credentials provided, skipping admin bootstrap")
+        sys.exit(0)
+
     print("🚀 Starting admin bootstrap...")
     success = bootstrap_admin(email, password)
 

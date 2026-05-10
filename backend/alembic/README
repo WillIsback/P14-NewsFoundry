@@ -1,1 +1,122 @@
-Generic single-database configuration.
+# Alembic Migrations - NewsFoundry Backend
+
+## Overview
+
+This directory contains Alembic migration scripts for managing database schema evolution. Alembic is a lightweight database migration tool for SQLAlchemy/SQLModel.
+
+## Quick Start
+
+### Creating a New Migration
+
+After modifying your models in `backend/src/database/models.py`, generate an automatic migration:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "descriptive message"
+```
+
+Example:
+
+```bash
+alembic revision --autogenerate -m "Add user role column"
+```
+
+### Running Migrations
+
+Apply all pending migrations to the database:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+### Checking Migration Status
+
+View the current migration state:
+
+```bash
+cd backend
+alembic current
+```
+
+List all migrations:
+
+```bash
+cd backend
+alembic history
+```
+
+## Project Structure
+
+- **env.py** - Configuration script that Alembic uses to discover models and set up the database connection. It automatically adds `backend/src` to Python's path to resolve imports correctly.
+- **alembic.ini** - Configuration file for Alembic settings (database URL, logging, etc.)
+- **versions/** - Directory containing all migration files (auto-generated)
+
+## Configuration
+
+### DATABASE_URL
+
+Migrations use the `DATABASE_URL` environment variable to connect to the database. This is loaded via `dotenv` in `env.py`.
+
+Set it in your `.env` file:
+
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/newsfoundry
+```
+
+### Models Auto-Detection
+
+The `env.py` script automatically imports all models from `backend.src.database.models` to discover SQLModel definitions. Ensure all models are defined in this module or imported there.
+
+## Common Issues
+
+### Import Errors
+
+If you see `ModuleNotFoundError: No module named 'database'` or similar:
+
+- The issue is resolved in `env.py` by adding `backend/src` to `sys.path`
+- Ensure you're running Alembic commands from the `backend/` directory
+- Models must be imported in `backend/src/database/models.py`
+
+### No Changes Detected
+
+If `alembic revision --autogenerate` creates an empty migration:
+
+- Verify your model changes are saved
+- Check that models inherit from `SQLModel` with `table=True`
+- Ensure the database is properly connected
+
+## Working with Migrations
+
+### Downgrading
+
+Revert to a specific migration:
+
+```bash
+alembic downgrade -1  # Revert one migration
+alembic downgrade <revision_id>  # Revert to specific revision
+```
+
+### Manual Migrations
+
+For complex changes that autogenerate can't handle, create an empty migration and edit it:
+
+```bash
+alembic revision -m "custom migration"
+# Edit the created file in versions/
+# Then apply: alembic upgrade head
+```
+
+## Best Practices
+
+1. **Always review generated migrations** before applying them to production
+2. **Test migrations locally** with a copy of your production database schema
+3. **Keep migration files immutable** once applied to production
+4. **Use descriptive revision messages** to explain what changed and why
+5. **Don't modify deployed migrations** - create a new one to fix issues
+
+## Reference
+
+- [Alembic Documentation](https://alembic.sqlalchemy.org/)
+- [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
+- [SQLAlchemy ORM Guide](https://docs.sqlalchemy.org/)
