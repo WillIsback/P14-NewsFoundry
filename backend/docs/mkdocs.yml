@@ -1,0 +1,16 @@
+site_name: NewsFoundry API
+site_description: Documentation de l'API backend NewsFoundry
+site_author: NewsFoundry Team
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: readthedocs
+
+nav:
+  - Accueil: index.md
+  - Démarrage rapide: getting-started.md
+  - Guides:
+    - Authentification: authentication.md
+  - Référence API: api-reference.md
+  - Changelog: changelog.md
