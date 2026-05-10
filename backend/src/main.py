@@ -26,7 +26,9 @@ db = Database()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # N'exécute db.init_db() (migrations) qu'en dev/local, jamais en production Railway
+    # En dev local uniquement: applique les migrations + seed au démarrage.
+    # En production (Railway), les migrations sont gérées par le release command:
+    #   uv run src/bootstrap.py
     if APP_ENV != "production":
         db.init_db()
     yield
