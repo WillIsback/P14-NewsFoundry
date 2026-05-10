@@ -31,7 +31,7 @@ Le body doit être encodé en `application/x-www-form-urlencoded` (formulaire HT
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "email=test@test.com&password=test"
+  -d "email=user@example.com&password=your_password"
 ```
 
 Réponse :
@@ -69,7 +69,7 @@ Réponse :
   "message": "Current user retrieved",
   "data": {
     "id": 1,
-    "email": "test@test.com"
+    "email": "user@example.com"
   },
   "error": null
 }

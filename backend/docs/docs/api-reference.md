@@ -2,7 +2,11 @@
 
 Cette page affiche la référence interactive complète de l'API NewsFoundry, générée automatiquement depuis la spec OpenAPI du backend.
 
-> **Prérequis :** Le backend doit être lancé localement sur `http://localhost:8000` pour que le Swagger UI ci-dessous soit fonctionnel en développement. En production, pointer l'URL vers le backend Railway déployé.
+!!! warning "Environnement local requis"
+    Le Swagger UI ci-dessous pointe sur `http://localhost:8000/openapi.json`.
+    **Le backend doit être lancé localement** pour qu'il soit fonctionnel.
+
+    Pour un environnement déployé, remplacez l'URL dans le script ci-dessous par l'URL de votre instance (ex. `https://api.mondomaine.com/openapi.json`).
 
 ---
 
@@ -24,7 +28,3 @@ Cette page affiche la référence interactive complète de l'API NewsFoundry, g�
     });
   };
 </script>
-
----
-
-*Pour pointer vers un backend distant, remplacer l'URL `http://localhost:8000/openapi.json` par l'URL de votre instance déployée.*
