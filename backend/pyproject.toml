@@ -21,3 +21,8 @@ dependencies = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["E402"]
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+]

@@ -99,3 +99,22 @@ def test_protected_allows_valid_token_only(client: TestClient) -> None:
     assert payload["success"] is True
     message = payload["data"]["message"]
     assert "test@test.com" in message
+
+
+def test_swagger_ui_is_on_api_docs(client: TestClient) -> None:
+    response = client.get("/api/docs")
+    assert response.status_code == 200
+    assert "swagger" in response.text.lower()
+
+
+def test_old_docs_route_is_gone(client: TestClient) -> None:
+    response = client.get("/docs")
+    assert response.status_code == 404
+
+
+def test_openapi_json_always_accessible(client: TestClient) -> None:
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    payload = response.json()
+    assert "openapi" in payload
+    assert payload["info"]["title"] == "NewsFoundry backend API"

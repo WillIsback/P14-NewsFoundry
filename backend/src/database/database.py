@@ -13,6 +13,7 @@ from core.config import (
     DEFAULT_USER_CREDENTIALS,
     DEFAULT_USER_EMAIL,
     SEED_DEFAULT_USER,
+    SQL_ECHO,
 )
 from core.security import hash_password
 from database.models import User
@@ -28,7 +29,7 @@ if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is not set.")
 
 print(f"Using database URL: {DATABASE_URL}")
-engine = create_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, echo=SQL_ECHO, pool_pre_ping=True)
 
 
 def _get_alembic_ini_path() -> Path:

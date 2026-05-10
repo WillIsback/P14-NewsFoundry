@@ -14,45 +14,65 @@ from api.models import (
     error_response,
     success_response,
 )
-from api.router import setup_routers
-from core.config import CORS_ORIGINS, DEBUG_MODE, APP_ENV
+from core.config import (
+    APP_ENV,
+    CORS_ORIGINS,
+    DEBUG_MODE,
+    ENVIRONMENT,
+    validate_runtime_config,
+)
 from core.middleware import register_middlewares
-from database.database import Database
 
 import uvicorn
 
-db = Database()
+def create_app() -> FastAPI:
+    missing_vars = validate_runtime_config()
+    if missing_vars:
+        missing_list = ", ".join(sorted(set(missing_vars)))
+        raise RuntimeError(
+            "Missing required environment variables: "
+            f"{missing_list}. Configure your environment before starting the API."
+        )
+
+    # Import only after config validation, to avoid early crashes from transitive imports.
+    from api.router import setup_routers
+    from database.database import Database
+
+    db = Database()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # En dev local uniquement: applique les migrations + seed au démarrage.
+        # En production (Railway), les migrations sont gérées par le release command:
+        #   uv run src/bootstrap.py
+        if APP_ENV != "production":
+            db.init_db()
+        yield
+
+    app = FastAPI(
+        lifespan=lifespan,
+        title="NewsFoundry backend API",
+        description="Backend API for NewsFoundry application",
+        version="1.0.0",
+        docs_url=None if ENVIRONMENT == "production" else "/api/docs",
+        redoc_url=None if ENVIRONMENT == "production" else "/api/redoc",
+    )
+
+    # --- CONFIGURATION CORS ---
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    register_middlewares(app)
+    setup_routers(app, db)
+    return app
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # En dev local uniquement: applique les migrations + seed au démarrage.
-    # En production (Railway), les migrations sont gérées par le release command:
-    #   uv run src/bootstrap.py
-    if APP_ENV != "production":
-        db.init_db()
-    yield
-
-
-app = FastAPI(
-    lifespan=lifespan,
-    title="NewsFoundry backend API",
-    description="Backend API for NewsFoundry application",
-    version="1.0.0",
-)
-
-# --- CONFIGURATION CORS ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-register_middlewares(app)
-
-setup_routers(app, db)
+app = create_app()
 
 
 @app.get("/")
