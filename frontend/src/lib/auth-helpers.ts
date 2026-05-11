@@ -4,12 +4,22 @@ import { z } from 'zod/v4'
 import type { ServiceResult } from './type.lib'
 import { authenticationLogin200Schema, loginRequestSchema } from '@/src/models/gen'
 
+/**
+ * Zod schema for validating login input, extending the base login request schema with email and password validation.
+ */
 export const loginInputSchema = loginRequestSchema.extend({
   email: z.email({ error: 'Email must be valid' }),
   password: z.string().min(1, { error: 'Password is required' }),
 })
 
+/**
+ * Type representing the inferred shape of the `loginInputSchema`.
+ */
 export type LoginInput = z.infer<typeof loginInputSchema>
+
+/**
+ * Type representing the inferred shape of the authentication login 200 response schema.
+ */
 export type LoginResponse = z.infer<typeof authenticationLogin200Schema>
 
 /**
