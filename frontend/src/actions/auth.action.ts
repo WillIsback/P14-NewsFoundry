@@ -1,7 +1,8 @@
 'use server'
-import { createSession } from '@/src/lib/session'
-
+import { redirect } from 'next/navigation'
 import * as z from "zod";
+import { createSession, deleteSession } from '@/src/lib/session'
+import { postLogin } from '@/src/service/auth.dal'
 
 const schema = z.object({
   email: z.string({
@@ -12,20 +13,28 @@ const schema = z.object({
   })
 })
 
-export async function loginUser(initialState: any, formData: FormData) {
+export async function loginUser(initialState: unknown, formData: FormData) {
   const validatedFields = schema.safeParse({
     email: formData.get('email'),
     password: formData.get('password')
   })
 
-  // Return early if the form data is invalid
   if (!validatedFields.success) {
     return {
       errors: z.treeifyError(validatedFields.error),
     }
   }
-  console.log("Login server Action data : ",validatedFields.data)
-  // Mutate data
+
+  const result = await postLogin(validatedFields.data.email, validatedFields.data.password)
+
+  if (!result.ok) {
+    return {
+      error: result.error.userMessage,
+    }
+  }
+
+  await createSession(result.data.data?.email ?? '')
+  redirect('/')
 }
 
 export async function logout() {

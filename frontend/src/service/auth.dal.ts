@@ -1,51 +1,63 @@
-import { withTimeout, request } from "@/src/lib/server.lib"
-import { bodyLoginForAccessTokenApiV1AuthLoginPostSchema } from "../models/gen"
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000/api"
+import 'server-only'
+import type { z } from "zod/v4"
 
-export async function postLogin(email : string, password: string) {
+import { fetchJson } from "@/src/lib/server.lib"
+import type { ServiceResult } from "@/src/lib/type.lib"
+import {
+    authenticationLogin200Schema,
+    authenticationLogin422Schema,
+    loginRequestSchema,
+} from "../models/gen"
+
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000/api/"
+
+type LoginResponse = z.infer<typeof authenticationLogin200Schema>
+
+function mapLoginError(result: ServiceResult<LoginResponse>): ServiceResult<LoginResponse> {
+    if (result.ok) return result
+
+    if (result.status === 401) {
+        return {
+            ...result,
+            error: {
+                ...result.error,
+                userMessage: "Identifiants invalides",
+            },
+        }
+    }
+
+    if (result.status === 422) {
+        return {
+            ...result,
+            error: {
+                ...result.error,
+                userMessage: "Le formulaire de connexion est invalide",
+            },
+        }
+    }
+
+    return {
+        ...result,
+        error: {
+            ...result.error,
+            userMessage: "Le serveur est indisponible pour le moment",
+        },
+    }
+}
+
+export async function postLogin(email: string, password: string): Promise<ServiceResult<LoginResponse>> {
     const route = "auth/login"
-    // Validation des paramètres
-    if (typeof email !== "string" || typeof password !== "string") {
-        const error = {
-            user: "Veuillez remplir tous les champs",
-            dev: "Invalid parameters: email and password must be strings"
-        }
-        console.error("[postLogin]", error.dev)
-        return { success: false, error }
-    }
+    const result = await fetchJson({
+        url: `${BACKEND_URL}${route}`,
+        method: "POST",
+        requestData: { email, password },
+        requestSchema: loginRequestSchema,
+        successSchema: authenticationLogin200Schema,
+        errorSchemas: {
+            422: authenticationLogin422Schema,
+        },
+        timeoutMs: 10000,
+    })
 
-    try {
-        const response = await withTimeout(
-            fetch(request(BACKEND_URL, route, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    email: email,
-                    password: password,
-                })
-            })),
-            10000 // 10s max
-        );
-
-        // Gestion des erreurs HTTP
-        if (!response.ok) {
-            const errorMessages = getErrorMessage(response.status)
-            console.error("[postLogin]", errorMessages.dev)
-            return { success: false, error: errorMessages }
-        }
-
-        // Succès
-        const data = await response.json()
-        // console.log('data reçu : ', data)
-        return { success: true, data }
-
-    } catch (error) {
-        // Erreurs réseau ou parsing JSON
-        const errorMessages = {
-            user: "Problème de connexion, vérifiez votre réseau",
-            dev: `Network or parsing error: ${error.message}`
-        }
-        console.error("[postLogin]", errorMessages.dev)
-        return { success: false, error: errorMessages }
-    }
+    return mapLoginError(result)
 }

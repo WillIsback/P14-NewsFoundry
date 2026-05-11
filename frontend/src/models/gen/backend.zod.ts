@@ -8,6 +8,7 @@ import { z } from "zod/v4";
 export const accessTokenDataSchema = z.object({
   access_token: z.string(),
   token_type: z.string(),
+  email: z.string(),
 });
 
 export const apiErrorSchema = z.object({
@@ -61,11 +62,6 @@ export const apiResponseUserPublicSchema = z.object({
   },
 });
 
-export const bodyLoginForAccessTokenApiV1AuthLoginPostSchema = z.object({
-  email: z.string(),
-  password: z.string(),
-});
-
 export const validationErrorSchema = z.object({
   loc: z.array(z.union([z.int(), z.string()])),
   msg: z.string(),
@@ -80,51 +76,58 @@ export const HTTPValidationErrorSchema = z.object({
   },
 });
 
+export const loginRequestSchema = z.object({
+  email: z.string(),
+  password: z.string(),
+});
+
 /**
  * @description Successful Response
  */
-export const loginForAccessTokenApiV1AuthLoginPost200Schema = z.lazy(
+export const authenticationLogin200Schema = z.lazy(
   () => apiResponseAccessTokenDataSchema,
 );
 
 /**
  * @description Validation Error
  */
-export const loginForAccessTokenApiV1AuthLoginPost422Schema = z.lazy(
+export const authenticationLogin422Schema = z.lazy(
   () => HTTPValidationErrorSchema,
 );
 
-export const loginForAccessTokenApiV1AuthLoginPostMutationRequestSchema =
-  z.lazy(() => bodyLoginForAccessTokenApiV1AuthLoginPostSchema);
+export const authenticationLoginMutationRequestSchema = z.lazy(
+  () => loginRequestSchema,
+);
 
-export const loginForAccessTokenApiV1AuthLoginPostMutationResponseSchema =
-  z.lazy(() => loginForAccessTokenApiV1AuthLoginPost200Schema);
+export const authenticationLoginMutationResponseSchema = z.lazy(
+  () => authenticationLogin200Schema,
+);
 
 /**
  * @description Successful Response
  */
-export const protectedRouteApiV1AuthProtectedGet200Schema = z.lazy(
+export const authenticationProtectedResource200Schema = z.lazy(
   () => apiResponseMessageDataSchema,
 );
 
-export const protectedRouteApiV1AuthProtectedGetQueryResponseSchema = z.lazy(
-  () => protectedRouteApiV1AuthProtectedGet200Schema,
+export const authenticationProtectedResourceQueryResponseSchema = z.lazy(
+  () => authenticationProtectedResource200Schema,
 );
 
 /**
  * @description Successful Response
  */
-export const readUsersMeApiV1AuthUsersMeGet200Schema = z.lazy(
+export const authenticationMe200Schema = z.lazy(
   () => apiResponseUserPublicSchema,
 );
 
-export const readUsersMeApiV1AuthUsersMeGetQueryResponseSchema = z.lazy(
-  () => readUsersMeApiV1AuthUsersMeGet200Schema,
+export const authenticationMeQueryResponseSchema = z.lazy(
+  () => authenticationMe200Schema,
 );
 
 /**
  * @description Successful Response
  */
-export const helloGet200Schema = z.lazy(() => apiResponseMessageDataSchema);
+export const hello200Schema = z.lazy(() => apiResponseMessageDataSchema);
 
-export const helloGetQueryResponseSchema = z.lazy(() => helloGet200Schema);
+export const helloQueryResponseSchema = z.lazy(() => hello200Schema);

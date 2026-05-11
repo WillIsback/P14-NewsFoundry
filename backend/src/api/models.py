@@ -23,6 +23,7 @@ class ApiResponse(BaseModel, Generic[DataT]):
 class AccessTokenData(BaseModel):
     access_token: str
     token_type: str
+    email: str
 
 
 class MessageData(BaseModel):
@@ -38,6 +39,9 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 def success_response(
     *,

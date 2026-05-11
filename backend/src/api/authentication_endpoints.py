@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from api.models import (
     AccessTokenData,
     ApiResponse,
+    LoginRequest,
     MessageData,
     UserPublic,
     success_response,
@@ -21,12 +22,11 @@ def build_authentication_router(db: Database) -> APIRouter:
 
     @router.post("/login")
     async def login(
-        email: Annotated[str, Form(...)],
-        password: Annotated[str, Form(...)],
+        credentials: LoginRequest,
         session: Annotated[Session, Depends(db.get_db)],
     ) -> ApiResponse[AccessTokenData]:
-        user = session.exec(select(User).where(User.email == email)).first()
-        if not user or not verify_password(password, user.hashed_password):
+        user = session.exec(select(User).where(User.email == credentials.email)).first()
+        if not user or not verify_password(credentials.password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Identifiant ou mot de passe incorrect",
@@ -37,7 +37,7 @@ def build_authentication_router(db: Database) -> APIRouter:
         return success_response(
             status=status.HTTP_200_OK,
             message="Login successful",
-            data=AccessTokenData(access_token=access_token, token_type="bearer"),
+            data=AccessTokenData(access_token=access_token, token_type="bearer", email=user.email),
         )
 
     @router.get("/protected")
