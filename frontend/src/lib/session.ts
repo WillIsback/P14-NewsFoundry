@@ -4,6 +4,9 @@ import { cookies } from 'next/headers'
 import { SessionTokenPayload } from './type.lib'
 
 const secretKey = process.env.SESSION_SECRET
+if (!secretKey) {
+  throw new Error('SESSION_SECRET is missing. Set it in frontend environment variables.')
+}
 const encodedKey = new TextEncoder().encode(secretKey)
 
 export async function encrypt(payload: SessionTokenPayload) {
@@ -15,6 +18,10 @@ export async function encrypt(payload: SessionTokenPayload) {
 }
 
 export async function decrypt(session: string | undefined = ''): Promise<SessionTokenPayload | null> {
+  if (!session) {
+    return null
+  }
+
   try {
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ['HS256'],
@@ -39,7 +46,7 @@ export async function createSession(userId: string) {
 
   cookieStore.set('session', session, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     expires: expiresAt,
     sameSite: 'lax',
     path: '/',
@@ -60,7 +67,7 @@ export async function updateSession() {
   const cookieStore = await cookies()
   cookieStore.set('session', session, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     expires: expires,
     sameSite: 'lax',
     path: '/',

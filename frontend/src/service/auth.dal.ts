@@ -9,7 +9,7 @@ import {
     authenticationLogin422Schema,
 } from "../models/gen"
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000/api/"
+const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "")
 
 type LoginResponse = z.infer<typeof authenticationLogin200Schema>
 
@@ -56,7 +56,7 @@ function mapLoginError(result: ServiceResult<LoginResponse>): ServiceResult<Logi
 }
 
 export async function postLogin(email: string, password: string): Promise<ServiceResult<LoginResponse>> {
-    const route = "auth/login"
+    const route = "/auth/login"
     const result = await fetchJson({
         url: `${BACKEND_URL}${route}`,
         method: "POST",

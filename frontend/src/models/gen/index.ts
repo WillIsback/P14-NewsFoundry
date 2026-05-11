@@ -19,4 +19,4 @@ export {
   messageDataSchema,
   userPublicSchema,
   validationErrorSchema,
-} from "./backend.zod.ts";
+} from "./backend.zod";

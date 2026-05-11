@@ -6,7 +6,7 @@ import type { ServiceError, ServiceResult, RequestPayload, FetchJsonOptions, Ret
 /**
  * Add a timeout to an existing promise.
  */
-export function withTimeout<T>(promise: Promise<T>, ms = 30000): Promise<T> {
+export async function withTimeout<T>(promise: Promise<T>, ms = 30000): Promise<T> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), ms)
 
@@ -24,7 +24,7 @@ export function withTimeout<T>(promise: Promise<T>, ms = 30000): Promise<T> {
 /**
  * Build a Request object for API calls.
  */
-export const request = (baseUrl: string, endpoint: string, payload: RequestPayload): Request => {
+export const request = async(baseUrl: string, endpoint: string, payload: RequestPayload): Promise<Request> => {
     const { method, headers, body } = payload
     const req = new Request(`${baseUrl}${endpoint}`, {
         method,

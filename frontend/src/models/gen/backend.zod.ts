@@ -77,7 +77,11 @@ export const HTTPValidationErrorSchema = z.object({
 });
 
 export const loginRequestSchema = z.object({
-  email: z.string(),
+  email: z
+    .string()
+    .min(3)
+    .max(254)
+    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
   password: z.string(),
 });
 
