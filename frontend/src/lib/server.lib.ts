@@ -1,13 +1,10 @@
 'use server'
 import { z } from "zod/v4"
-import type { ServiceError, ServiceResult, RequestPayload, FetchJsonOptions } from "./type.lib"
+import type { ServiceError, ServiceResult, RequestPayload, FetchJsonOptions, RetryOptions } from "./type.lib"
 
 
 /**
- * Brief: Ajoute un timeout à une promesse existante
- * @param {Promise} promise - La promesse à chronométrer
- * @param {number} ms - Temps limite en millisecondes (défaut: 30000)
- * @returns {Promise} Promesse qui se résout ou rejette selon le timeout
+ * Add a timeout to an existing promise.
  */
 export function withTimeout<T>(promise: Promise<T>, ms = 30000): Promise<T> {
     const controller = new AbortController()
@@ -24,16 +21,8 @@ export function withTimeout<T>(promise: Promise<T>, ms = 30000): Promise<T> {
 }
 
 
-/*
-    fonction générique Request pour les differentes opérations CRUD
-*/
 /**
- * Brief: Fonction générique pour effectuer des requêtes HTTP vers l'API backend
- *
- * @param {string} endpoint - Endpoint de l'API à appeler (relatif à l'URL de base)
- * @param {Object} payload - Configuration de la requête {method, headers, body, authorization}
- * @param {string} baseUrl - Configuration de l'url de base
- * @returns {Request} Objet Request configuré pour l'appel à l'API
+ * Build a Request object for API calls.
  */
 export const request = (baseUrl: string, endpoint: string, payload: RequestPayload): Request => {
     const { method, headers, body } = payload
@@ -208,38 +197,47 @@ function handleFetchException(error: unknown, timeoutMs: number): ServiceResult<
     }
 }
 
-export async function fetchJson<TReq, TOk>(
-    options: FetchJsonOptions<TReq, TOk>,
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function computeRetryDelay(attempt: number, retry: RetryOptions): number {
+    const initialDelayMs = retry.initialDelayMs ?? 250
+    const maxDelayMs = retry.maxDelayMs ?? 1500
+    const exponential = Math.min(maxDelayMs, initialDelayMs * Math.pow(2, attempt - 1))
+    const jitter = Math.floor(Math.random() * 100)
+    return exponential + jitter
+}
+
+type FailedServiceResult = { ok: false; status: number; error: ServiceError }
+
+function shouldRetry(result: FailedServiceResult, retry: RetryOptions): boolean {
+    if (result.error.kind === "network" || result.error.kind === "timeout") {
+        return true
+    }
+    if (result.error.kind !== "http") {
+        return false
+    }
+    const retryStatuses = retry.retryOnStatuses ?? [429, 500, 502, 503, 504]
+    return retryStatuses.includes(result.status)
+}
+
+async function executeAttempt<TReq, TOk>(
+    url: string,
+    method: string,
+    headers: Headers,
+    payload: TReq | undefined,
+    timeoutMs: number,
+    successSchema: z.ZodType<TOk>,
+    errorSchemas?: Record<number, z.ZodTypeAny>,
 ): Promise<ServiceResult<TOk>> {
-    const {
-        url,
-        method,
-        requestData,
-        requestSchema,
-        successSchema,
-        errorSchemas,
-        timeoutMs = 10000,
-        headers,
-    } = options
-
-    const validation = validateRequestPayload(requestData, requestSchema)
-    if (!validation.ok) {
-        return validation.result
-    }
-
-    const payload = validation.payload
-    const finalHeaders = new Headers(headers)
-    if (!finalHeaders.has("Content-Type") && payload !== undefined) {
-        finalHeaders.set("Content-Type", "application/json")
-    }
-
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
         const response = await fetch(url, {
             method,
-            headers: finalHeaders,
+            headers,
             body: payload === undefined ? undefined : JSON.stringify(payload),
             signal: controller.signal,
         })
@@ -270,6 +268,75 @@ export async function fetchJson<TReq, TOk>(
         return handleFetchException(error, timeoutMs)
     } finally {
         clearTimeout(timeoutId)
+    }
+}
+
+export async function fetchJson<TReq, TOk>(
+    options: FetchJsonOptions<TReq, TOk>,
+): Promise<ServiceResult<TOk>> {
+    const {
+        url,
+        method,
+        requestData,
+        requestSchema,
+        successSchema,
+        errorSchemas,
+        timeoutMs = 10000,
+        headers,
+        retry,
+    } = options
+
+    const validation = validateRequestPayload(requestData, requestSchema)
+    if (!validation.ok) {
+        return validation.result
+    }
+
+    const payload = validation.payload
+    const finalHeaders = new Headers(headers)
+    if (!finalHeaders.has("Content-Type") && payload !== undefined) {
+        finalHeaders.set("Content-Type", "application/json")
+    }
+
+    const attempts = retry?.attempts ?? 1
+    let lastResult: ServiceResult<TOk> | null = null
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        lastResult = await executeAttempt(
+            url,
+            method,
+            finalHeaders,
+            payload,
+            timeoutMs,
+            successSchema,
+            errorSchemas,
+        )
+
+        if (lastResult.ok) {
+            return lastResult
+        }
+
+        if (!retry || attempt === attempts) {
+            break
+        }
+
+        if (!shouldRetry(lastResult, retry)) {
+            break
+        }
+
+        await sleep(computeRetryDelay(attempt, retry))
+    }
+
+    return lastResult ?? {
+        ok: false,
+        status: 0,
+        error: buildError(
+            {
+                kind: "unknown",
+                code: "UNEXPECTED_FAILURE",
+                message: "Unexpected request failure",
+                userMessage: "Une erreur inattendue est survenue",
+            },
+        ),
     }
 }
 

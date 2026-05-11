@@ -18,6 +18,13 @@ export type ServiceResult<T> =
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
+export type RetryOptions = {
+  attempts?: number
+  initialDelayMs?: number
+  maxDelayMs?: number
+  retryOnStatuses?: number[]
+}
+
 export type FetchJsonOptions<TReq, TOk> = {
     url: string
     method: HttpMethod
@@ -27,6 +34,7 @@ export type FetchJsonOptions<TReq, TOk> = {
     errorSchemas?: Record<number, z.ZodTypeAny>
     timeoutMs?: number
     headers?: HeadersInit
+    retry?: RetryOptions
 }
   
 export type RequestPayload = {
