@@ -1,6 +1,6 @@
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 DataT = TypeVar("DataT")
@@ -40,7 +40,12 @@ class UserCreate(BaseModel):
     password: str
 
 class LoginRequest(BaseModel):
-    email: str
+    email: str = Field(
+        ...,
+        min_length=3,
+        max_length=254,
+        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    )
     password: str
 
 def success_response(

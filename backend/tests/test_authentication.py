@@ -112,6 +112,21 @@ def test_login_with_malformed_json_returns_422(client: TestClient) -> None:
     assert response.status_code == 422
     payload = response.json()
     assert payload["success"] is False
+    assert payload["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_login_with_invalid_email_format_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "invalid-email", "password": "test"},
+        headers={"x-forwarded-for": "10.0.0.7"},
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "VALIDATION_ERROR"
+    assert any(err["loc"][-1] == "email" for err in payload["error"]["details"])
 
 
 def test_login_with_nonexistent_user_returns_401(client: TestClient) -> None:
@@ -201,3 +216,32 @@ def test_openapi_json_always_accessible(client: TestClient) -> None:
     payload = response.json()
     assert "openapi" in payload
     assert payload["info"]["title"] == "NewsFoundry backend API"
+
+
+def test_login_rate_limit_returns_429_after_limit_for_same_ip(client: TestClient) -> None:
+    ip_headers = {"x-forwarded-for": "10.0.1.250"}
+
+    for _ in range(5):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "test@test.com", "password": "wrong_password"},
+            headers=ip_headers,
+        )
+        assert response.status_code == 401
+        payload = response.json()
+        assert payload["success"] is False
+
+    sixth_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "test@test.com", "password": "wrong_password"},
+        headers=ip_headers,
+    )
+
+    assert sixth_response.status_code == 429
+    payload = sixth_response.json()
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+    assert payload["error"]["details"]["retry_after_seconds"] >= 1
+    assert "Retry-After" in sixth_response.headers
+    assert sixth_response.headers["X-RateLimit-Remaining"] == "0"
+    assert sixth_response.headers["X-RateLimit-Limit"] == "5"
