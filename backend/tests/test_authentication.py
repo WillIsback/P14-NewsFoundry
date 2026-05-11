@@ -15,6 +15,7 @@ if str(BACKEND_SRC) not in sys.path:
 
 import core.auth as auth
 import main
+from core.config import API_LOGIN_RATE_LIMIT_REQUESTS
 from database.database import Database
 from database.models import User
 
@@ -221,7 +222,7 @@ def test_openapi_json_always_accessible(client: TestClient) -> None:
 def test_login_rate_limit_returns_429_after_limit_for_same_ip(client: TestClient) -> None:
     ip_headers = {"x-forwarded-for": "10.0.1.250"}
 
-    for _ in range(5):
+    for _ in range(API_LOGIN_RATE_LIMIT_REQUESTS):
         response = client.post(
             "/api/v1/auth/login",
             json={"email": "test@test.com", "password": "wrong_password"},
@@ -244,4 +245,4 @@ def test_login_rate_limit_returns_429_after_limit_for_same_ip(client: TestClient
     assert payload["error"]["details"]["retry_after_seconds"] >= 1
     assert "Retry-After" in sixth_response.headers
     assert sixth_response.headers["X-RateLimit-Remaining"] == "0"
-    assert sixth_response.headers["X-RateLimit-Limit"] == "5"
+    assert sixth_response.headers["X-RateLimit-Limit"] == str(API_LOGIN_RATE_LIMIT_REQUESTS)

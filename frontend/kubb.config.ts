@@ -2,10 +2,12 @@ import { defineConfig } from '@kubb/core';
 import { pluginOas } from '@kubb/plugin-oas';
 import { pluginZod } from '@kubb/plugin-zod';
 
+const openApiUrl = process.env.KUBB_OPENAPI_URL ?? 'http://127.0.0.1:8000/openapi.json';
+
 export default defineConfig({
   root: '.',
   input: {
-    path: 'http://127.0.0.1:8000/openapi.json',
+    path: openApiUrl,
   },
   output: {
     // On garde un dossier "gen" dédié pour ne pas polluer tes autres fichiers

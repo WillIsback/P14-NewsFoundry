@@ -12,9 +12,13 @@ from api.models import (
     success_response,
 )
 from core.auth import create_access_token, get_current_user
-from core.security import verify_password
+from core.security import hash_password, verify_password
 from database.database import Database
 from database.models import User
+
+# Bcrypt hash of a fixed dummy password. Used to keep comparable verification
+# cost when the user does not exist, reducing account-enumeration timing leaks.
+DUMMY_BCRYPT_HASH = hash_password("timing-check-placeholder")
 
 
 def build_authentication_router(db: Database) -> APIRouter:
@@ -26,7 +30,11 @@ def build_authentication_router(db: Database) -> APIRouter:
         session: Annotated[Session, Depends(db.get_db)],
     ) -> ApiResponse[AccessTokenData]:
         user = session.exec(select(User).where(User.email == credentials.email)).first()
-        if not user or not verify_password(credentials.password, user.hashed_password):
+
+        password_hash = user.hashed_password if user else DUMMY_BCRYPT_HASH
+        password_is_valid = verify_password(credentials.password, password_hash)
+
+        if not user or not password_is_valid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Identifiant ou mot de passe incorrect",
