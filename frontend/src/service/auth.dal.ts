@@ -13,6 +13,12 @@ const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:8000/api/v1").
 
 type LoginResponse = z.infer<typeof authenticationLogin200Schema>
 
+/**
+ * Maps a ServiceResult from the login API to provide user-friendly error messages.
+ *
+ * @param result - The result object returned from the login request.
+ * @returns The original result with potentially updated error messages, or the original result if it was successful.
+ */
 function mapLoginError(result: ServiceResult<LoginResponse>): ServiceResult<LoginResponse> {
     if (result.ok) return result
 
@@ -55,6 +61,13 @@ function mapLoginError(result: ServiceResult<LoginResponse>): ServiceResult<Logi
     }
 }
 
+/**
+ * Sends a login request to the backend authentication service.
+ *
+ * @param email - The user's email address.
+ * @param password - The user's password.
+ * @returns A promise resolving to the ServiceResult containing the login response or error details.
+ */
 export async function postLogin(email: string, password: string): Promise<ServiceResult<LoginResponse>> {
     const route = "/auth/login"
     const result = await fetchJson({
