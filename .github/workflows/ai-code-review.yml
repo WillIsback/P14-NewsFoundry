@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: AI Code Review
-        uses: WillIsback/ai-devops-toolkit/code-review@main
+        uses: WillIsback/ai-devops-toolkit/code-review@v0.0.2
         with:
           vllm-url: ${{ secrets.VLLM_URL }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
