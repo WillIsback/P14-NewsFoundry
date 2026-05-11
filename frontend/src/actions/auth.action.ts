@@ -3,15 +3,11 @@ import { redirect } from 'next/navigation'
 import * as z from "zod";
 import { createSession, deleteSession } from '@/src/lib/session'
 import { postLogin } from '@/src/service/auth.dal'
-import { SessionTokenPayload } from "@/src/lib/type.lib"
+import { validateLoginPayload } from '@/src/lib/auth.helpers'
 
 const schema = z.object({
-  email: z.string({
-    error: 'Invalid Email',
-  }),
-  password: z.string({
-    error: 'Invalid Password'
-  })
+  email: z.string().email('Email must be valid'),
+  password: z.string().min(1, 'Password is required')
 })
 
 export async function loginUser(initialState: unknown, formData: FormData) {
@@ -34,7 +30,15 @@ export async function loginUser(initialState: unknown, formData: FormData) {
     }
   }
 
-  await createSession(result.data.data?.email ?? '')
+  // Extract email safely with validation
+  const email = validateLoginPayload(result)
+  if (!email) {
+    return {
+      error: 'Invalid response from server',
+    }
+  }
+
+  await createSession(email)
   redirect('/')
 }
 
