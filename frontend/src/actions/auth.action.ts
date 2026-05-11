@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import * as z from "zod";
 import { createSession, deleteSession } from '@/src/lib/session'
 import { postLogin } from '@/src/service/auth.dal'
+import { SessionTokenPayload } from "@/src/lib/type.lib"
 
 const schema = z.object({
   email: z.string({

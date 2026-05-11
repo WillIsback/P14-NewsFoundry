@@ -1,13 +1,7 @@
 import 'server-only'
-import type { JWTPayload } from 'jose'
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
-
-type SessionTokenPayload = JWTPayload & {
-  /** The user's email address, used as a stable identifier across sessions. */
-  userId: string
-  expiresAt: string
-}
+import { SessionTokenPayload } from './type.lib'
 
 const secretKey = process.env.SESSION_SECRET
 const encodedKey = new TextEncoder().encode(secretKey)

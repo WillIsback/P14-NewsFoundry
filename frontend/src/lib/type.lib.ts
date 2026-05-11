@@ -1,4 +1,5 @@
 import { z } from "zod/v4"
+import type { JWTPayload } from 'jose'
 
 export type ServiceErrorKind = "validation" | "http" | "network" | "timeout" | "parse" | "unknown"
 
@@ -35,3 +36,8 @@ export type RequestPayload = {
 }
   
   
+export type SessionTokenPayload = JWTPayload & {
+  /** The user's email address, used as a stable identifier across sessions. */
+  userId: string
+  expiresAt: string
+}
