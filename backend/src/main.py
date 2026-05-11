@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
 from api.models import (
     ApiResponse,
@@ -24,6 +25,19 @@ from core.config import (
 from core.middleware import register_middlewares
 
 import uvicorn
+
+
+def generate_operation_id(route: APIRoute) -> str:
+    """Generate stable, concise OpenAPI operation IDs for codegen.
+
+    Format:
+    - `<tag>_<handler_name>` for tagged routers
+    - `<handler_name>` for untagged routes
+    """
+    tag = (route.tags[0] if route.tags else "").strip().lower()
+    tag = tag.replace(" ", "_").replace("-", "_")
+    name = route.name.strip().lower().replace(" ", "_").replace("-", "_")
+    return f"{tag}_{name}" if tag else name
 
 def create_app() -> FastAPI:
     missing_vars = validate_runtime_config()
@@ -54,6 +68,7 @@ def create_app() -> FastAPI:
         title="NewsFoundry backend API",
         description="Backend API for NewsFoundry application",
         version="1.0.0",
+        generate_unique_id_function=generate_operation_id,
         docs_url=None if ENVIRONMENT == "production" else "/api/docs",
         redoc_url=None if ENVIRONMENT == "production" else "/api/redoc",
     )
@@ -145,4 +160,6 @@ if __name__ == "__main__":
         app,
         host=os.getenv("HOST", "127.0.0.1"),
         port=int(os.getenv("PORT", "8000")),
+        log_level="debug" if DEBUG_MODE else "info",
+        access_log=True,
     )

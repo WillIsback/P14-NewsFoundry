@@ -1,6 +1,6 @@
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 DataT = TypeVar("DataT")
@@ -23,6 +23,7 @@ class ApiResponse(BaseModel, Generic[DataT]):
 class AccessTokenData(BaseModel):
     access_token: str
     token_type: str
+    email: str
 
 
 class MessageData(BaseModel):
@@ -38,6 +39,14 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
+class LoginRequest(BaseModel):
+    email: str = Field(
+        ...,
+        min_length=3,
+        max_length=254,
+        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    )
+    password: str
 
 def success_response(
     *,

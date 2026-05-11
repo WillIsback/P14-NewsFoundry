@@ -1,32 +1,40 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from api.models import (
     AccessTokenData,
     ApiResponse,
+    LoginRequest,
     MessageData,
     UserPublic,
     success_response,
 )
 from core.auth import create_access_token, get_current_user
-from core.security import verify_password
+from core.security import hash_password, verify_password
 from database.database import Database
 from database.models import User
+
+# Bcrypt hash of a fixed dummy password. Used to keep comparable verification
+# cost when the user does not exist, reducing account-enumeration timing leaks.
+DUMMY_BCRYPT_HASH = hash_password("timing-check-placeholder")
 
 
 def build_authentication_router(db: Database) -> APIRouter:
     router = APIRouter(tags=["authentication"])
 
     @router.post("/login")
-    async def login_for_access_token(
-        email: Annotated[str, Form(...)],
-        password: Annotated[str, Form(...)],
+    async def login(
+        credentials: LoginRequest,
         session: Annotated[Session, Depends(db.get_db)],
     ) -> ApiResponse[AccessTokenData]:
-        user = session.exec(select(User).where(User.email == email)).first()
-        if not user or not verify_password(password, user.hashed_password):
+        user = session.exec(select(User).where(User.email == credentials.email)).first()
+
+        password_hash = user.hashed_password if user else DUMMY_BCRYPT_HASH
+        password_is_valid = verify_password(credentials.password, password_hash)
+
+        if not user or not password_is_valid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Identifiant ou mot de passe incorrect",
@@ -37,11 +45,11 @@ def build_authentication_router(db: Database) -> APIRouter:
         return success_response(
             status=status.HTTP_200_OK,
             message="Login successful",
-            data=AccessTokenData(access_token=access_token, token_type="bearer"),
+            data=AccessTokenData(access_token=access_token, token_type="bearer", email=user.email),
         )
 
     @router.get("/protected")
-    async def protected_route(
+    async def protected_resource(
         current_user: Annotated[User, Depends(get_current_user)],
     ) -> ApiResponse[MessageData]:
         return success_response(
@@ -53,7 +61,7 @@ def build_authentication_router(db: Database) -> APIRouter:
         )
 
     @router.get("/users/me")
-    def read_users_me(
+    def me(
         current_user: Annotated[User, Depends(get_current_user)],
     ) -> ApiResponse[UserPublic]:
         return success_response(
