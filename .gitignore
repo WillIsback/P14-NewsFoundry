@@ -14,3 +14,4 @@ wheels/
 .github/agents
 actions-runner/
 docs/superpowers
+docs/.dev

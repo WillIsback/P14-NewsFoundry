@@ -20,7 +20,7 @@ def build_authentication_router(db: Database) -> APIRouter:
     router = APIRouter(tags=["authentication"])
 
     @router.post("/login")
-    async def login_for_access_token(
+    async def login(
         email: Annotated[str, Form(...)],
         password: Annotated[str, Form(...)],
         session: Annotated[Session, Depends(db.get_db)],
@@ -41,7 +41,7 @@ def build_authentication_router(db: Database) -> APIRouter:
         )
 
     @router.get("/protected")
-    async def protected_route(
+    async def protected_resource(
         current_user: Annotated[User, Depends(get_current_user)],
     ) -> ApiResponse[MessageData]:
         return success_response(
@@ -53,7 +53,7 @@ def build_authentication_router(db: Database) -> APIRouter:
         )
 
     @router.get("/users/me")
-    def read_users_me(
+    def me(
         current_user: Annotated[User, Depends(get_current_user)],
     ) -> ApiResponse[UserPublic]:
         return success_response(
