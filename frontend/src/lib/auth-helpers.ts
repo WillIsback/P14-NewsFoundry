@@ -24,6 +24,7 @@ export type LoginResponse = z.infer<typeof authenticationLogin200Schema>
 
 /**
  * Extracts the login response data from a service result.
+ *
  * @param result - The service result containing the login response.
  * @returns The extracted login response data, or null if the result is not OK or data is missing.
  */
@@ -38,6 +39,7 @@ export function getLoginPayload(
 
 /**
  * Validates the login payload and extracts the email.
+ *
  * @param result - The service result containing the login response.
  * @returns The email string if valid and present, otherwise null.
  */
