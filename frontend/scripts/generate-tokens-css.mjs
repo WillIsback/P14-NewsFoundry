@@ -124,8 +124,11 @@ const elementTypographyMap = [
   { selector: "h4", group: "heading-xs" },
   { selector: "h5", group: "heading-2xs" },
   { selector: "p", group: "body-xs" },
-  { selector: "small, time", group: "body-s" },
-  { selector: "label", group: "body-xs" },
+  { selector: "time", group: "body-2xs" },
+  { selector: "label", group: "body-s" },
+  { selector: "span", group: "body-2xs" },
+  { selector: "input", group: "body-xs" },
+  { selector: "textarea", group: "body-xs" },
 ];
 
 const baseLines = [];

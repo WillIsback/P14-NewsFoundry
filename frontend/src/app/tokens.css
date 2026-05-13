@@ -13,6 +13,17 @@
   --typography-body-2xl-paragraphspacing: 0;
   --typography-body-2xl-textcase: none;
   --typography-body-2xl-textdecoration: none;
+  --typography-body-2xs-fontfamily: Inter;
+  --typography-body-2xs-fontsize: 12px;
+  --typography-body-2xs-fontstretch: normal;
+  --typography-body-2xs-fontstyle: normal;
+  --typography-body-2xs-fontweight: 400;
+  --typography-body-2xs-letterspacing: 0;
+  --typography-body-2xs-lineheight: 14.4px;
+  --typography-body-2xs-paragraphindent: 0;
+  --typography-body-2xs-paragraphspacing: 0;
+  --typography-body-2xs-textcase: none;
+  --typography-body-2xs-textdecoration: none;
   --typography-body-l-fontfamily: Inter;
   --typography-body-l-fontsize: 24px;
   --typography-body-l-fontstretch: normal;
@@ -36,12 +47,12 @@
   --typography-body-m-textcase: none;
   --typography-body-m-textdecoration: none;
   --typography-body-s-fontfamily: Inter;
-  --typography-body-s-fontsize: 12px;
+  --typography-body-s-fontsize: 16px;
   --typography-body-s-fontstretch: normal;
   --typography-body-s-fontstyle: normal;
   --typography-body-s-fontweight: 400;
   --typography-body-s-letterspacing: 0;
-  --typography-body-s-lineheight: 14.4px;
+  --typography-body-s-lineheight: 19.2px;
   --typography-body-s-paragraphindent: 0;
   --typography-body-s-paragraphspacing: 0;
   --typography-body-s-textcase: none;
@@ -186,12 +197,14 @@
   --font-heading: IBM Plex Sans;
   --text-body-2xl: 32px;
   --text-body-2xl--line-height: 38.4px;
+  --text-body-2xs: 12px;
+  --text-body-2xs--line-height: 14.4px;
   --text-body-l: 24px;
   --text-body-l--line-height: 28.8px;
   --text-body-m: 18px;
   --text-body-m--line-height: 21.6px;
-  --text-body-s: 12px;
-  --text-body-s--line-height: 14.4px;
+  --text-body-s: 16px;
+  --text-body-s--line-height: 19.2px;
   --text-body-xl: 28px;
   --text-body-xl--line-height: 33.6px;
   --text-body-xs: 14px;
@@ -254,13 +267,31 @@
     line-height: var(--typography-body-xs-lineheight);
     letter-spacing: var(--typography-body-xs-letterspacing);
   }
-  small, time {
+  time {
+    font-family: var(--typography-body-2xs-fontfamily);
+    font-size: var(--typography-body-2xs-fontsize);
+    line-height: var(--typography-body-2xs-lineheight);
+    letter-spacing: var(--typography-body-2xs-letterspacing);
+  }
+  label {
     font-family: var(--typography-body-s-fontfamily);
     font-size: var(--typography-body-s-fontsize);
     line-height: var(--typography-body-s-lineheight);
     letter-spacing: var(--typography-body-s-letterspacing);
   }
-  label {
+  span {
+    font-family: var(--typography-body-2xs-fontfamily);
+    font-size: var(--typography-body-2xs-fontsize);
+    line-height: var(--typography-body-2xs-lineheight);
+    letter-spacing: var(--typography-body-2xs-letterspacing);
+  }
+  input {
+    font-family: var(--typography-body-xs-fontfamily);
+    font-size: var(--typography-body-xs-fontsize);
+    line-height: var(--typography-body-xs-lineheight);
+    letter-spacing: var(--typography-body-xs-letterspacing);
+  }
+  textarea {
     font-family: var(--typography-body-xs-fontfamily);
     font-size: var(--typography-body-xs-fontsize);
     line-height: var(--typography-body-xs-lineheight);

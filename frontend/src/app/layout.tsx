@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/src/lib/utils";
+import { Toaster } from "@/src/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -36,7 +37,10 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, inter.variable, ibmPlexSans.variable, "font-sans")}
     >
-      <body className="h-full">{children}</body>
+      <body className="h-full">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }
