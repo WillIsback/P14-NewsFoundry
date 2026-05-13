@@ -12,7 +12,7 @@ export default function Menu(){
         }
     ]
     return(
-        <aside className="w-fit h-full flex flex-col bg-slate-100" >
+        <aside className="w-fit h-full justify-between flex flex-col  bg-slate-100" >
             {/* Partie Haute*/}
             <div className="w-full h-fit flex flex-col">
                 <header className="w-full flex gap-2.5 pl-6 pt-5.5 pb-5.5 bg-slate-100 border-slate-400 border">
