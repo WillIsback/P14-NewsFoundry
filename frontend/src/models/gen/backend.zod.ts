@@ -6,127 +6,127 @@
 import { z } from "zod/v4";
 
 export const accessTokenDataSchema = z.object({
-  access_token: z.string(),
-  token_type: z.string(),
-  email: z.string(),
+	access_token: z.string(),
+	token_type: z.string(),
+	email: z.string(),
 });
 
 export const apiErrorSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  details: z.optional(z.union([z.any(), z.null()])),
+	code: z.string(),
+	message: z.string(),
+	details: z.optional(z.union([z.any(), z.null()])),
 });
 
 export const apiResponseAccessTokenDataSchema = z.object({
-  success: z.boolean(),
-  status: z.int(),
-  message: z.string(),
-  get data() {
-    return z.union([accessTokenDataSchema, z.null()]).optional();
-  },
-  get error() {
-    return z.union([apiErrorSchema, z.null()]).optional();
-  },
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([accessTokenDataSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
 });
 
 export const messageDataSchema = z.object({
-  message: z.string(),
+	message: z.string(),
 });
 
 export const apiResponseMessageDataSchema = z.object({
-  success: z.boolean(),
-  status: z.int(),
-  message: z.string(),
-  get data() {
-    return z.union([messageDataSchema, z.null()]).optional();
-  },
-  get error() {
-    return z.union([apiErrorSchema, z.null()]).optional();
-  },
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([messageDataSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
 });
 
 export const userPublicSchema = z.object({
-  id: z.int(),
-  email: z.string(),
+	id: z.int(),
+	email: z.string(),
 });
 
 export const apiResponseUserPublicSchema = z.object({
-  success: z.boolean(),
-  status: z.int(),
-  message: z.string(),
-  get data() {
-    return z.union([userPublicSchema, z.null()]).optional();
-  },
-  get error() {
-    return z.union([apiErrorSchema, z.null()]).optional();
-  },
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([userPublicSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
 });
 
 export const validationErrorSchema = z.object({
-  loc: z.array(z.union([z.int(), z.string()])),
-  msg: z.string(),
-  type: z.string(),
-  input: z.optional(z.any()),
-  ctx: z.optional(z.object({})),
+	loc: z.array(z.union([z.int(), z.string()])),
+	msg: z.string(),
+	type: z.string(),
+	input: z.optional(z.any()),
+	ctx: z.optional(z.object({})),
 });
 
 export const HTTPValidationErrorSchema = z.object({
-  get detail() {
-    return z.array(validationErrorSchema).optional();
-  },
+	get detail() {
+		return z.array(validationErrorSchema).optional();
+	},
 });
 
 export const loginRequestSchema = z.object({
-  email: z
-    .string()
-    .min(3)
-    .max(254)
-    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
-  password: z.string(),
+	email: z
+		.string()
+		.min(3)
+		.max(254)
+		.regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
+	password: z.string(),
 });
 
 /**
  * @description Successful Response
  */
 export const authenticationLogin200Schema = z.lazy(
-  () => apiResponseAccessTokenDataSchema,
+	() => apiResponseAccessTokenDataSchema,
 );
 
 /**
  * @description Validation Error
  */
 export const authenticationLogin422Schema = z.lazy(
-  () => HTTPValidationErrorSchema,
+	() => HTTPValidationErrorSchema,
 );
 
 export const authenticationLoginMutationRequestSchema = z.lazy(
-  () => loginRequestSchema,
+	() => loginRequestSchema,
 );
 
 export const authenticationLoginMutationResponseSchema = z.lazy(
-  () => authenticationLogin200Schema,
+	() => authenticationLogin200Schema,
 );
 
 /**
  * @description Successful Response
  */
 export const authenticationProtectedResource200Schema = z.lazy(
-  () => apiResponseMessageDataSchema,
+	() => apiResponseMessageDataSchema,
 );
 
 export const authenticationProtectedResourceQueryResponseSchema = z.lazy(
-  () => authenticationProtectedResource200Schema,
+	() => authenticationProtectedResource200Schema,
 );
 
 /**
  * @description Successful Response
  */
 export const authenticationMe200Schema = z.lazy(
-  () => apiResponseUserPublicSchema,
+	() => apiResponseUserPublicSchema,
 );
 
 export const authenticationMeQueryResponseSchema = z.lazy(
-  () => authenticationMe200Schema,
+	() => authenticationMe200Schema,
 );
 
 /**

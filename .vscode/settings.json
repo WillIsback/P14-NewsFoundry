@@ -1,5 +1,6 @@
 {
-    "biome.lsp.trace.server": "verbose",
+    "biome.lsp.bin": "./frontend/node_modules/.pnpm/@biomejs+cli-linux-x64@2.4.10/node_modules/@biomejs/cli-linux-x64/biome",
+    "biome.lsp.trace.server": "off",
     "biome.lsp.watcher.kind": "recommended",
     "biome.configurationPath": ".config/biome.json",
     "editor.defaultFormatter": "biomejs.biome",

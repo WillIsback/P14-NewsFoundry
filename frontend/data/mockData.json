@@ -1,0 +1,45 @@
+{
+  "chats": [
+    {
+        "id": 1,
+        "date": "10/12/2026"
+    },
+    {
+        "id": 2,
+        "date": "11/12/2026"
+    },
+    {
+        "id": 3,
+        "date": "12/12/2026"
+    }
+  ],
+  "pressReviews": [
+    {
+        "id": 1,
+        "title": "Press Review 1",
+        "description": "2025-09-30T09:00:00",
+        "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit. Donec et mollis dolor. Praesent et diam eget libero egestas mattis sit amet vitae augue. Nam tincidunt congue enim, ut porta lorem lacinia consectetur. Donec ut libero sed arcu vehicula ultricies a non tortor. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ut gravida lorem."  
+    },
+    {
+        "id": 2,
+        "title": "Press Review 2",
+        "description": "2026-05-15T14:00:00",
+        "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit. Donec et mollis dolor. Praesent et diam eget libero egestas mattis sit amet vitae augue. Nam tincidunt congue enim, ut porta lorem lacinia consectetur. Donec ut libero sed arcu vehicula ultricies a non tortor. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ut gravida lorem."  
+    }
+  ],
+  "messages": [
+    {
+        "id": 1,
+        "type": "user",
+        "content": "Peux-tu me donner les dernières actualités politiques ?",
+        "timestamp": "2026-01-01T10:30:00"
+    },
+    {
+        "id": 2,
+        "type": "ai",
+        "content": "Voici un **résumé des dernières nouvelles politiques** :\n\n- Le gouvernement a annoncé de nouvelles **mesures économiques**\n- Débat sur la _réforme des retraites_ au Parlement\n- Visite diplomatique prévue la semaine prochaine\n\n> Ces informations sont issues de sources vérifiées au **13 mai 2026**.\n\nSouhaitez-vous que je génère une revue de presse détaillée sur l'un de ces sujets ?",
+        "timestamp": "2026-01-01T10:31:00"
+    }
+  ]
+
+}

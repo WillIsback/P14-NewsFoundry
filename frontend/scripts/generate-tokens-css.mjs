@@ -3,7 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const inputPath = path.join(root, "figma", "design-tokens.tokens.json");
-const outputPath = path.join(root, "app", "tokens.css");
+const outputPath = path.join(root, "src", "app", "tokens.css");
 
 const raw = fs.readFileSync(inputPath, "utf8");
 const json = JSON.parse(raw);
@@ -116,6 +116,36 @@ const themeLines = [...themeVars.entries()]
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([name, val]) => `  ${name}: ${val};`);
 
+// Mapping élément HTML → groupe typographique Figma
+const elementTypographyMap = [
+  { selector: "h1", group: "heading-l" },
+  { selector: "h2", group: "heading-m" },
+  { selector: "h3", group: "heading-s" },
+  { selector: "h4", group: "heading-xs" },
+  { selector: "h5", group: "heading-2xs" },
+  { selector: "p", group: "body-xs" },
+  { selector: "time", group: "body-2xs" },
+  { selector: "label", group: "body-s" },
+  { selector: "span", group: "body-2xs" },
+  { selector: "input", group: "body-xs" },
+  { selector: "textarea", group: "body-xs" },
+];
+
+const baseLines = [];
+for (const { selector, group } of elementTypographyMap) {
+  const textcase = rootVars.get(`typography-${group}-textcase`) ?? "none";
+  const props = [
+    `    font-family: var(--typography-${group}-fontfamily);`,
+    `    font-size: var(--typography-${group}-fontsize);`,
+    `    line-height: var(--typography-${group}-lineheight);`,
+    `    letter-spacing: var(--typography-${group}-letterspacing);`,
+  ];
+  if (textcase !== "none") {
+    props.push(`    text-transform: ${textcase};`);
+  }
+  baseLines.push(`  ${selector} {`, ...props, `  }`);
+}
+
 const out = [
   "/* Auto-generated from figma/design-tokens.tokens.json — do not edit by hand */",
   "",
@@ -127,9 +157,13 @@ const out = [
   ...themeLines,
   "}",
   "",
+  "@layer base {",
+  ...baseLines,
+  "}",
+  "",
 ].join("\n");
 
 fs.writeFileSync(outputPath, out, "utf8");
 console.log(
-  `Generated ${path.relative(root, outputPath)} — ${rootLines.length} :root vars, ${themeLines.length} @theme vars`
+  `Generated ${path.relative(root, outputPath)} — ${rootLines.length} :root vars, ${themeLines.length} @theme vars, ${elementTypographyMap.length} @layer base rules`
 );
