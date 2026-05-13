@@ -2,6 +2,12 @@ import "server-only";
 import type { z } from "zod/v4";
 import type { FetchJsonOptions, ServiceResult } from "./type.lib";
 
+/**
+ * Parses a JSON string and returns a result object indicating success or failure.
+ *
+ * @param text - The string to parse as JSON.
+ * @returns An object with `ok: true` and the parsed value if successful, or `ok: false` if parsing fails.
+ */
 function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 	try {
 		return { ok: true, value: JSON.parse(text) };
@@ -10,6 +16,14 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 	}
 }
 
+/**
+ * Handles an HTTP response by parsing the body and validating it against Zod schemas.
+ *
+ * @param response - The Response object from a fetch call.
+ * @param successSchema - The Zod schema to validate successful responses against.
+ * @param errorSchemas - Optional record mapping HTTP status codes to Zod schemas for error responses.
+ * @returns A ServiceResult object containing either the parsed data or an error description.
+ */
 async function handleResponse<TOk>(
 	response: Response,
 	successSchema: z.ZodType<TOk>,
