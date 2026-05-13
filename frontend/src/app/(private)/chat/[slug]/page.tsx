@@ -4,14 +4,25 @@ import Menu from "@/src/components/Menu";
 import { ButtonSend } from "@/src/components/ui/ButtonSend";
 import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
 import TextArea from "@/src/components/ui/TextArea";
+import { notFound } from "next/navigation";
 
-export default async function HomePage() {
-	let chats: { id: string; date: string }[] | undefined;
-	let pressReviews:
-		| { id: string; title: string; description: string; content: string }[]
-		| undefined;
-	let messages:
-		| { id: string; type: "user" | "ai"; content: string; timestamp: string }[]
+export default async function ChatPage({
+	params,
+}: Readonly<{
+	params: Promise<{ slug: string }>;
+}>) {
+	const { slug } = await params;
+	let chats:
+		| {
+				id: string;
+				date: string;
+				messages: {
+					id: string;
+					type: "user" | "ai";
+					content: string;
+					timestamp: string;
+				}[];
+		  }[]
 		| undefined;
 
 	try {
@@ -21,15 +32,14 @@ export default async function HomePage() {
 		);
 		const data = JSON.parse(file);
 		chats = data.chats;
-		pressReviews = data.pressReviews;
-		messages = data.messages;
 	} catch {
 		chats = undefined;
-		pressReviews = undefined;
-		messages = undefined;
 	}
-
-	console.log(chats);
+	console.log(" type of slug : ", typeof slug);
+	const chat = chats?.find((c) => c.id === slug);
+	if (!chat) {
+		notFound();
+	}
 	return (
 		<div className="flex w-full h-full">
 			<Menu chats={chats} />
@@ -42,9 +52,11 @@ export default async function HomePage() {
 					</div>
 				</header>
 				{/* Assistant response area */}
-				{/* Home Assistant Welcome Section */}
+				{/* Home Assistant Chat Section*/}
 				<section className="w-full min-h-202.75 flex flex-col gap-2.5 px-[25%] py-[18%] bg-slate-400">
-					<AssistantCard variant="welcome" />
+					<AssistantCard
+						messages={chats?.find((chat) => chat.id === slug)?.messages}
+					/>
 				</section>
 				<footer className="flex w-full min-h-23.25 gap-4 px-[6.44%] py-4.25 bg-white">
 					<TextArea />

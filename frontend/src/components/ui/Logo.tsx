@@ -3,7 +3,10 @@ interface LogoProps {
 	height?: number | string;
 }
 
-export default function Logo({ width = 144, height = 13 }: Readonly<LogoProps>) {
+export default function Logo({
+	width = 144,
+	height = 13,
+}: Readonly<LogoProps>) {
 	return (
 		<svg
 			width={width}

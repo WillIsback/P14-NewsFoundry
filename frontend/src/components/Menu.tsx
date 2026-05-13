@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { logout } from "@/src/actions/auth.action";
 import Chat from "./ui/chat";
 import Logo from "./ui/Logo";
-import { logout } from "@/src/actions/auth.action";
+import Link from "next/link";
+
 interface MenuProps {
 	id: string;
 	date: string;
@@ -42,16 +44,16 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 		<aside className="w-fit h-full justify-between flex flex-col  bg-slate-100">
 			{/* Partie Haute*/}
 			<div className="w-full h-fit flex flex-col">
-				<header className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 pr-37.5 bg-slate-100 border-slate-400 border">
+				<Link href="/" className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 pr-37.5 bg-slate-100 border-slate-400 border">
 					{/* Logo NewFoundry placeholder */}
 					<Logo />
-				</header>
+				</Link>
 				{/* Historique de discussion */}
 				<nav className="w-full h-fit">
 					<ul className="flex flex-col gap-0.5">
 						{/* Card Chat à implementer ici en generation par map, attention a avoir discussion id */}
 						{chats ? (
-							chats.map((c) => <Chat key={c.id} date={c.date} />)
+							chats.map((c) => <Chat key={c.id} date={c.date} id={c.id} />)
 						) : (
 							<li>No chats available.</li>
 						)}
@@ -59,7 +61,10 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 				</nav>
 			</div>
 			{/* Partie basse */}
-			<form action={logout} className="w-full h-fit pl-6 pr-9.25 pt-9.75 pb-9.75 bg-slate-100">
+			<form
+				action={logout}
+				className="w-full h-fit pl-6 pr-9.25 pt-9.75 pb-9.75 bg-slate-100"
+			>
 				<button
 					type="submit"
 					className="w-full h-fit flex py-4 gap-2.75 rounded-[8px] items-center hover:underline"

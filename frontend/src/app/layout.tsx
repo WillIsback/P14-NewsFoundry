@@ -24,7 +24,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
 	title: "NewsFoundry",
-	description: "Votre assistant d'actualités IA personnalisé pour rester informé en un clin d'œil",
+	description:
+		"Votre assistant d'actualités IA personnalisé pour rester informé en un clin d'œil",
 };
 
 export default function RootLayout({

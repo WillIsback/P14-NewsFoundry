@@ -11,7 +11,12 @@ export default function Input(props: Readonly<InputProps>) {
 	const { label, placeholder, type, required, name, autocomplete } = props;
 
 	const autoAttr =
-		autocomplete ?? (type === "password" ? "current-password" : type === "email" ? "email" : undefined);
+		autocomplete ??
+		(type === "password"
+			? "current-password"
+			: type === "email"
+				? "email"
+				: undefined);
 
 	return (
 		<label className="w-full h-fit flex flex-col gap-3 text-slate-dark">
