@@ -43,7 +43,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "ai-devops-toolkit": "github:WillIsback/ai-devops-toolkit#v0.0.4",
+    "ai-devops-toolkit": "github:WillIsback/ai-devops-toolkit",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "prettier": "^3.8.3",

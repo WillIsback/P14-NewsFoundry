@@ -1,4 +1,3 @@
-
 from contextlib import asynccontextmanager
 import os
 import traceback
@@ -25,7 +24,6 @@ from core.config import (
 from core.middleware import register_middlewares
 
 import uvicorn
-
 
 def generate_operation_id(route: APIRoute) -> str:
     """Generate stable, concise OpenAPI operation IDs for codegen.

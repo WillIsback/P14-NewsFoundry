@@ -11,8 +11,15 @@ export default function PublicLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<main className="min-h-full w-full bg-background">
-			<div className="mx-auto flex min-h-full w-full max-w-140 flex-col justify-center px-4 py-8 sm:px-6">
+		<main
+			className="relative w-full min-h-screen overflow-hidden"
+			style={{
+				backgroundImage: "url('/PublicBg.png')",
+				backgroundPosition: "center",
+				backgroundSize: "cover",
+			}}
+		>
+			<div className="relative z-10 flex items-center justify-center w-full min-h-screen bg-slate-dark/80">
 				{children}
 			</div>
 		</main>

@@ -11,6 +11,12 @@ if (!secretKey) {
 }
 const encodedKey = new TextEncoder().encode(secretKey);
 
+/**
+ * Encrypts the given payload into a JWT token.
+ *
+ * @param payload - The session token payload to encrypt.
+ * @returns A signed JWT string.
+ */
 export async function encrypt(payload: SessionTokenPayload) {
 	return new SignJWT(payload)
 		.setProtectedHeader({ alg: "HS256" })
@@ -19,6 +25,12 @@ export async function encrypt(payload: SessionTokenPayload) {
 		.sign(encodedKey);
 }
 
+/**
+ * Decrypts and verifies a session token.
+ *
+ * @param session - The JWT session string to decrypt.
+ * @returns The decrypted session payload if valid, otherwise null.
+ */
 export async function decrypt(
 	session: string | undefined = "",
 ): Promise<SessionTokenPayload | null> {
@@ -45,7 +57,11 @@ export async function decrypt(
 	}
 }
 
-/** @param userId - The user's email address (returned by the backend login endpoint). */
+/**
+ * Creates a new session by generating a JWT and setting it in an HTTP-only cookie.
+ *
+ * @param userId - The user's email address (returned by the backend login endpoint).
+ */
 export async function createSession(userId: string) {
 	const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 	const session = await encrypt({ userId, expiresAt: expiresAt.toISOString() });
@@ -60,6 +76,11 @@ export async function createSession(userId: string) {
 	});
 }
 
+/**
+ * Updates the current session by refreshing the cookie expiration time.
+ *
+ * @returns The updated session payload if successful, otherwise null.
+ */
 export async function updateSession() {
 	const session = (await cookies()).get("session")?.value;
 	const payload = await decrypt(session);
@@ -80,6 +101,9 @@ export async function updateSession() {
 	});
 }
 
+/**
+ * Deletes the current session by removing the session cookie.
+ */
 export async function deleteSession() {
 	const cookieStore = await cookies();
 	cookieStore.delete("session");

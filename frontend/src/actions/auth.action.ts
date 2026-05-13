@@ -1,6 +1,5 @@
 "use server";
 import { redirect } from "next/navigation";
-import * as z from "zod";
 import { loginInputSchema, validateLoginPayload } from "@/src/lib/auth-helpers";
 import { createSession, deleteSession } from "@/src/lib/session";
 import { postLogin } from "@/src/service/auth.dal";
@@ -40,11 +39,10 @@ export async function loginUser(
 		email: typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "",
 		password: typeof rawPassword === "string" ? rawPassword : "",
 	});
-
 	if (!validatedFields.success) {
 		return {
 			error: null,
-			errors: z.treeifyError(validatedFields.error),
+			errors: validatedFields.error.issues,
 		};
 	}
 
@@ -70,7 +68,7 @@ export async function loginUser(
 	}
 
 	await createSession(email);
-	redirect("/");
+	redirect("/home");
 
 	return { error: null, errors: null };
 }

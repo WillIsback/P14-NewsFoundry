@@ -26,12 +26,12 @@ Client                          API
 
 **Endpoint :** `POST /api/v1/auth/login`
 
-Le body doit être encodé en `application/x-www-form-urlencoded` (formulaire HTML standard).
+Le body doit être encodé en `application/json` (formulaire HTML standard).
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "email=user@example.com&password=your_password"
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password"="your_password"}'
 ```
 
 Réponse :

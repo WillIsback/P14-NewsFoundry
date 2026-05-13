@@ -85,8 +85,8 @@ importers:
         specifier: ^19
         version: 19.2.3(@types/react@19.2.14)
       ai-devops-toolkit:
-        specifier: github:WillIsback/ai-devops-toolkit#v0.0.4
-        version: https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/afa4841a12e85276e932982f0997b4480d3d9cfb
+        specifier: github:WillIsback/ai-devops-toolkit
+        version: https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/8c4a00b74b3c9577aa21d0bfd80adb544c45c9d4
       eslint:
         specifier: ^9
         version: 9.39.4(jiti@2.6.1)
@@ -1883,9 +1883,10 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  ai-devops-toolkit@https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/afa4841a12e85276e932982f0997b4480d3d9cfb:
-    resolution: {tarball: https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/afa4841a12e85276e932982f0997b4480d3d9cfb}
-    version: 0.0.0
+  ai-devops-toolkit@https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/8c4a00b74b3c9577aa21d0bfd80adb544c45c9d4:
+    resolution: {tarball: https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/8c4a00b74b3c9577aa21d0bfd80adb544c45c9d4}
+    version: 0.1.0
+    hasBin: true
 
   ajv-draft-04@1.0.0:
     resolution: {integrity: sha512-mv00Te6nmYbRp5DCwclxtt7yV/joXJPGS7nM+97GdxvuttCOfgI3K4U25zboyeX0O+myI8ERluxQe5wljMmVIw==}
@@ -6376,7 +6377,7 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai-devops-toolkit@https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/afa4841a12e85276e932982f0997b4480d3d9cfb: {}
+  ai-devops-toolkit@https://codeload.github.com/WillIsback/ai-devops-toolkit/tar.gz/8c4a00b74b3c9577aa21d0bfd80adb544c45c9d4: {}
 
   ajv-draft-04@1.0.0(ajv@8.20.0):
     optionalDependencies:

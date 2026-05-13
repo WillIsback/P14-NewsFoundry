@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "NewsFoundry App",
-	description: "Espace prive de l'application NewsFoundry",
+	description: "Espace privé de l'application NewsFoundry",
 };
 
 export default function PrivateLayout({

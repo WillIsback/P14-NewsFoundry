@@ -1,7 +1,6 @@
 import "server-only";
 import type { z } from "zod/v4";
-import { loginInputSchema } from "@/src/lib/auth-helpers";
-import { fetchJson } from "@/src/lib/server.lib";
+import { fetchJson } from "@/src/lib/fetch.lib";
 import type { ServiceResult } from "@/src/lib/type.lib";
 import {
 	authenticationLogin200Schema,
@@ -76,23 +75,20 @@ export async function postLogin(
 	password: string,
 ): Promise<ServiceResult<LoginResponse>> {
 	const route = "/auth/login";
+	const url = `${BACKEND_URL}${route}`;
+	console.log("[auth.dal] postLogin url:", url);
 	const result = await fetchJson({
 		url: `${BACKEND_URL}${route}`,
 		method: "POST",
 		requestData: { email, password },
-		requestSchema: loginInputSchema,
 		successSchema: authenticationLogin200Schema,
 		errorSchemas: {
 			422: authenticationLogin422Schema,
 		},
 		timeoutMs: 10000,
-		retry: {
-			attempts: 3,
-			initialDelayMs: 250,
-			maxDelayMs: 1200,
-			retryOnStatuses: [429, 500, 502, 503, 504],
-		},
+		fetchOptions: { cache: "no-store" },
 	});
+	console.log("[auth.dal] postLogin result:", result);
 
 	return mapLoginError(result);
 }
