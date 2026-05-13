@@ -30,16 +30,26 @@ export type RetryOptions = {
 	retryOnStatuses?: number[];
 };
 
+export type NextFetchOptions = {
+	/** Next.js server-side cache strategy. Use `'no-store'` for dynamic/auth requests. */
+	cache?: RequestCache;
+	next?: {
+		/** Cache lifetime in seconds. `false` = indefinite, `0` = no cache. */
+		revalidate?: number | false;
+		/** Cache tags for on-demand invalidation via `revalidateTag`. */
+		tags?: string[];
+	};
+};
+
 export type FetchJsonOptions<TReq, TOk> = {
 	url: string;
 	method: HttpMethod;
 	requestData?: TReq;
-	requestSchema?: z.ZodType<TReq>;
 	successSchema: z.ZodType<TOk>;
 	errorSchemas?: Record<number, z.ZodTypeAny>;
 	timeoutMs?: number;
 	headers?: HeadersInit;
-	retry?: RetryOptions;
+	fetchOptions?: NextFetchOptions;
 };
 
 export type RequestPayload = {

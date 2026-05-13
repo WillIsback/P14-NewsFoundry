@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import Chat from "./ui/chat";
 import Logo from "./ui/Logo";
+import { logout } from "@/src/actions/auth.action";
 interface MenuProps {
 	id: string;
 	date: string;
@@ -58,15 +59,15 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 				</nav>
 			</div>
 			{/* Partie basse */}
-			<footer className="w-full h-fit pl-6 pr-9.25 pt-9.75 pb-9.75 bg-slate-100">
-				<a
-					href="/api/auth/logout"
+			<form action={logout} className="w-full h-fit pl-6 pr-9.25 pt-9.75 pb-9.75 bg-slate-100">
+				<button
+					type="submit"
 					className="w-full h-fit flex py-4 gap-2.75 rounded-[8px] items-center hover:underline"
 				>
 					{logoutSVG}
 					<span className="text-body-xs text-slate-dark"> Se déconnecter</span>
-				</a>
-			</footer>
+				</button>
+			</form>
 		</aside>
 	);
 }
