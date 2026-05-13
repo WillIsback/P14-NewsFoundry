@@ -1,11 +1,17 @@
-export default function Logo() {
+interface LogoProps {
+	width?: number | string;
+	height?: number | string;
+}
+
+export default function Logo({ width = 144, height = 13 }: Readonly<LogoProps>) {
 	return (
 		<svg
-			width="144"
-			height="13"
+			width={width}
+			height={height}
 			viewBox="0 0 144 13"
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
+			preserveAspectRatio="xMidYMid meet"
 		>
 			<title>Logo NewsFoundry</title>
 			<path

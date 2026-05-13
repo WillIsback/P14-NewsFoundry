@@ -29,7 +29,7 @@ export default function Message({
 
 	return (
 		<div
-			className={`flex flex-col h-fit justify-center gap-4 px-4 py-4 rounded-[10px] ${type === "user" ? "bg-[#030213] w-fit" : "bg-slate-300 w-full"}`}
+			className={`flex flex-col h-fit justify-center gap-4 px-4 py-4 rounded-[10px] ${type === "user" ? "bg-slate-dark w-fit" : "bg-slate-300 w-full"}`}
 		>
 			{type === "user" ? (
 				<>

@@ -1,4 +1,5 @@
 "use server";
+import type { NextRequest } from "next/server";
 import type { z } from "zod/v4";
 import type {
 	FetchJsonOptions,
@@ -26,6 +27,36 @@ export async function withTimeout<T>(
 			});
 		}),
 	]).finally(() => clearTimeout(timeoutId));
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiting
+// ---------------------------------------------------------------------------
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+export async function getClientIp(req: NextRequest): Promise<string> {
+	return (
+		req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+		req.headers.get("x-real-ip") ??
+		"unknown"
+	);
+}
+
+export async function isRateLimited(ip: string): Promise<boolean> {
+	const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000);
+	const max = Number(process.env.RATE_LIMIT_MAX ?? 10);
+	const now = Date.now();
+	const entry = rateLimitMap.get(ip);
+
+	if (!entry || now >= entry.resetAt) {
+		rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
+		return false;
+	}
+	if (entry.count >= max) return true;
+
+	entry.count += 1;
+	return false;
 }
 
 /**

@@ -40,11 +40,11 @@ export async function loginUser(
 		email: typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "",
 		password: typeof rawPassword === "string" ? rawPassword : "",
 	});
-
+	console.log(validatedFields)
 	if (!validatedFields.success) {
 		return {
 			error: null,
-			errors: z.treeifyError(validatedFields.error),
+			errors: validatedFields.error.issues,
 		};
 	}
 
@@ -52,6 +52,8 @@ export async function loginUser(
 		validatedFields.data.email,
 		validatedFields.data.password,
 	);
+
+	console.log("[auth.action] postLogin called with", validatedFields.data.email);
 
 	if (!result.ok) {
 		return {
@@ -70,7 +72,7 @@ export async function loginUser(
 	}
 
 	await createSession(email);
-	redirect("/");
+	redirect("/home");
 
 	return { error: null, errors: null };
 }
