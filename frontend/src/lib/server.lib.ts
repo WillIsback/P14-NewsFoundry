@@ -8,6 +8,10 @@ import type { NextRequest } from "next/server";
 /**
  * Wraps a promise with a timeout. Rejects with an `Error` after `ms`
  * milliseconds if the promise has not settled.
+ *
+ * @param promise - The promise to wrap.
+ * @param ms - The timeout duration in milliseconds. Defaults to 30,000.
+ * @returns A promise that resolves with the result of the input promise or rejects on timeout.
  */
 export async function withTimeout<T>(
 	promise: Promise<T>,
@@ -32,7 +36,12 @@ export async function withTimeout<T>(
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-/** Extracts the client IP from common reverse-proxy headers. */
+/**
+ * Extracts the client IP from common reverse-proxy headers.
+ *
+ * @param req - The Next.js request object.
+ * @returns The client IP address string.
+ */
 export async function getClientIp(req: NextRequest): Promise<string> {
 	return (
 		req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -44,6 +53,9 @@ export async function getClientIp(req: NextRequest): Promise<string> {
 /**
  * Checks and updates a simple in-memory rate limiter for an IP address.
  * Window and max are controlled by `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX`.
+ *
+ * @param ip - The IP address to check.
+ * @returns True if the IP is rate limited, false otherwise.
  */
 export async function isRateLimited(ip: string): Promise<boolean> {
 	const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000);
