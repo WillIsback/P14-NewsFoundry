@@ -39,7 +39,6 @@ export async function loginUser(
 		email: typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "",
 		password: typeof rawPassword === "string" ? rawPassword : "",
 	});
-	console.log(validatedFields);
 	if (!validatedFields.success) {
 		return {
 			error: null,
@@ -50,11 +49,6 @@ export async function loginUser(
 	const result = await postLogin(
 		validatedFields.data.email,
 		validatedFields.data.password,
-	);
-
-	console.log(
-		"[auth.action] postLogin called with",
-		validatedFields.data.email,
 	);
 
 	if (!result.ok) {

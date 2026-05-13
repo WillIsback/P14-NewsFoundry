@@ -4,6 +4,7 @@ import Message from "./ui/Message";
 interface AssistantCardProps {
 	variant?: "default" | "welcome";
 	messages?: {
+		id: string;
 		type: "user" | "ai";
 		content?: string;
 		timestamp?: string;
@@ -23,7 +24,7 @@ export default function AssistantCard({
 				<div>
 					{messages?.map((message) => (
 						<Message
-							key={message.timestamp}
+							key={message.id}
 							type={message.type}
 							content={message.content}
 							timestamp={message.timestamp}

@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { toast } from "sonner";
+import Link from "next/link";
 import { logout } from "@/src/actions/auth.action";
 import Chat from "./ui/chat";
 import Logo from "./ui/Logo";
-import Link from "next/link";
 
 interface MenuProps {
 	id: string;
@@ -13,17 +11,6 @@ interface MenuProps {
 }
 
 export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
-	useEffect(() => {
-		const id = setTimeout(() => {
-			if (chats && chats.length > 0) {
-				toast.success("Menu component loaded successfully!");
-			} else {
-				toast.error("No chats available.");
-			}
-		}, 0);
-		return () => clearTimeout(id);
-	}, [chats]);
-
 	const logoutSVG = (
 		<svg
 			width="14"
@@ -44,7 +31,10 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 		<aside className="w-fit h-full justify-between flex flex-col  bg-slate-100">
 			{/* Partie Haute*/}
 			<div className="w-full h-fit flex flex-col">
-				<Link href="/" className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 pr-37.5 bg-slate-100 border-slate-400 border">
+				<Link
+					href="/"
+					className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 pr-37.5 bg-slate-100 border-slate-400 border"
+				>
 					{/* Logo NewFoundry placeholder */}
 					<Logo />
 				</Link>

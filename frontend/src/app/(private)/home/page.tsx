@@ -7,12 +7,6 @@ import TextArea from "@/src/components/ui/TextArea";
 
 export default async function HomePage() {
 	let chats: { id: string; date: string }[] | undefined;
-	let pressReviews:
-		| { id: string; title: string; description: string; content: string }[]
-		| undefined;
-	let messages:
-		| { id: string; type: "user" | "ai"; content: string; timestamp: string }[]
-		| undefined;
 
 	try {
 		const file = await fs.readFile(
@@ -21,15 +15,10 @@ export default async function HomePage() {
 		);
 		const data = JSON.parse(file);
 		chats = data.chats;
-		pressReviews = data.pressReviews;
-		messages = data.messages;
 	} catch {
 		chats = undefined;
-		pressReviews = undefined;
-		messages = undefined;
 	}
 
-	console.log(chats);
 	return (
 		<div className="flex w-full h-full">
 			<Menu chats={chats} />

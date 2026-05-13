@@ -11,16 +11,21 @@ export default function AssistantWelcome() {
 				générer une revue de presse sur un sujet spécifique.
 			</p>
 			<div className="flex w-full h-fit flex-col items-center gap-2.25">
-				<p className="font-bold text-[#717182]">Exemples : </p>
-				<p className="text-slate-800">
-					• &quot;Quelles sont les dernières nouvelles en politique ?&quot;
-				</p>
-				<p className="text-slate-800">
-					• &quot;Génère une revue de presse sur la technologie&quot;
-				</p>
-				<p className="text-slate-800">
-					• &quot;Résume l&apos;actualité économique de la semaine&quot;
-				</p>
+				<p className="font-bold text-slate-500">Exemples :</p>
+				<ul className="flex flex-col items-center gap-1 text-slate-800 list-none">
+					<li>
+						&bull;&nbsp;&quot;Quelles sont les dernières nouvelles en politique
+						?&quot;
+					</li>
+					<li>
+						&bull;&nbsp;&quot;Génère une revue de presse sur la
+						technologie&quot;
+					</li>
+					<li>
+						&bull;&nbsp;&quot;Résume l&apos;actualité économique de la
+						semaine&quot;
+					</li>
+				</ul>
 			</div>
 		</>
 	);
