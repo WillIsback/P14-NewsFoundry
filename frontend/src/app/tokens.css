@@ -1,4 +1,4 @@
-/* Auto-generated from design-tokens.tokens.json — do not edit by hand */
+/* Auto-generated from figma/design-tokens.tokens.json — do not edit by hand */
 
 :root {
   --color-black: #141414ff;
@@ -213,4 +213,57 @@
   --text-heading-xs: 16px;
   --text-heading-xs--line-height: 19.2px;
   --tracking-heading: -0.31px;
+}
+
+@layer base {
+  h1 {
+    font-family: var(--typography-heading-l-fontfamily);
+    font-size: var(--typography-heading-l-fontsize);
+    line-height: var(--typography-heading-l-lineheight);
+    letter-spacing: var(--typography-heading-l-letterspacing);
+  }
+  h2 {
+    font-family: var(--typography-heading-m-fontfamily);
+    font-size: var(--typography-heading-m-fontsize);
+    line-height: var(--typography-heading-m-lineheight);
+    letter-spacing: var(--typography-heading-m-letterspacing);
+  }
+  h3 {
+    font-family: var(--typography-heading-s-fontfamily);
+    font-size: var(--typography-heading-s-fontsize);
+    line-height: var(--typography-heading-s-lineheight);
+    letter-spacing: var(--typography-heading-s-letterspacing);
+  }
+  h4 {
+    font-family: var(--typography-heading-xs-fontfamily);
+    font-size: var(--typography-heading-xs-fontsize);
+    line-height: var(--typography-heading-xs-lineheight);
+    letter-spacing: var(--typography-heading-xs-letterspacing);
+    text-transform: uppercase;
+  }
+  h5 {
+    font-family: var(--typography-heading-2xs-fontfamily);
+    font-size: var(--typography-heading-2xs-fontsize);
+    line-height: var(--typography-heading-2xs-lineheight);
+    letter-spacing: var(--typography-heading-2xs-letterspacing);
+    text-transform: uppercase;
+  }
+  p {
+    font-family: var(--typography-body-xs-fontfamily);
+    font-size: var(--typography-body-xs-fontsize);
+    line-height: var(--typography-body-xs-lineheight);
+    letter-spacing: var(--typography-body-xs-letterspacing);
+  }
+  small, time {
+    font-family: var(--typography-body-s-fontfamily);
+    font-size: var(--typography-body-s-fontsize);
+    line-height: var(--typography-body-s-lineheight);
+    letter-spacing: var(--typography-body-s-letterspacing);
+  }
+  label {
+    font-family: var(--typography-body-xs-fontfamily);
+    font-size: var(--typography-body-xs-fontsize);
+    line-height: var(--typography-body-xs-lineheight);
+    letter-spacing: var(--typography-body-xs-letterspacing);
+  }
 }

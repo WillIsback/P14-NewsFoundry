@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "gen:models": "kubb generate"
+    "gen:models": "kubb generate",
+    "gen:tokens": "node scripts/generate-tokens-css.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

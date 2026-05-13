@@ -1,20 +1,3 @@
-import { cva, type VariantProps } from "class-variance-authority"
-
-const chatVariant = cva(
-  "w-full h-fit flex flex-col items-center gap-1 px-6 py-5.25",
-  {
-    variants: {
-      variant: {
-        default: "bg-slate-100",
-        hover:
-          "border-border bg-background shadow-xs hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
 interface ChatProps  {
     date : string
 }
