@@ -25,14 +25,14 @@ COPY --chown=appuser:appuser src/ ./src/
 
 # Use the venv python directly (no uv in runtime)
 ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+  PYTHONUNBUFFERED=1 \
+  PYTHONDONTWRITEBYTECODE=1
 
 USER appuser
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD ["python", "-c", "import urllib.request,sys\ntry:\n urllib.request.urlopen('http://localhost:8000/')\nexcept Exception:\n sys.exit(1)"]
+  CMD ["python", "-c", "import urllib.request,sys\ntry:\n urllib.request.urlopen('http://localhost:8000/')\nexcept Exception:\n sys.exit(1)"]
 
 CMD ["python", "src/main.py"]
