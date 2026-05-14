@@ -1,4 +1,5 @@
-import { promises as fs } from "node:fs";
+import { fetchChats } from "@/src/actions/chat.action";
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import Menu from "@/src/components/Menu";
 import PressReview from "@/src/components/PressReview";
 import { ButtonReview } from "@/src/components/ui/ButtonReview";
@@ -13,7 +14,6 @@ import Robot from "@/src/components/ui/Robot";
 import TextArea from "@/src/components/ui/TextArea";
 
 export default async function TestPage() {
-	let chats: { id: string; date: string }[] | undefined;
 	let pressReviews:
 		| { id: string; title: string; description: string; content: string }[]
 		| undefined;
@@ -21,29 +21,24 @@ export default async function TestPage() {
 		| { id: string; type: "user" | "ai"; content: string; timestamp: string }[]
 		| undefined;
 
-	try {
-		const file = await fs.readFile(
-			`${process.cwd()}/data/mockData.json`,
-			"utf8",
-		);
-		const data = JSON.parse(file);
-		chats = data.chats;
-		pressReviews = data.pressReviews;
-		messages = data.messages;
-	} catch {
-		chats = undefined;
-		pressReviews = undefined;
-		messages = undefined;
-	}
+	const chatsPromise = fetchChats().then((r) => {
+		if (r.error || !r.data) throw new Error(r.error ?? "Failed to load chats");
+		return r.data.data ?? [];
+	});
 
-	console.log(chats);
 	return (
 		<div className="h-max bg-[#343434] flex gap-50 flex-wrap px-12 py-12">
 			<div className="flex flex-col gap-4">
 				<h2 className="border border-brand-velvet rounded-l px-4 py-4">
 					Menu ui{" "}
 				</h2>
-				<Menu chats={chats} />
+				<ErrorBoundary
+					fallback={
+						<aside className="hidden tablet:flex w-fit h-full bg-slate-100" />
+					}
+				>
+					<Menu chatsPromise={chatsPromise} />
+				</ErrorBoundary>
 			</div>
 
 			<div className="flex flex-col gap-4">

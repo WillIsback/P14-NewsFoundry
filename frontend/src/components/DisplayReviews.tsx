@@ -1,15 +1,21 @@
+"use client";
+
+import { use } from "react";
 import PressReview from "./PressReview";
 
+interface ReviewItem {
+	id: number;
+	title: string;
+	description: string;
+	content: string;
+}
+
 export default function DisplayReviews({
-	pressReviews,
+	reviewsPromise,
 }: Readonly<{
-	pressReviews?: {
-		id: string;
-		title: string;
-		description: string;
-		content: string;
-	}[];
+	reviewsPromise: Promise<ReviewItem[]>;
 }>) {
+	const reviews = use(reviewsPromise);
 	return (
 		<div className="flex flex-col h-full min-h-0">
 			<header className="flex flex-col h-fit w-full shrink-0">
@@ -20,7 +26,7 @@ export default function DisplayReviews({
 			</header>
 			{/* PressReviews Gallery display */}
 			<div className="flex-1 overflow-y-auto flex flex-col gap-4 mt-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-				{pressReviews?.map((review) => (
+				{reviews.map((review) => (
 					<PressReview key={review.id} {...review} />
 				))}
 			</div>

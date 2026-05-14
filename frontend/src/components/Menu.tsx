@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { use } from "react";
 import { logout } from "@/src/actions/auth.action";
 import Chat from "./ui/chat";
 import Logo from "./ui/Logo";
 
-interface MenuProps {
-	id: string;
+interface ChatItem {
+	id: number;
 	date: string;
 }
 
 export default function Menu({
-	chats,
+	chatsPromise,
 	inDrawer = false,
-}: Readonly<{ chats?: MenuProps[]; inDrawer?: boolean }>) {
+}: Readonly<{ chatsPromise: Promise<ChatItem[]>; inDrawer?: boolean }>) {
+	const chats = use(chatsPromise);
 	const logoutSVG = (
 		<svg
 			width="14"
@@ -49,10 +51,10 @@ export default function Menu({
 				<nav className="w-full h-fit">
 					<ul className="flex flex-col gap-0.5">
 						{/* Card Chat à implementer ici en generation par map, attention a avoir discussion id */}
-						{chats ? (
+						{chats.length > 0 ? (
 							chats.map((c) => <Chat key={c.id} date={c.date} id={c.id} />)
 						) : (
-							<li>No chats available.</li>
+							<li>Aucune discussion disponible.</li>
 						)}
 					</ul>
 				</nav>

@@ -1,3 +1,5 @@
+"use client";
+
 import AssistantWelcome from "./ui/AssistantWelcome";
 import Icon from "./ui/Icon";
 import Message from "./ui/Message";
@@ -5,10 +7,10 @@ import Message from "./ui/Message";
 interface AssistantCardProps {
 	variant?: "default" | "welcome";
 	messages?: {
-		id: string;
-		type: "user" | "ai";
-		content?: string;
-		timestamp?: string;
+		id: number;
+		type: string;
+		content: string;
+		timestamp: string;
 	}[];
 }
 
@@ -35,7 +37,7 @@ export default function AssistantCard({
 								{message.type === "ai" && <Icon type="ai" />}
 								<Message
 									key={message.id}
-									type={message.type}
+									type={message.type as "user" | "ai"}
 									content={message.content}
 									timestamp={message.timestamp}
 								/>
