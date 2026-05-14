@@ -47,9 +47,13 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['chat_id'], ['chat.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    # PostgreSQL requires the enum type to exist before ALTER COLUMN can cast to it.
+    # The baseline migration defined role as VARCHAR, so we must CREATE TYPE first.
+    userrole_enum = sa.Enum('ADMIN', 'USER', name='userrole')
+    userrole_enum.create(op.get_bind(), checkfirst=True)
     op.alter_column('user', 'role',
                existing_type=sa.VARCHAR(),
-               type_=sa.Enum('ADMIN', 'USER', name='userrole'),
+               type_=userrole_enum,
                existing_nullable=False,
                postgresql_using="role::userrole")
     op.drop_constraint(op.f('user_email_key'), 'user', type_='unique')
@@ -64,6 +68,8 @@ def downgrade() -> None:
                existing_type=sa.Enum('ADMIN', 'USER', name='userrole'),
                type_=sa.VARCHAR(),
                existing_nullable=False)
+    # Drop the enum type after the column no longer references it
+    sa.Enum(name='userrole').drop(op.get_bind(), checkfirst=True)
     op.drop_table('message')
     op.drop_table('pressreview')
     op.drop_table('chat')
