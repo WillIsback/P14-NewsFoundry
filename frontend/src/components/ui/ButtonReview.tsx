@@ -1,5 +1,3 @@
-import { cn } from "@/src/lib/utils";
-
 function ReviewIcon() {
 	return (
 		<svg
@@ -22,10 +20,7 @@ function ButtonReview() {
 	return (
 		<button
 			type="button"
-			className={cn(
-				"inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit px-6 py-5.25 text-body-s transition-all",
-				"bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100",
-			)}
+			className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100 px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
 		>
 			<ReviewIcon />
 			Générer une revue de presse

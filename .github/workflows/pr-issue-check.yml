@@ -13,60 +13,21 @@ jobs:
     name: Validate PR Links Issue
     runs-on: ubuntu-latest
     steps:
-      - name: Check branch naming convention
-        id: branch-check
-        run: |
-          BRANCH="${{ github.head_ref }}"
-          # Accept:
-          #   Standard:       feat/42-my-feature  fix/42-bug  chore/42-...
-          #   GitHub auto:    42-feat-my-feature  42-fix-bug  42-chore-...
-          if echo "$BRANCH" | grep -qE '^(feat|fix|chore|docs|refactor|test)/[0-9]+-[a-z0-9-]+$' || \
-             echo "$BRANCH" | grep -qE '^[0-9]+-(feat|fix|chore|docs|refactor|test)-[a-z0-9-]+$'; then
-            echo "branch_ok=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Branch '$BRANCH' follows the naming convention."
-          else
-            echo "branch_ok=false" >> "$GITHUB_OUTPUT"
-            echo "❌ Branch '$BRANCH' does not follow the naming convention."
-            echo "   Standard format:     <type>/<issue-number>-<short-description>"
-            echo "   GitHub auto format:  <issue-number>-<type>-<short-description>"
-            echo "   Examples : feat/42-add-login   42-feat-add-login   fix/7-null-pointer"
-            echo "   Allowed types: feat | fix | chore | docs | refactor | test"
-          fi
-
       - name: Check PR body references an issue
-        id: issue-check
         env:
           PR_BODY: "${{ github.event.pull_request.body }}"
         run: |
           if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+'; then
-            echo "issue_ok=true" >> "$GITHUB_OUTPUT"
-            echo "✅ PR body contains a valid issue reference."
+            echo "✅ PR references an issue. Ready for review."
           else
-            echo "issue_ok=false" >> "$GITHUB_OUTPUT"
-            echo "❌ PR body must reference an issue."
-            echo "   Add one of the following lines in the PR description:"
-            echo "     Closes #42"
-            echo "     Fixes #42"
-            echo "     Resolves #42"
-          fi
-
-      - name: Fail if any check did not pass
-        run: |
-          BRANCH_OK="${{ steps.branch-check.outputs.branch_ok }}"
-          ISSUE_OK="${{ steps.issue-check.outputs.issue_ok }}"
-
-          if [ "$BRANCH_OK" != "true" ] || [ "$ISSUE_OK" != "true" ]; then
+            echo "❌ This PR must solve a GitHub issue."
             echo ""
-            echo "============================================"
-            echo " PR Validation Failed — fix the issues below"
-            echo "============================================"
-            if [ "$BRANCH_OK" != "true" ]; then
-              echo " [branch] Must follow: (feat|fix|chore|docs|refactor|test)/<issue-number>-<description>"
-            fi
-            if [ "$ISSUE_OK" != "true" ]; then
-              echo " [issue]  PR body must contain: Closes #<number>, Fixes #<number>, or Resolves #<number>"
-            fi
+            echo "   Add one of the following lines in the PR description:"
+            echo "     Closes #<number>"
+            echo "     Fixes #<number>"
+            echo "     Resolves #<number>"
+            echo ""
+            echo "   The pr-autolink-issue workflow injects this automatically when the PR is opened."
+            echo "   If it failed, check that the branch name contains an issue number."
             exit 1
           fi
-
-          echo "✅ All PR validations passed. Ready for review."

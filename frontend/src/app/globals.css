@@ -5,6 +5,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+	--breakpoint-tablet: 640px;
+	--breakpoint-laptop: 1024px;
+	--breakpoint-desktop: 1280px;
+}
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);

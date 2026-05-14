@@ -8,7 +8,9 @@ interface SubMenuNavProps {
 	defaultMode?: "chat" | "review";
 }
 
-export function SubMenuNav({ defaultMode = "chat" }: Readonly<SubMenuNavProps>) {
+export function SubMenuNav({
+	defaultMode = "chat",
+}: Readonly<SubMenuNavProps>) {
 	const params = useSearchParams();
 	const mode = (params.get("mode") as "chat" | "review") ?? defaultMode;
 
