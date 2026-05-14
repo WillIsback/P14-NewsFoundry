@@ -11,7 +11,7 @@ from api.models import (
     UserPublic,
     success_response,
 )
-from core.auth import create_access_token, get_current_user
+from core.auth import create_access_token, verify_user
 from core.security import hash_password, verify_password
 from database.database import Database
 from database.models import User
@@ -25,7 +25,7 @@ def build_authentication_router(db: Database) -> APIRouter:
     router = APIRouter(tags=["authentication"])
 
     @router.post("/login")
-    async def login(
+    def login(
         credentials: LoginRequest,
         session: Annotated[Session, Depends(db.get_db)],
     ) -> ApiResponse[AccessTokenData]:
@@ -45,12 +45,14 @@ def build_authentication_router(db: Database) -> APIRouter:
         return success_response(
             status=status.HTTP_200_OK,
             message="Login successful",
-            data=AccessTokenData(access_token=access_token, token_type="bearer", email=user.email),
+            data=AccessTokenData(
+                access_token=access_token, token_type="bearer", email=user.email
+            ),
         )
 
     @router.get("/protected")
-    async def protected_resource(
-        current_user: Annotated[User, Depends(get_current_user)],
+    def protected_resource(
+        current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[MessageData]:
         return success_response(
             status=status.HTTP_200_OK,
@@ -62,12 +64,12 @@ def build_authentication_router(db: Database) -> APIRouter:
 
     @router.get("/users/me")
     def me(
-        current_user: Annotated[User, Depends(get_current_user)],
+        current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[UserPublic]:
         return success_response(
             status=status.HTTP_200_OK,
             message="Current user retrieved",
-            data=UserPublic(id=current_user.id, email=current_user.email),
+            data=UserPublic(id=current_user.id, email=current_user.email),  # type: ignore[arg-type]
         )
 
     ### Register function not implemented.

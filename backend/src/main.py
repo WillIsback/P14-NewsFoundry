@@ -25,6 +25,7 @@ from core.middleware import register_middlewares
 
 import uvicorn
 
+
 def generate_operation_id(route: APIRoute) -> str:
     """Generate stable, concise OpenAPI operation IDs for codegen.
 
@@ -36,6 +37,7 @@ def generate_operation_id(route: APIRoute) -> str:
     tag = tag.replace(" ", "_").replace("-", "_")
     name = route.name.strip().lower().replace(" ", "_").replace("-", "_")
     return f"{tag}_{name}" if tag else name
+
 
 def create_app() -> FastAPI:
     missing_vars = validate_runtime_config()
@@ -69,6 +71,7 @@ def create_app() -> FastAPI:
         generate_unique_id_function=generate_operation_id,
         docs_url=None if ENVIRONMENT == "production" else "/api/docs",
         redoc_url=None if ENVIRONMENT == "production" else "/api/redoc",
+        openiapi_url=None if ENVIRONMENT == "production" else "/api/openapi.json",
     )
 
     # --- CONFIGURATION CORS ---

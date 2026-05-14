@@ -45,6 +45,69 @@ export const apiResponseMessageDataSchema = z.object({
 	},
 });
 
+export const reviewPublicSchema = z.object({
+	id: z.int(),
+	title: z.string(),
+	description: z.string(),
+	content: z.string(),
+});
+
+export const apiResponseReviewPublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([reviewPublicSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
+export const messagePublicSchema = z.object({
+	id: z.int(),
+	chat_id: z.int(),
+	type: z.string(),
+	content: z.string(),
+	timestamp: z.string(),
+});
+
+/**
+ * @description Snapshot of context window usage — returned to the frontend.
+ */
+export const contextWindowInfoSchema = z
+	.object({
+		used_tokens: z.int(),
+		limit_tokens: z.int(),
+		usage_ratio: z.number(),
+		was_compacted: z.boolean(),
+	})
+	.describe("Snapshot of context window usage — returned to the frontend.");
+
+export const sendMessageResponseSchema = z.object({
+	chat_id: z.int(),
+	get message() {
+		return messagePublicSchema;
+	},
+	get context() {
+		return contextWindowInfoSchema.describe(
+			"Snapshot of context window usage — returned to the frontend.",
+		);
+	},
+});
+
+export const apiResponseSendMessageResponseSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([sendMessageResponseSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
 export const userPublicSchema = z.object({
 	id: z.int(),
 	email: z.string(),
@@ -60,6 +123,51 @@ export const apiResponseUserPublicSchema = z.object({
 	get error() {
 		return z.union([apiErrorSchema, z.null()]).optional();
 	},
+});
+
+export const chatPublicSchema = z.object({
+	id: z.int(),
+	date: z.string(),
+});
+
+export const apiResponseListChatPublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([z.array(chatPublicSchema), z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
+export const apiResponseListMessagePublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([z.array(messagePublicSchema), z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
+export const apiResponseListReviewPublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([z.array(reviewPublicSchema), z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
+export const createReviewRequestSchema = z.object({
+	articles: z.string().min(1).max(32000),
 });
 
 export const validationErrorSchema = z.object({
@@ -83,6 +191,10 @@ export const loginRequestSchema = z.object({
 		.max(254)
 		.regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
 	password: z.string(),
+});
+
+export const sendMessageRequestSchema = z.object({
+	content: z.string().min(1).max(8000),
 });
 
 /**
@@ -127,6 +239,118 @@ export const authenticationMe200Schema = z.lazy(
 
 export const authenticationMeQueryResponseSchema = z.lazy(
 	() => authenticationMe200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
+export const chatGetChats200Schema = z.lazy(
+	() => apiResponseListChatPublicSchema,
+);
+
+export const chatGetChatsQueryResponseSchema = z.lazy(
+	() => chatGetChats200Schema,
+);
+
+export const chatGetMessagesPathParamsSchema = z.object({
+	chat_id: z.coerce.number().int(),
+});
+
+/**
+ * @description Successful Response
+ */
+export const chatGetMessages200Schema = z.lazy(
+	() => apiResponseListMessagePublicSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const chatGetMessages422Schema = z.lazy(() => HTTPValidationErrorSchema);
+
+export const chatGetMessagesQueryResponseSchema = z.lazy(
+	() => chatGetMessages200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
+export const chatNewChatMessage201Schema = z.lazy(
+	() => apiResponseSendMessageResponseSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const chatNewChatMessage422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const chatNewChatMessageMutationRequestSchema = z.lazy(
+	() => sendMessageRequestSchema,
+);
+
+export const chatNewChatMessageMutationResponseSchema = z.lazy(
+	() => chatNewChatMessage201Schema,
+);
+
+export const chatContinueChatMessagePathParamsSchema = z.object({
+	chat_id: z.coerce.number().int(),
+});
+
+/**
+ * @description Successful Response
+ */
+export const chatContinueChatMessage200Schema = z.lazy(
+	() => apiResponseSendMessageResponseSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const chatContinueChatMessage422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const chatContinueChatMessageMutationRequestSchema = z.lazy(
+	() => sendMessageRequestSchema,
+);
+
+export const chatContinueChatMessageMutationResponseSchema = z.lazy(
+	() => chatContinueChatMessage200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
+export const reviewGetReviews200Schema = z.lazy(
+	() => apiResponseListReviewPublicSchema,
+);
+
+export const reviewGetReviewsQueryResponseSchema = z.lazy(
+	() => reviewGetReviews200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
+export const reviewCreateReview201Schema = z.lazy(
+	() => apiResponseReviewPublicSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const reviewCreateReview422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const reviewCreateReviewMutationRequestSchema = z.lazy(
+	() => createReviewRequestSchema,
+);
+
+export const reviewCreateReviewMutationResponseSchema = z.lazy(
+	() => reviewCreateReview201Schema,
 );
 
 /**

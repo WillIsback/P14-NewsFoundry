@@ -42,7 +42,7 @@ def client() -> TestClient:
 
     app = main.app
 
-    # Override auth dependency used by get_current_user.
+    # Override auth dependency used by verify_user.
     app.dependency_overrides[auth.db.get_db] = override_get_db
 
     # Override router-level db dependency captured during app factory setup.
@@ -72,7 +72,9 @@ def client() -> TestClient:
     app.dependency_overrides.clear()
 
 
-def test_login_with_valid_credentials_returns_token_and_email(client: TestClient) -> None:
+def test_login_with_valid_credentials_returns_token_and_email(
+    client: TestClient,
+) -> None:
     response = client.post(
         "/api/v1/auth/login",
         json={"email": "test@test.com", "password": "test"},
@@ -219,7 +221,9 @@ def test_openapi_json_always_accessible(client: TestClient) -> None:
     assert payload["info"]["title"] == "NewsFoundry backend API"
 
 
-def test_login_rate_limit_returns_429_after_limit_for_same_ip(client: TestClient) -> None:
+def test_login_rate_limit_returns_429_after_limit_for_same_ip(
+    client: TestClient,
+) -> None:
     ip_headers = {"x-forwarded-for": "10.0.1.250"}
 
     for _ in range(API_LOGIN_RATE_LIMIT_REQUESTS):
@@ -245,4 +249,6 @@ def test_login_rate_limit_returns_429_after_limit_for_same_ip(client: TestClient
     assert payload["error"]["details"]["retry_after_seconds"] >= 1
     assert "Retry-After" in sixth_response.headers
     assert sixth_response.headers["X-RateLimit-Remaining"] == "0"
-    assert sixth_response.headers["X-RateLimit-Limit"] == str(API_LOGIN_RATE_LIMIT_REQUESTS)
+    assert sixth_response.headers["X-RateLimit-Limit"] == str(
+        API_LOGIN_RATE_LIMIT_REQUESTS
+    )
