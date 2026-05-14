@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+from collections.abc import Generator
 
 import bcrypt
 import pytest
@@ -21,7 +22,7 @@ from database.models import User
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Generator[TestClient, None, None]:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

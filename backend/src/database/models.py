@@ -34,7 +34,7 @@ class User(SQLModel, table=True):
         test@test.com
     """
 
-    id: Optional[int] = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(unique=True, index=True)
     hashed_password: str = Field()
     role: UserRole = Field(default=UserRole.USER, index=True)
@@ -55,7 +55,7 @@ class Message(SQLModel, table=True):
         Hello, world!
     """
 
-    id: Optional[int] = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     chat_id: int = Field(foreign_key="chat.id")
     type: MessageType = Field(default=MessageType.USER)
     content: str = Field()
@@ -76,7 +76,7 @@ class Chat(SQLModel, table=True):
         My First Chat
     """
 
-    id: Optional[int] = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     date: str = Field(default=None)
     messages: list[Message] = Relationship()
@@ -97,7 +97,7 @@ class PressReview(SQLModel, table=True):
         Great News!
     """
 
-    id: Optional[int] = Field(primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     title: str = Field()
     description: str = Field()
