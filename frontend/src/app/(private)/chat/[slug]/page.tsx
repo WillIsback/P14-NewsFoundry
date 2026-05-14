@@ -5,6 +5,10 @@ import Menu from "@/src/components/Menu";
 import { ButtonSend } from "@/src/components/ui/ButtonSend";
 import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
 import TextArea from "@/src/components/ui/TextArea";
+import Link from "next/dist/client/link";
+import { ArrowLeft } from "lucide-react";
+import { ButtonReview } from "@/src/components/ui/ButtonReview";
+
 
 export default async function ChatPage({
 	params,
@@ -44,12 +48,18 @@ export default async function ChatPage({
 			<Menu chats={chats} />
 			{/* Main content area */}
 			<div className=" w-full h-full flex flex-col">
-				<header className="w-full h-22 flex items-center px-4.5 py-1.75 bg-slate-100 border-0 border-l border-b border-slate-400">
-					<div className="w-fit h-fit flex items-center gap-2 rounded-[8px]">
-						<ButtonSubMenu type_="chat" active />
-						<ButtonSubMenu type_="review" />
-					</div>
-				</header>
+			{/* Partie Header */}
+				<div className="w-full h-22 flex justify-between items-center px-4.5 py-1.75 bg-slate-100 border-0 border-l border-b border-slate-400 ">
+				{/* Partie Nav return*/}
+					<Link href="/home" className="flex h-22 w-50 items-center gap-2">
+						<ArrowLeft size={18}/>
+						<div className="flex flex-col gap-1">
+							<h3 className="text-slate-dark">Nouvelle discussion</h3>
+							<small className="text-slate-600">Conversation active</small>
+						</div>
+					</Link>
+					<ButtonReview />
+				</div>
 				{/* Assistant response area */}
 				{/* Home Assistant Chat Section*/}
 				<section className="w-full min-h-202.75 flex flex-col gap-2.5 px-[25%] py-[18%] bg-slate-400">
