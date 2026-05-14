@@ -62,4 +62,6 @@ export type SessionTokenPayload = JWTPayload & {
 	/** The user's email address, used as a stable identifier across sessions. */
 	userId: string;
 	expiresAt: string;
+	/** The backend-issued JWT access token, forwarded as Bearer on authenticated requests. */
+	accessToken: string;
 };

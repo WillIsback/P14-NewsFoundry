@@ -60,14 +60,15 @@ export async function loginUser(
 
 	// Extract email safely with validation
 	const email = validateLoginPayload(result);
-	if (!email) {
+	const accessToken = result.data.data?.access_token;
+	if (!email || !accessToken) {
 		return {
 			error: "Invalid response from server",
 			errors: null,
 		};
 	}
 
-	await createSession(email);
+	await createSession(email, accessToken);
 	redirect("/home");
 
 	return { error: null, errors: null };
