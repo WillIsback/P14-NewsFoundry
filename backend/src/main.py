@@ -71,7 +71,7 @@ def create_app() -> FastAPI:
         generate_unique_id_function=generate_operation_id,
         docs_url=None if ENVIRONMENT == "production" else "/api/docs",
         redoc_url=None if ENVIRONMENT == "production" else "/api/redoc",
-        openiapi_url=None if ENVIRONMENT == "production" else "/api/openapi.json",
+        openapi_url=None if ENVIRONMENT == "production" else "/api/openapi.json",
     )
 
     # --- CONFIGURATION CORS ---
