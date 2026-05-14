@@ -30,14 +30,19 @@ if not DATABASE_URL:
 
 
 def _mask_db_url(url: str | None) -> str:
-    """Return db URL with credentials redacted: postgresql://***@host/db"""
+    """Return db URL with credentials redacted: scheme://***@host:port/db"""
     if not url:
         return "(not set)"
     try:
         from urllib.parse import urlparse
 
         parsed = urlparse(url)
-        return f"{parsed.scheme}://***@{parsed.hostname}{parsed.path}"
+        # SQLite has no hostname
+        if parsed.scheme.startswith("sqlite"):
+            return f"{parsed.scheme}:{parsed.path or '(memory)'}"
+        host = parsed.hostname or ""
+        port = f":{parsed.port}" if parsed.port else ""
+        return f"{parsed.scheme}://***@{host}{port}{parsed.path}"
     except Exception:
         return "***"
 

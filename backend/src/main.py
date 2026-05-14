@@ -26,9 +26,8 @@ from core.middleware import register_middlewares
 
 import uvicorn
 
-_sentry_sample_rate = (
-    0.1 if os.getenv("ENVIRONMENT", "development") == "production" else 1.0
-)
+_env = os.getenv("ENVIRONMENT", "development")
+_sentry_sample_rate = 0.1 if _env == "production" else 0.0 if _env == "testing" else 1.0
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN", ""),
@@ -64,7 +63,8 @@ def create_app() -> FastAPI:
         import logging
 
         logging.critical("[STARTUP] %s", msg)
-        sentry_sdk.capture_message(msg, level="fatal")
+        if os.getenv("SENTRY_DSN"):
+            sentry_sdk.capture_message(msg, level="fatal")
         raise RuntimeError(msg)
 
     # Import only after config validation, to avoid early crashes from transitive imports.

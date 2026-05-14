@@ -100,8 +100,8 @@ def validate_runtime_config() -> list[str]:
         if not ADMIN_PASSWORD:
             missing_vars.append("ADMIN_PASSWORD")
 
-    # SECRET_KEY must always be explicitly set
-    if not SECRET_KEY and not os.getenv("PYTEST_VERSION"):
+    # SECRET_KEY must always be explicitly set (exempt only in testing)
+    if ENVIRONMENT != "testing" and not SECRET_KEY:
         missing_vars.append("SECRET_KEY")
     elif ENVIRONMENT == "production" and len(SECRET_KEY) < 32:
         missing_vars.append("SECRET_KEY (too short, must be >= 32 chars in production)")
