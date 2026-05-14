@@ -24,7 +24,7 @@ function ButtonReview() {
 			type="button"
 			className={cn(
 				"inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit px-6 py-5.25 text-body-s transition-all",
-				"bg-brand-velvet text-slate-100 hover:bg-slate-dark disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100",
+				"bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100",
 			)}
 		>
 			<ReviewIcon />

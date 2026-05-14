@@ -261,29 +261,23 @@
 		letter-spacing: var(--typography-heading-2xs-letterspacing);
 		text-transform: uppercase;
 	}
-	p {
-		font-family: var(--typography-body-xs-fontfamily);
-		font-size: var(--typography-body-xs-fontsize);
-		line-height: var(--typography-body-xs-lineheight);
-		letter-spacing: var(--typography-body-xs-letterspacing);
-	}
-	time {
-		font-family: var(--typography-body-2xs-fontfamily);
-		font-size: var(--typography-body-2xs-fontsize);
-		line-height: var(--typography-body-2xs-lineheight);
-		letter-spacing: var(--typography-body-2xs-letterspacing);
-	}
 	label {
 		font-family: var(--typography-body-s-fontfamily);
 		font-size: var(--typography-body-s-fontsize);
 		line-height: var(--typography-body-s-lineheight);
 		letter-spacing: var(--typography-body-s-letterspacing);
 	}
-	span {
-		font-family: var(--typography-body-2xs-fontfamily);
-		font-size: var(--typography-body-2xs-fontsize);
-		line-height: var(--typography-body-2xs-lineheight);
-		letter-spacing: var(--typography-body-2xs-letterspacing);
+	p {
+		font-family: var(--typography-body-xs-fontfamily);
+		font-size: var(--typography-body-xs-fontsize);
+		line-height: var(--typography-body-xs-lineheight);
+		letter-spacing: var(--typography-body-xs-letterspacing);
+	}
+	small {
+		font-family: var(--typography-body-xs-fontfamily);
+		font-size: var(--typography-body-xs-fontsize);
+		line-height: var(--typography-body-xs-lineheight);
+		letter-spacing: var(--typography-body-xs-letterspacing);
 	}
 	input {
 		font-family: var(--typography-body-xs-fontfamily);
@@ -296,5 +290,17 @@
 		font-size: var(--typography-body-xs-fontsize);
 		line-height: var(--typography-body-xs-lineheight);
 		letter-spacing: var(--typography-body-xs-letterspacing);
+	}
+	span {
+		font-family: var(--typography-body-2xs-fontfamily);
+		font-size: var(--typography-body-2xs-fontsize);
+		line-height: var(--typography-body-2xs-lineheight);
+		letter-spacing: var(--typography-body-2xs-letterspacing);
+	}
+	time {
+		font-family: var(--typography-body-2xs-fontfamily);
+		font-size: var(--typography-body-2xs-fontsize);
+		line-height: var(--typography-body-2xs-lineheight);
+		letter-spacing: var(--typography-body-2xs-letterspacing);
 	}
 }
