@@ -45,7 +45,7 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				default:
-					"bg-brand-velvet text-slate-white hover:bg-slate-dark disabled:text-slate-200 disabled:bg-slate-500 disabled:opacity-100",
+					"bg-brand-velvet text-slate-white hover:bg-slate-dark hover:cursor-pointer disabled:text-slate-200 disabled:bg-slate-500 disabled:opacity-100",
 				outline:
 					"border-border bg-background shadow-xs hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
 				secondary:

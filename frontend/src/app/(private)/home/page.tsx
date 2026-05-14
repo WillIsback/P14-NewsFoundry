@@ -1,8 +1,9 @@
 import { promises as fs } from "node:fs";
+import { Suspense } from "react";
 import AssistantCard from "@/src/components/AssistantCard";
 import Menu from "@/src/components/Menu";
+import { SubMenuNav } from "@/src/components/SubMenuNav";
 import { ButtonSend } from "@/src/components/ui/ButtonSend";
-import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
 import TextArea from "@/src/components/ui/TextArea";
 
 export default async function HomePage() {
@@ -25,10 +26,9 @@ export default async function HomePage() {
 			{/* Main content area */}
 			<div className=" w-full h-full flex flex-col">
 				<header className="w-full h-22 flex items-center px-4.5 py-1.75 bg-slate-100 border-0 border-l border-b border-slate-400">
-					<div className="w-fit h-fit flex items-center gap-2 rounded-[8px]">
-						<ButtonSubMenu type_="chat" active />
-						<ButtonSubMenu type_="review" />
-					</div>
+					<Suspense>
+						<SubMenuNav />
+					</Suspense>
 				</header>
 				{/* Assistant response area */}
 				{/* Home Assistant Welcome Section */}

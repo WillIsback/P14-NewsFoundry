@@ -1,14 +1,11 @@
 import { promises as fs } from "node:fs";
 import { notFound } from "next/navigation";
 import AssistantCard from "@/src/components/AssistantCard";
+import { ChatBackButton } from "@/src/components/ChatBackButton";
 import Menu from "@/src/components/Menu";
-import { ButtonSend } from "@/src/components/ui/ButtonSend";
-import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
-import TextArea from "@/src/components/ui/TextArea";
-import Link from "next/dist/client/link";
-import { ArrowLeft } from "lucide-react";
 import { ButtonReview } from "@/src/components/ui/ButtonReview";
-
+import { ButtonSend } from "@/src/components/ui/ButtonSend";
+import TextArea from "@/src/components/ui/TextArea";
 
 export default async function ChatPage({
 	params,
@@ -48,16 +45,10 @@ export default async function ChatPage({
 			<Menu chats={chats} />
 			{/* Main content area */}
 			<div className=" w-full h-full flex flex-col">
-			{/* Partie Header */}
+				{/* Partie Header */}
 				<div className="w-full h-22 flex justify-between items-center px-4.5 py-1.75 bg-slate-100 border-0 border-l border-b border-slate-400 ">
-				{/* Partie Nav return*/}
-					<Link href="/home" className="flex h-22 w-50 items-center gap-2">
-						<ArrowLeft size={18}/>
-						<div className="flex flex-col gap-1">
-							<h3 className="text-slate-dark">Nouvelle discussion</h3>
-							<small className="text-slate-600">Conversation active</small>
-						</div>
-					</Link>
+					{/* Partie Nav return*/}
+					<ChatBackButton />
 					<ButtonReview />
 				</div>
 				{/* Assistant response area */}

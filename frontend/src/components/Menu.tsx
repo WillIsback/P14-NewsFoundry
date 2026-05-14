@@ -57,7 +57,7 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 			>
 				<button
 					type="submit"
-					className="w-full h-fit flex py-4 gap-2.75 rounded-[8px] items-center hover:underline"
+					className="w-full h-fit flex py-4 gap-2.75 rounded-[8px] items-center hover:underline hover:cursor-pointer"
 				>
 					{logoutSVG}
 					<span className="text-body-xs text-slate-dark"> Se déconnecter</span>

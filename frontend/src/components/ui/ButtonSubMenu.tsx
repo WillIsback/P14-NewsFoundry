@@ -73,7 +73,7 @@ function ButtonSubMenu({
 	return (
 		<button
 			className={cn(
-				"inline-flex items-center justify-center gap-2 rounded-[8px] w-fit min-h-9 px-3 text-body-xs transition-all",
+				"inline-flex items-center justify-center gap-2 rounded-[8px] w-fit min-h-9 px-3 text-body-xs transition-all hover:cursor-pointer",
 				active
 					? "bg-brand-velvet text-slate-white font-bold"
 					: "bg-slate-200 text-slate-dark font-normal",
