@@ -38,12 +38,15 @@ ENABLE_HTTPS_REDIRECT = os.getenv("ENABLE_HTTPS_REDIRECT", "false").lower() == "
 
 
 # Authentication
-SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_change_in_prod")
+SECRET_KEY: str = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # CORS
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+_cors_raw = os.getenv("CORS_ORIGINS", "")
+CORS_ORIGINS: list[str] = (
+    [o.strip() for o in _cors_raw.split(",") if o.strip()] if _cors_raw else ["*"]
+)
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -75,6 +78,43 @@ ADMIN_PASSWORD: str | None = os.getenv("ADMIN_PASSWORD")
 CI = os.getenv("CI", "false").lower() == "true"
 
 
+def _check_seeding_config(missing_vars: list[str]) -> None:
+    """Validate default-user seeding variables when seeding is enabled."""
+    if not SEED_DEFAULT_USER:
+        return
+    if not DEFAULT_USER_EMAIL:
+        missing_vars.append("DEFAULT_USER_EMAIL")
+    if not DEFAULT_USER_CREDENTIALS:
+        missing_vars.append("DEFAULT_USER_PASSWORD")
+
+
+def _check_bootstrap_config(missing_vars: list[str]) -> None:
+    """Validate admin bootstrap variables when bootstrap is enabled."""
+    if not BOOTSTRAP_ENABLED:
+        return
+    if not ADMIN_EMAIL:
+        missing_vars.append("ADMIN_EMAIL")
+    if not ADMIN_PASSWORD:
+        missing_vars.append("ADMIN_PASSWORD")
+
+
+def _check_secret_key(missing_vars: list[str]) -> None:
+    """Validate SECRET_KEY presence and strength."""
+    if ENVIRONMENT != "testing" and not SECRET_KEY:
+        missing_vars.append("SECRET_KEY")
+    elif ENVIRONMENT == "production" and len(SECRET_KEY) < 32:
+        missing_vars.append("SECRET_KEY (too short, must be >= 32 chars in production)")
+
+
+def _check_cors_config(missing_vars: list[str]) -> None:
+    """Validate that CORS_ORIGINS is explicitly restricted in production."""
+    cors_env = os.getenv("CORS_ORIGINS", "")
+    if ENVIRONMENT == "production" and (not cors_env or "*" in cors_env):
+        missing_vars.append(
+            "CORS_ORIGINS (wildcard '*' not allowed in production; set explicit origins)"
+        )
+
+
 def validate_runtime_config() -> list[str]:
     """Return a list of missing environment variables for runtime startup."""
     missing_vars: list[str] = []
@@ -83,18 +123,9 @@ def validate_runtime_config() -> list[str]:
     if not DATABASE_URL and not os.getenv("PYTEST_VERSION"):
         missing_vars.append("DATABASE_URL")
 
-    # If default user seeding is enabled, credentials must be fully configured.
-    if SEED_DEFAULT_USER:
-        if not DEFAULT_USER_EMAIL:
-            missing_vars.append("DEFAULT_USER_EMAIL")
-        if not DEFAULT_USER_CREDENTIALS:
-            missing_vars.append("DEFAULT_USER_PASSWORD")
-
-    # If bootstrap is enabled, admin credentials are mandatory.
-    if BOOTSTRAP_ENABLED:
-        if not ADMIN_EMAIL:
-            missing_vars.append("ADMIN_EMAIL")
-        if not ADMIN_PASSWORD:
-            missing_vars.append("ADMIN_PASSWORD")
+    _check_seeding_config(missing_vars)
+    _check_bootstrap_config(missing_vars)
+    _check_secret_key(missing_vars)
+    _check_cors_config(missing_vars)
 
     return missing_vars

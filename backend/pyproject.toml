@@ -13,9 +13,6 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "python-jose[cryptography]>=3.3.0",
     "python-multipart>=0.0.28",
-    "pytest>=9.0.3",
-    "httpx>=0.28.1",
-    "ruff>=0.15.13",
     "alembic>=1.18.4",
     "openai>=2.36.0",
     "sentry-sdk>=2.60.0",
@@ -29,4 +26,8 @@ pythonpath = ["src"]
 "tests/*.py" = ["E402"]
 
 [dependency-groups]
-dev = ["mkdocs>=1.6.1"]
+dev = ["mkdocs>=1.6.1", "pytest>=9.0.3", "httpx>=0.28.1", "ruff>=0.15.13"]
+
+[tool.pyright]
+pythonVersion = "3.13"
+extraPaths = ["src"]

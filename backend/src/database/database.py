@@ -28,7 +28,26 @@ if not DATABASE_URL:
     else:
         raise ValueError("DATABASE_URL environment variable is not set.")
 
-print(f"Using database URL: {DATABASE_URL}")
+
+def _mask_db_url(url: str | None) -> str:
+    """Return db URL with credentials redacted: scheme://***@host:port/db"""
+    if not url:
+        return "(not set)"
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        # SQLite has no hostname
+        if parsed.scheme.startswith("sqlite"):
+            return f"{parsed.scheme}:{parsed.path or '(memory)'}"
+        host = parsed.hostname or ""
+        port = f":{parsed.port}" if parsed.port else ""
+        return f"{parsed.scheme}://***@{host}{port}{parsed.path}"
+    except Exception:
+        return "***"
+
+
+print(f"Using database: {_mask_db_url(DATABASE_URL)}")
 engine = create_engine(DATABASE_URL, echo=SQL_ECHO, pool_pre_ping=True)
 
 

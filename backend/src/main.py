@@ -26,21 +26,20 @@ from core.middleware import register_middlewares
 
 import uvicorn
 
+_env = os.getenv("ENVIRONMENT", "development")
+if _env == "production":
+    _sentry_sample_rate = 0.1
+elif _env == "testing":
+    _sentry_sample_rate = 0.0
+else:
+    _sentry_sample_rate = 1.0
+
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN", ""),
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
-    # Enable sending logs to Sentry
+    send_default_pii=False,
     enable_logs=True,
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for tracing.
-    traces_sample_rate=1.0,
-    # Set profile_session_sample_rate to 1.0 to profile 100%
-    # of profile sessions.
-    profile_session_sample_rate=1.0,
-    # Set profile_lifecycle to "trace" to automatically
-    # run the profiler on when there is an active transaction
+    traces_sample_rate=_sentry_sample_rate,
+    profile_session_sample_rate=_sentry_sample_rate,
     profile_lifecycle="trace",
 )
 
@@ -62,10 +61,16 @@ def create_app() -> FastAPI:
     missing_vars = validate_runtime_config()
     if missing_vars:
         missing_list = ", ".join(sorted(set(missing_vars)))
-        raise RuntimeError(
+        msg = (
             "Missing required environment variables: "
             f"{missing_list}. Configure your environment before starting the API."
         )
+        import logging
+
+        logging.critical("[STARTUP] %s", msg)
+        if os.getenv("SENTRY_DSN"):
+            sentry_sdk.capture_message(msg, level="fatal")
+        raise RuntimeError(msg)
 
     # Import only after config validation, to avoid early crashes from transitive imports.
     from api.router import setup_routers

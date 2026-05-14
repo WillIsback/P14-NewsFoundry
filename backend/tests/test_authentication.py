@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+from collections.abc import Generator
 
 import bcrypt
 import pytest
@@ -21,7 +22,7 @@ from database.models import User
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Generator[TestClient, None, None]:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -77,8 +78,8 @@ def test_login_with_valid_credentials_returns_token_and_email(
 ) -> None:
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test@test.com", "password": "test"},
-        headers={"x-forwarded-for": "10.0.0.1"},
+        json={"email": "test@test.com", "password": "test"},  # NOSONAR
+        headers={"x-forwarded-for": "10.0.0.1"},  # NOSONAR
     )
 
     assert response.status_code == 200
@@ -95,8 +96,8 @@ def test_login_with_valid_credentials_returns_token_and_email(
 def test_login_with_invalid_credentials_returns_401(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test@test.com", "password": "wrong_password"},
-        headers={"x-forwarded-for": "10.0.0.2"},
+        json={"email": "test@test.com", "password": "wrong_password"},  # NOSONAR
+        headers={"x-forwarded-for": "10.0.0.2"},  # NOSONAR
     )
 
     assert response.status_code == 401
@@ -109,7 +110,7 @@ def test_login_with_malformed_json_returns_422(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",
         json={"email": "test@test.com"},  # missing password
-        headers={"x-forwarded-for": "10.0.0.3"},
+        headers={"x-forwarded-for": "10.0.0.3"},  # NOSONAR
     )
 
     assert response.status_code == 422
@@ -121,8 +122,8 @@ def test_login_with_malformed_json_returns_422(client: TestClient) -> None:
 def test_login_with_invalid_email_format_returns_422(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "invalid-email", "password": "test"},
-        headers={"x-forwarded-for": "10.0.0.7"},
+        json={"email": "invalid-email", "password": "test"},  # NOSONAR
+        headers={"x-forwarded-for": "10.0.0.7"},  # NOSONAR
     )
 
     assert response.status_code == 422
@@ -135,8 +136,8 @@ def test_login_with_invalid_email_format_returns_422(client: TestClient) -> None
 def test_login_with_nonexistent_user_returns_401(client: TestClient) -> None:
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "nonexistent@test.com", "password": "test"},
-        headers={"x-forwarded-for": "10.0.0.4"},
+        json={"email": "nonexistent@test.com", "password": "test"},  # NOSONAR
+        headers={"x-forwarded-for": "10.0.0.4"},  # NOSONAR
     )
 
     assert response.status_code == 401
@@ -164,8 +165,8 @@ def test_protected_rejects_missing_or_invalid_token(client: TestClient) -> None:
 def test_protected_allows_valid_token_only(client: TestClient) -> None:
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test@test.com", "password": "test"},
-        headers={"x-forwarded-for": "10.0.0.5"},
+        json={"email": "test@test.com", "password": "test"},  # NOSONAR
+        headers={"x-forwarded-for": "10.0.0.5"},  # NOSONAR
     )
     token = login_response.json()["data"]["access_token"]
 
@@ -184,8 +185,8 @@ def test_protected_allows_valid_token_only(client: TestClient) -> None:
 def test_token_validation_extracts_correct_user_email(client: TestClient) -> None:
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test@test.com", "password": "test"},
-        headers={"x-forwarded-for": "10.0.0.6"},
+        json={"email": "test@test.com", "password": "test"},  # NOSONAR
+        headers={"x-forwarded-for": "10.0.0.6"},  # NOSONAR
     )
     assert login_response.status_code == 200
     data = login_response.json()["data"]
@@ -214,7 +215,7 @@ def test_old_docs_route_is_gone(client: TestClient) -> None:
 
 
 def test_openapi_json_always_accessible(client: TestClient) -> None:
-    response = client.get("/openapi.json")
+    response = client.get("/api/openapi.json")
     assert response.status_code == 200
     payload = response.json()
     assert "openapi" in payload
@@ -224,12 +225,12 @@ def test_openapi_json_always_accessible(client: TestClient) -> None:
 def test_login_rate_limit_returns_429_after_limit_for_same_ip(
     client: TestClient,
 ) -> None:
-    ip_headers = {"x-forwarded-for": "10.0.1.250"}
+    ip_headers = {"x-forwarded-for": "10.0.1.250"}  # NOSONAR
 
     for _ in range(API_LOGIN_RATE_LIMIT_REQUESTS):
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "test@test.com", "password": "wrong_password"},
+            json={"email": "test@test.com", "password": "wrong_password"},  # NOSONAR
             headers=ip_headers,
         )
         assert response.status_code == 401
@@ -238,7 +239,7 @@ def test_login_rate_limit_returns_429_after_limit_for_same_ip(
 
     sixth_response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test@test.com", "password": "wrong_password"},
+        json={"email": "test@test.com", "password": "wrong_password"},  # NOSONAR
         headers=ip_headers,
     )
 
