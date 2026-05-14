@@ -25,7 +25,7 @@ def build_authentication_router(db: Database) -> APIRouter:
     router = APIRouter(tags=["authentication"])
 
     @router.post("/login")
-    async def login(
+    def login(
         credentials: LoginRequest,
         session: Annotated[Session, Depends(db.get_db)],
     ) -> ApiResponse[AccessTokenData]:
@@ -51,7 +51,7 @@ def build_authentication_router(db: Database) -> APIRouter:
         )
 
     @router.get("/protected")
-    async def protected_resource(
+    def protected_resource(
         current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[MessageData]:
         return success_response(
@@ -69,7 +69,7 @@ def build_authentication_router(db: Database) -> APIRouter:
         return success_response(
             status=status.HTTP_200_OK,
             message="Current user retrieved",
-            data=UserPublic(id=current_user.id, email=current_user.email),
+            data=UserPublic(id=current_user.id, email=current_user.email),  # type: ignore[arg-type]
         )
 
     ### Register function not implemented.

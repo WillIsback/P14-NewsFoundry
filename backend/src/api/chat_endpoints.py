@@ -102,10 +102,10 @@ def build_chat_router() -> APIRouter:
     router = APIRouter(tags=["chat"])
 
     @router.get("/chats")
-    async def get_chats(
+    def get_chats(
         current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[list[ChatPublic]]:
-        chats = await asyncio.to_thread(get_chats_by_user_sync, current_user.id)  # type: ignore[arg-type]
+        chats = get_chats_by_user_sync(current_user.id)  # type: ignore[arg-type]
         return success_response(
             status=status.HTTP_200_OK,
             message="Chats retrieved",
@@ -113,18 +113,18 @@ def build_chat_router() -> APIRouter:
         )
 
     @router.get("/chats/{chat_id}/messages")
-    async def get_messages(
+    def get_messages(
         chat_id: int,
         current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[list[MessagePublic]]:
-        chat = await asyncio.to_thread(get_chat_by_id_sync, chat_id)
+        chat = get_chat_by_id_sync(chat_id)
         # Return 404 regardless — do not reveal existence to other users
         if not chat or chat.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
             )
 
-        messages = await asyncio.to_thread(get_messages_by_chat_sync, chat_id)
+        messages = get_messages_by_chat_sync(chat_id)
         return success_response(
             status=status.HTTP_200_OK,
             message="Messages retrieved",
@@ -148,6 +148,11 @@ def build_chat_router() -> APIRouter:
         """Create a new chat and send the first message in a single call."""
         now = datetime.now(timezone.utc).isoformat()
         chat = await asyncio.to_thread(create_chat_sync, current_user.id, now)  # type: ignore[arg-type]
+        if chat.id is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Chat creation failed",
+            )
         data = await _process_message(chat.id, body.content)
         return success_response(
             status=status.HTTP_201_CREATED,

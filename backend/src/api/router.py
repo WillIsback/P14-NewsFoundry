@@ -16,5 +16,5 @@ def setup_routers(app: FastAPI, db: Database) -> None:
     chat_router = build_chat_router()
     app.include_router(chat_router, prefix=API_V1_PREFIX)
 
-    review_router = build_review_router(db)
+    review_router = build_review_router()
     app.include_router(review_router, prefix=API_V1_PREFIX)

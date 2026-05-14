@@ -4,7 +4,6 @@ from typing import Annotated
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlmodel import Session
 
 from api.models import (
     ApiResponse,
@@ -19,7 +18,6 @@ from database.crud import (
     create_press_review_sync,
     get_press_reviews_by_user_sync,
 )
-from database.database import Database
 from database.models import User
 
 
@@ -32,16 +30,14 @@ class _PressReviewLLMOutput(BaseModel):
     )
 
 
-def build_review_router(db: Database) -> APIRouter:
+def build_review_router() -> APIRouter:
     router = APIRouter(tags=["review"])
 
     @router.get("/reviews")
-    async def get_reviews(
+    def get_reviews(
         current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[list[ReviewPublic]]:
-        reviews = await asyncio.to_thread(
-            get_press_reviews_by_user_sync, current_user.id
-        )  # type: ignore[arg-type]
+        reviews = get_press_reviews_by_user_sync(current_user.id)  # type: ignore[arg-type]
         return success_response(
             status=status.HTTP_200_OK,
             message="Reviews retrieved",
@@ -56,11 +52,17 @@ def build_review_router(db: Database) -> APIRouter:
             ],
         )
 
-    @router.post("/reviews", status_code=status.HTTP_201_CREATED)
+    @router.post(
+        "/reviews",
+        status_code=status.HTTP_201_CREATED,
+        responses={
+            504: {"description": "LLM request timed out"},
+            502: {"description": "LLM provider error"},
+        },
+    )
     async def create_review(
         body: CreateReviewRequest,
         current_user: Annotated[User, Depends(verify_user)],
-        session: Annotated[Session, Depends(db.get_db)],
     ) -> ApiResponse[ReviewPublic]:
         """Generate a press review via structured LLM output and persist it."""
         try:
