@@ -53,7 +53,7 @@ export default async function ChatPage({
 				</div>
 				{/* Assistant response area */}
 				{/* Home Assistant Chat Section*/}
-				<section className="w-full min-h-202.75 flex flex-col gap-2.5 px-[25%] py-[18%] bg-slate-400">
+				<section className="w-full flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-8 md:px-[25%] md:py-[18%] bg-slate-400">
 					<AssistantCard messages={chat.messages} />
 				</section>
 				<footer className="flex w-full min-h-23.25 gap-4 px-[6.44%] py-4.25 bg-white">

@@ -1,11 +1,11 @@
 import { promises as fs } from "node:fs";
 import { Suspense } from "react";
 import AssistantCard from "@/src/components/AssistantCard";
+import DisplayReviews from "@/src/components/DisplayReviews";
 import Menu from "@/src/components/Menu";
 import { SubMenuNav } from "@/src/components/SubMenuNav";
 import { ButtonSend } from "@/src/components/ui/ButtonSend";
 import TextArea from "@/src/components/ui/TextArea";
-import DisplayReviews from "@/src/components/DisplayReviews";
 
 export default async function HomePage({
 	searchParams,
@@ -15,7 +15,7 @@ export default async function HomePage({
 	let chats: { id: string; date: string }[] | undefined;
 	let pressReviews:
 		| { id: string; title: string; description: string; content: string }[]
-		| undefined
+		| undefined;
 	try {
 		const file = await fs.readFile(
 			`${process.cwd()}/data/mockData.json`,
@@ -41,10 +41,14 @@ export default async function HomePage({
 				</header>
 				{/* Assistant response area */}
 
-				<section className={`w-full flex-1 min-h-0 flex flex-col gap-2.5 bg-slate-400 ${defaultMode === "review" ? "px-22.5 pt-10 " : "px-[25%] py-[18%]"}`}>
-					{defaultMode ==="review" 
-						? <DisplayReviews pressReviews={pressReviews} />
-						: <AssistantCard variant="welcome" />}
+				<section
+					className={`w-full flex-1 min-h-0 flex flex-col gap-2.5 bg-slate-400 ${defaultMode === "review" ? "px-4 md:px-22.5 pt-6 md:pt-10" : "px-4 py-8 md:px-[25%] md:py-[18%]"}`}
+				>
+					{defaultMode === "review" ? (
+						<DisplayReviews pressReviews={pressReviews} />
+					) : (
+						<AssistantCard variant="welcome" />
+					)}
 				</section>
 				<footer className="flex w-full min-h-23.25 gap-4 px-[6.44%] py-4.25 bg-white">
 					<TextArea />

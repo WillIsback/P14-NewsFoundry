@@ -28,7 +28,7 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 	);
 
 	return (
-		<aside className="w-fit h-full justify-between flex flex-col  bg-slate-100">
+		<aside className="hidden md:flex flex-col w-fit h-full justify-between bg-slate-100">
 			{/* Partie Haute*/}
 			<div className="w-full h-fit flex flex-col">
 				<Link
