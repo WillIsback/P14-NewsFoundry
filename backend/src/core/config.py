@@ -13,7 +13,7 @@ load_dotenv()
 # Environment
 ENVIRONMENT: Literal["development", "testing", "production"] = cast(
     Literal["development", "testing", "production"],
-    os.getenv("ENVIRONMENT", "development")
+    os.getenv("ENVIRONMENT", "development"),
 )
 DEBUG_MODE = ENVIRONMENT in ("development", "testing")
 
@@ -52,6 +52,21 @@ APP_ENV = os.getenv("APP_ENV", "development").lower()
 SEED_DEFAULT_USER = os.getenv("SEED_DEFAULT_USER", "false").lower() == "true"
 DEFAULT_USER_EMAIL: str | None = os.getenv("DEFAULT_USER_EMAIL")
 DEFAULT_USER_CREDENTIALS: str | None = os.getenv("DEFAULT_USER_PASSWORD")
+
+# LLM Provider
+LLM_BASE_URL: str | None = os.getenv("LLM_BASE_URL")  # e.g. http://localhost:8000/v1
+LLM_API_KEY: str = os.getenv("LLM_API_KEY", "EMPTY")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "default")
+LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
+LLM_MAX_CONCURRENT: int = int(os.getenv("LLM_MAX_CONCURRENT", "5"))
+LLM_MAX_INPUT_CHARS: int = int(os.getenv("LLM_MAX_INPUT_CHARS", "8000"))
+LLM_CONTEXT_WINDOW_TOKENS: int = int(os.getenv("LLM_CONTEXT_WINDOW_TOKENS", "36000"))
+# Trigger compaction when history reaches this fraction of the context window (0.0–1.0)
+LLM_COMPACT_THRESHOLD_RATIO: float = float(
+    os.getenv("LLM_COMPACT_THRESHOLD_RATIO", "0.80")
+)
+# Number of recent messages to preserve verbatim during compaction
+LLM_COMPACT_RECENT_KEEP: int = int(os.getenv("LLM_COMPACT_RECENT_KEEP", "6"))
 
 # Bootstrap Configuration (one-shot admin creation)
 BOOTSTRAP_ENABLED = os.getenv("BOOTSTRAP_ENABLED", "false").lower() == "true"

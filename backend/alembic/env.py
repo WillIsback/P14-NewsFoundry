@@ -14,8 +14,6 @@ from alembic import context
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir / "src"))
 
-# Import model modules so SQLModel metadata is fully populated for autogenerate.
-from database import models  
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -34,10 +32,12 @@ config.set_main_option("sqlalchemy.url", database_url)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
+# Import all models so SQLModel.metadata is populated before autogenerate runs.
+# Without these imports the metadata is empty and Alembic drops every table.
+import database.models  # noqa: F401, E402
+
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
