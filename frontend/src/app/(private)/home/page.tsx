@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import AssistantCard from "@/src/components/AssistantCard";
 import DisplayReviews from "@/src/components/DisplayReviews";
 import Menu from "@/src/components/Menu";
+import { MenuDrawer } from "@/src/components/MenuDrawer";
 import { SubMenuNav } from "@/src/components/SubMenuNav";
 import { ButtonSend } from "@/src/components/ui/ButtonSend";
 import TextArea from "@/src/components/ui/TextArea";
@@ -34,10 +35,11 @@ export default async function HomePage({
 			<Menu chats={chats} />
 			{/* Main content area */}
 			<div className=" w-full h-full flex flex-col">
-				<header className="w-full h-22 flex items-center px-4.5 py-1.75 bg-slate-100 border-0 border-l border-b border-slate-400">
+				<header className="w-full h-22 flex justify-between items-center px-4.5 py-1.75 bg-slate-100 border-0 border-l border-b border-slate-400">
 					<Suspense>
 						<SubMenuNav defaultMode={defaultMode} />
 					</Suspense>
+					<MenuDrawer chats={chats} />
 				</header>
 				{/* Assistant response area */}
 

@@ -10,7 +10,10 @@ interface MenuProps {
 	date: string;
 }
 
-export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
+export default function Menu({
+	chats,
+	inDrawer = false,
+}: Readonly<{ chats?: MenuProps[]; inDrawer?: boolean }>) {
 	const logoutSVG = (
 		<svg
 			width="14"
@@ -28,12 +31,16 @@ export default function Menu({ chats }: Readonly<{ chats?: MenuProps[] }>) {
 	);
 
 	return (
-		<aside className="hidden md:flex flex-col w-fit h-full justify-between bg-slate-100">
+		<aside
+			className={`${
+				inDrawer ? "flex" : "hidden tablet:flex"
+			} flex-col w-fit h-full justify-between bg-slate-100`}
+		>
 			{/* Partie Haute*/}
 			<div className="w-full h-fit flex flex-col">
 				<Link
 					href="/"
-					className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 pr-37.5 bg-slate-100 border-slate-400 border"
+					className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 tablet:pr-16 desktop:pr-37.5 bg-slate-100 border-slate-400 border"
 				>
 					{/* Logo NewFoundry placeholder */}
 					<Logo />
