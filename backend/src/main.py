@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+import sentry_sdk
 
 from api.models import (
     ApiResponse,
@@ -25,6 +26,24 @@ from core.middleware import register_middlewares
 
 import uvicorn
 
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN", ""),
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+    # Enable sending logs to Sentry
+    enable_logs=True,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    # Set profile_session_sample_rate to 1.0 to profile 100%
+    # of profile sessions.
+    profile_session_sample_rate=1.0,
+    # Set profile_lifecycle to "trace" to automatically
+    # run the profiler on when there is an active transaction
+    profile_lifecycle="trace",
+)
+
 
 def generate_operation_id(route: APIRoute) -> str:
     """Generate stable, concise OpenAPI operation IDs for codegen.
@@ -33,7 +52,7 @@ def generate_operation_id(route: APIRoute) -> str:
     - `<tag>_<handler_name>` for tagged routers
     - `<handler_name>` for untagged routes
     """
-    tag = (route.tags[0] if route.tags else "").strip().lower()
+    tag = (str(route.tags[0]) if route.tags else "").strip().lower()
     tag = tag.replace(" ", "_").replace("-", "_")
     name = route.name.strip().lower().replace(" ", "_").replace("-", "_")
     return f"{tag}_{name}" if tag else name
@@ -106,6 +125,11 @@ async def hello() -> ApiResponse[MessageData]:
         message="API reachable",
         data=MessageData(message="👋"),
     )
+
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
 
 
 @app.exception_handler(HTTPException)
