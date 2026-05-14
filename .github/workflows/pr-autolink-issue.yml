@@ -24,18 +24,12 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           # Extract issue number from branch name
-          # Supports: feat/42-desc  OR  42-feat-desc  (GitHub auto-generated)
-          ISSUE_NUMBER=$(echo "$BRANCH" | grep -oE '(^(feat|fix|chore|docs|refactor|test)/\K[0-9]+|^[0-9]+(?=-(feat|fix|chore|docs|refactor|test)))' 2>/dev/null || true)
-
-          # Fallback: simpler extraction covering both patterns
-          if [ -z "$ISSUE_NUMBER" ]; then
-            # Pattern: feat/42-... → extract after /
-            ISSUE_NUMBER=$(echo "$BRANCH" | sed -n 's|^[a-z]*/\([0-9]*\)-.*|\1|p')
-          fi
-          if [ -z "$ISSUE_NUMBER" ]; then
-            # Pattern: 42-feat-... → extract leading number
-            ISSUE_NUMBER=$(echo "$BRANCH" | sed -n 's|^\([0-9]*\)-[a-z]*-.*|\1|p')
-          fi
+          # Supports any format that contains a number, e.g.:
+          #   feat/42-desc      → 42
+          #   42-feat-desc      → 42
+          #   18-bug-desc       → 18
+          #   fix/7-desc        → 7
+          ISSUE_NUMBER=$(echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
 
           if [ -z "$ISSUE_NUMBER" ]; then
             echo "⚠️  Could not extract issue number from branch '$BRANCH'. Skipping."
