@@ -61,10 +61,15 @@ export async function decrypt(
  * Creates a new session by generating a JWT and setting it in an HTTP-only cookie.
  *
  * @param userId - The user's email address (returned by the backend login endpoint).
+ * @param accessToken - The backend-issued JWT access token.
  */
-export async function createSession(userId: string) {
+export async function createSession(userId: string, accessToken: string) {
 	const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-	const session = await encrypt({ userId, expiresAt: expiresAt.toISOString() });
+	const session = await encrypt({
+		userId,
+		expiresAt: expiresAt.toISOString(),
+		accessToken,
+	});
 	const cookieStore = await cookies();
 
 	cookieStore.set("session", session, {
@@ -99,6 +104,15 @@ export async function updateSession() {
 		sameSite: "lax",
 		path: "/",
 	});
+}
+
+/**
+ * Returns the backend Bearer token from the current session cookie, or null if not authenticated.
+ */
+export async function getBearerToken(): Promise<string | null> {
+	const session = (await cookies()).get("session")?.value;
+	const payload = await decrypt(session);
+	return payload?.accessToken ?? null;
 }
 
 /**
