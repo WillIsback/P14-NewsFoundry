@@ -45,9 +45,6 @@ jobs:
           fi
 
           # Append the closing reference to the PR body
-          NEW_BODY="${PR_BODY}
-
-Closes #${ISSUE_NUMBER}"
-
+          NEW_BODY=$(printf '%s\n\nCloses #%s\n' "$PR_BODY" "$ISSUE_NUMBER")
           gh pr edit "$PR_NUMBER" --body "$NEW_BODY" --repo "$REPO"
           echo "✅ Injected 'Closes #${ISSUE_NUMBER}' into PR body."
