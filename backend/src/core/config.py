@@ -38,12 +38,15 @@ ENABLE_HTTPS_REDIRECT = os.getenv("ENABLE_HTTPS_REDIRECT", "false").lower() == "
 
 
 # Authentication
-SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_change_in_prod")
+SECRET_KEY: str = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # CORS
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+_cors_raw = os.getenv("CORS_ORIGINS", "")
+CORS_ORIGINS: list[str] = (
+    [o.strip() for o in _cors_raw.split(",") if o.strip()] if _cors_raw else ["*"]
+)
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -96,5 +99,18 @@ def validate_runtime_config() -> list[str]:
             missing_vars.append("ADMIN_EMAIL")
         if not ADMIN_PASSWORD:
             missing_vars.append("ADMIN_PASSWORD")
+
+    # SECRET_KEY must always be explicitly set
+    if not SECRET_KEY and not os.getenv("PYTEST_VERSION"):
+        missing_vars.append("SECRET_KEY")
+    elif ENVIRONMENT == "production" and len(SECRET_KEY) < 32:
+        missing_vars.append("SECRET_KEY (too short, must be >= 32 chars in production)")
+
+    # In production, CORS must be explicitly restricted
+    cors_env = os.getenv("CORS_ORIGINS", "")
+    if ENVIRONMENT == "production" and (not cors_env or "*" in cors_env):
+        missing_vars.append(
+            "CORS_ORIGINS (wildcard '*' not allowed in production; set explicit origins)"
+        )
 
     return missing_vars

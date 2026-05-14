@@ -28,7 +28,21 @@ if not DATABASE_URL:
     else:
         raise ValueError("DATABASE_URL environment variable is not set.")
 
-print(f"Using database URL: {DATABASE_URL}")
+
+def _mask_db_url(url: str | None) -> str:
+    """Return db URL with credentials redacted: postgresql://***@host/db"""
+    if not url:
+        return "(not set)"
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        return f"{parsed.scheme}://***@{parsed.hostname}{parsed.path}"
+    except Exception:
+        return "***"
+
+
+print(f"Using database: {_mask_db_url(DATABASE_URL)}")
 engine = create_engine(DATABASE_URL, echo=SQL_ECHO, pool_pre_ping=True)
 
 

@@ -214,7 +214,7 @@ def test_old_docs_route_is_gone(client: TestClient) -> None:
 
 
 def test_openapi_json_always_accessible(client: TestClient) -> None:
-    response = client.get("/openapi.json")
+    response = client.get("/api/openapi.json")
     assert response.status_code == 200
     payload = response.json()
     assert "openapi" in payload
