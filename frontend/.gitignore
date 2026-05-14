@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Models Generation
 src/models/gen/schemas
+# Sentry Config File
+.env.sentry-build-plugin
