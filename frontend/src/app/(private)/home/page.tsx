@@ -41,7 +41,7 @@ export default async function HomePage({
 				</header>
 				{/* Assistant response area */}
 
-				<section className={`w-full flex-1 min-h-0 flex flex-col gap-2.5 bg-slate-400 ${defaultMode === "review" ? "px-22.5 pt-10 pb-37" : "px-[25%] py-[18%]"}`}>
+				<section className={`w-full flex-1 min-h-0 flex flex-col gap-2.5 bg-slate-400 ${defaultMode === "review" ? "px-22.5 pt-10 " : "px-[25%] py-[18%]"}`}>
 					{defaultMode ==="review" 
 						? <DisplayReviews pressReviews={pressReviews} />
 						: <AssistantCard variant="welcome" />}
