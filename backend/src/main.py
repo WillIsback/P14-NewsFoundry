@@ -27,7 +27,12 @@ from core.middleware import register_middlewares
 import uvicorn
 
 _env = os.getenv("ENVIRONMENT", "development")
-_sentry_sample_rate = 0.1 if _env == "production" else 0.0 if _env == "testing" else 1.0
+if _env == "production":
+    _sentry_sample_rate = 0.1
+elif _env == "testing":
+    _sentry_sample_rate = 0.0
+else:
+    _sentry_sample_rate = 1.0
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN", ""),
