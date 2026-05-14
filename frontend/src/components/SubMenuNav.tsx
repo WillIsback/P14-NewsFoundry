@@ -4,9 +4,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
 
-export function SubMenuNav() {
+interface SubMenuNavProps {
+	defaultMode?: "chat" | "review";
+}
+
+export function SubMenuNav({ defaultMode = "chat" }: Readonly<SubMenuNavProps>) {
 	const params = useSearchParams();
-	const mode = params.get("mode") ?? "chat";
+	const mode = (params.get("mode") as "chat" | "review") ?? defaultMode;
 
 	return (
 		<div className="w-fit h-fit flex items-center gap-2 rounded-[8px]">
