@@ -1,0 +1,59 @@
+name: PR Auto-link Issue
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+
+permissions:
+  pull-requests: write
+
+jobs:
+  autolink:
+    name: Inject issue reference into PR body
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract issue number and patch PR body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.head_ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Extract issue number from branch name
+          # Supports: feat/42-desc  OR  42-feat-desc  (GitHub auto-generated)
+          ISSUE_NUMBER=$(echo "$BRANCH" | grep -oE '(^(feat|fix|chore|docs|refactor|test)/\K[0-9]+|^[0-9]+(?=-(feat|fix|chore|docs|refactor|test)))' 2>/dev/null || true)
+
+          # Fallback: simpler extraction covering both patterns
+          if [ -z "$ISSUE_NUMBER" ]; then
+            # Pattern: feat/42-... → extract after /
+            ISSUE_NUMBER=$(echo "$BRANCH" | sed -n 's|^[a-z]*/\([0-9]*\)-.*|\1|p')
+          fi
+          if [ -z "$ISSUE_NUMBER" ]; then
+            # Pattern: 42-feat-... → extract leading number
+            ISSUE_NUMBER=$(echo "$BRANCH" | sed -n 's|^\([0-9]*\)-[a-z]*-.*|\1|p')
+          fi
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⚠️  Could not extract issue number from branch '$BRANCH'. Skipping."
+            exit 0
+          fi
+
+          echo "Detected issue number: #$ISSUE_NUMBER"
+
+          # Check if PR body already references the issue
+          if echo "$PR_BODY" | grep -qiE "(closes|fixes|resolves)[[:space:]]+#${ISSUE_NUMBER}"; then
+            echo "✅ PR body already references #$ISSUE_NUMBER. Nothing to do."
+            exit 0
+          fi
+
+          # Append the closing reference to the PR body
+          NEW_BODY="${PR_BODY}
+
+Closes #${ISSUE_NUMBER}"
+
+          gh pr edit "$PR_NUMBER" --body "$NEW_BODY" --repo "$REPO"
+          echo "✅ Injected 'Closes #${ISSUE_NUMBER}' into PR body."
