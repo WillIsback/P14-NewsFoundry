@@ -2,6 +2,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
+from core.llm_provider import ContextWindowInfo
 
 DataT = TypeVar("DataT")
 
@@ -39,6 +40,7 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
+
 class LoginRequest(BaseModel):
     email: str = Field(
         ...,
@@ -47,6 +49,56 @@ class LoginRequest(BaseModel):
         pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
     )
     password: str
+
+
+# ---------------------------------------------------------------------------
+# Chat / Message
+# ---------------------------------------------------------------------------
+
+
+class ChatPublic(BaseModel):
+    id: int
+    date: str
+
+
+class MessagePublic(BaseModel):
+    id: int
+    chat_id: int
+    type: str  # "user" | "ai"
+    content: str
+    timestamp: str
+
+
+class SendMessageRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=8000)
+
+
+class SendMessageResponse(BaseModel):
+    chat_id: int
+    message: MessagePublic
+    context: ContextWindowInfo
+
+
+# ---------------------------------------------------------------------------
+# Press Review
+# ---------------------------------------------------------------------------
+
+
+class ReviewPublic(BaseModel):
+    id: int
+    title: str
+    description: str
+    content: str
+
+
+class CreateReviewRequest(BaseModel):
+    articles: str = Field(min_length=1, max_length=32000)
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 
 def success_response(
     *,

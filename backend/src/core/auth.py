@@ -22,7 +22,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-def get_current_user(
+def verify_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db_session: Annotated[Session, Depends(db.get_db)],
 ):

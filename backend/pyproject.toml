@@ -13,16 +13,19 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "python-jose[cryptography]>=3.3.0",
     "python-multipart>=0.0.28",
-    "pytest>=8.4.2",
+    "pytest>=9.0.3",
     "httpx>=0.28.1",
-    "ruff>=0.15.12",
+    "ruff>=0.15.13",
     "alembic>=1.18.4",
+    "openai>=2.36.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["E402"]
 
 [dependency-groups]
-dev = [
-    "mkdocs>=1.6.1",
-]
+dev = ["mkdocs>=1.6.1"]

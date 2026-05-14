@@ -96,6 +96,85 @@ def _is_auth_required_path(path: str) -> bool:
     return path in set(API_AUTH_REQUIRED_PATHS)
 
 
+def _apply_starlette_middlewares(app: FastAPI) -> None:
+    if TRUSTED_HOSTS != ["*"]:
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
+    if ENABLE_HTTPS_REDIRECT:
+        app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+async def _check_rate_limit(
+    request: Request,
+    request_id: str,
+    limiter: InMemoryRateLimiter,
+    login_limiter: InMemoryRateLimiter,
+) -> tuple[JSONResponse | None, int, int]:
+    """Apply rate limiting. Returns (early_response_or_None, active_limit, remaining)."""
+    is_login = _is_login_path(request.url.path)
+    current_limiter = login_limiter if is_login else limiter
+    active_limit = (
+        API_LOGIN_RATE_LIMIT_REQUESTS if is_login else API_RATE_LIMIT_REQUESTS
+    )
+
+    client_key = _resolve_client_ip(request)
+    allowed, retry_after, remaining = await current_limiter.allow(client_key)
+
+    if allowed:
+        return None, active_limit, remaining
+
+    payload = error_response(
+        status=status.HTTP_429_TOO_MANY_REQUESTS,
+        code="RATE_LIMIT_EXCEEDED",
+        message="Too many requests",
+        details={"request_id": request_id, "retry_after_seconds": retry_after},
+    )
+    return (
+        JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content=payload.model_dump(),
+            headers={
+                "Retry-After": str(retry_after),
+                "X-Request-Id": request_id,
+                "X-RateLimit-Limit": str(active_limit),
+                "X-RateLimit-Remaining": "0",
+            },
+        ),
+        active_limit,
+        0,
+    )
+
+
+def _check_auth(
+    request: Request,
+    request_id: str,
+    active_limit: int,
+    remaining: int,
+) -> JSONResponse | None:
+    """Validate Bearer token and populate request.state. Returns an error response or None."""
+    try:
+        token = _extract_bearer_token(request)
+        request.state.user_email = _verify_access_token(token)
+        return None
+    except HTTPException as exc:
+        payload = error_response(
+            status=exc.status_code,
+            code="HTTP_EXCEPTION",
+            message=str(exc.detail),
+            details={"request_id": request_id},
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=payload.model_dump(),
+            headers={
+                "WWW-Authenticate": "Bearer",
+                "X-Request-Id": request_id,
+                "X-RateLimit-Limit": str(active_limit),
+                "X-RateLimit-Remaining": str(remaining),
+            },
+        )
+
+
 def register_middlewares(app: FastAPI) -> None:
     """Register API-gateway style middlewares and protections."""
 
@@ -103,19 +182,12 @@ def register_middlewares(app: FastAPI) -> None:
         max_requests=API_RATE_LIMIT_REQUESTS,
         window_seconds=API_RATE_LIMIT_WINDOW_SECONDS,
     )
-
     login_limiter = InMemoryRateLimiter(
         max_requests=API_LOGIN_RATE_LIMIT_REQUESTS,
         window_seconds=API_LOGIN_RATE_LIMIT_WINDOW_SECONDS,
     )
 
-    if TRUSTED_HOSTS != ["*"]:
-        app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
-
-    if ENABLE_HTTPS_REDIRECT:
-        app.add_middleware(HTTPSRedirectMiddleware)
-
-    app.add_middleware(GZipMiddleware, minimum_size=500)
+    _apply_starlette_middlewares(app)
 
     @app.middleware("http")
     async def api_gateway(request: Request, call_next):
@@ -128,56 +200,18 @@ def register_middlewares(app: FastAPI) -> None:
 
         is_api_call = request.url.path.startswith(API_V1_PREFIX)
         if request.method != "OPTIONS" and is_api_call:
-            client_key = _resolve_client_ip(request)
-            current_limiter = limiter
-
-            if _is_login_path(request.url.path):
-                current_limiter = login_limiter
-                active_limit = API_LOGIN_RATE_LIMIT_REQUESTS
-
-            allowed, retry_after, remaining = await current_limiter.allow(client_key)
-            if not allowed:
-                payload = error_response(
-                    status=status.HTTP_429_TOO_MANY_REQUESTS,
-                    code="RATE_LIMIT_EXCEEDED",
-                    message="Too many requests",
-                    details={
-                        "request_id": request_id,
-                        "retry_after_seconds": retry_after,
-                    },
-                )
-                return JSONResponse(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    content=payload.model_dump(),
-                    headers={
-                        "Retry-After": str(retry_after),
-                        "X-Request-Id": request_id,
-                        "X-RateLimit-Limit": str(active_limit),
-                        "X-RateLimit-Remaining": "0",
-                    },
-                )
+            rate_response, active_limit, remaining = await _check_rate_limit(
+                request, request_id, limiter, login_limiter
+            )
+            if rate_response is not None:
+                return rate_response
 
             if _is_auth_required_path(request.url.path):
-                try:
-                    token = _extract_bearer_token(request)
-                    request.state.user_email = _verify_access_token(token)
-                except HTTPException as exc:
-                    payload = error_response(
-                        status=exc.status_code,
-                        code="HTTP_EXCEPTION",
-                        message=str(exc.detail),
-                        details={"request_id": request_id},
-                    )
-                    return JSONResponse(
-                        status_code=exc.status_code,
-                        content=payload.model_dump(),
-                        headers={
-                            "WWW-Authenticate": "Bearer",
-                            "X-Request-Id": request_id,
-                            "X-RateLimit-Limit": str(active_limit),
-                            "X-RateLimit-Remaining": str(remaining),
-                        },
-                    )
+                auth_response = _check_auth(
+                    request, request_id, active_limit, remaining
+                )
+                if auth_response is not None:
+                    return auth_response
 
         response = await call_next(request)
         process_time_ms = (time.perf_counter() - start) * 1000
