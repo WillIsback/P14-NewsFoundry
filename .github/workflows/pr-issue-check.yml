@@ -17,15 +17,19 @@ jobs:
         id: branch-check
         run: |
           BRANCH="${{ github.head_ref }}"
-          # Accept: feat/42-my-feature  fix/42-bug  chore/42-...  docs/42-...  refactor/42-...  test/42-...
-          if echo "$BRANCH" | grep -qE '^(feat|fix|chore|docs|refactor|test)/[0-9]+-[a-z0-9-]+$'; then
+          # Accept:
+          #   Standard:       feat/42-my-feature  fix/42-bug  chore/42-...
+          #   GitHub auto:    42-feat-my-feature  42-fix-bug  42-chore-...
+          if echo "$BRANCH" | grep -qE '^(feat|fix|chore|docs|refactor|test)/[0-9]+-[a-z0-9-]+$' || \
+             echo "$BRANCH" | grep -qE '^[0-9]+-(feat|fix|chore|docs|refactor|test)-[a-z0-9-]+$'; then
             echo "branch_ok=true" >> "$GITHUB_OUTPUT"
             echo "✅ Branch '$BRANCH' follows the naming convention."
           else
             echo "branch_ok=false" >> "$GITHUB_OUTPUT"
             echo "❌ Branch '$BRANCH' does not follow the naming convention."
-            echo "   Expected format: <type>/<issue-number>-<short-description>"
-            echo "   Examples : feat/42-add-login   fix/7-null-pointer   chore/12-update-deps"
+            echo "   Standard format:     <type>/<issue-number>-<short-description>"
+            echo "   GitHub auto format:  <issue-number>-<type>-<short-description>"
+            echo "   Examples : feat/42-add-login   42-feat-add-login   fix/7-null-pointer"
             echo "   Allowed types: feat | fix | chore | docs | refactor | test"
           fi
 
