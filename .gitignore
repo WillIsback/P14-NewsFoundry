@@ -13,5 +13,5 @@ wheels/
 .dev-prod.md
 .github/agents
 actions-runner/
-docs/superpowers
-docs/.dev
+OC-P14/
+OC-P14/*
