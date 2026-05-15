@@ -39,12 +39,12 @@ jobs:
       }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: AI Code Review
-        uses: WillIsback/ai-devops-toolkit/code-review@v0.0.4
+        uses: WillIsback/code-review@afa4841a12e85276e932982f0997b4480d3d9cfb # v0.0.4
         with:
           vllm-url: ${{ secrets.VLLM_URL }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
