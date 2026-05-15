@@ -41,7 +41,11 @@ export async function sendNewMessage(
 	if (!result.ok) {
 		return { error: result.error.userMessage };
 	}
-	redirect(`/chat/${result.data.data?.chat_id}`);
+	const chatId = result.data.data?.chat_id;
+	if (!chatId) {
+		return { error: "Erreur lors de la création du chat" };
+	}
+	redirect(`/chat/${chatId}`);
 }
 
 export async function continueChat(
