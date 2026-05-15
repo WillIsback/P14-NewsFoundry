@@ -2,10 +2,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { fetchChats, fetchMessages } from "@/src/actions/chat.action";
 import AssistantCard from "@/src/components/AssistantCard";
+import ChatForm from "@/src/components/ChatForm";
 import { ChatHeader } from "@/src/components/ChatHeader";
 import Menu from "@/src/components/Menu";
-import { ButtonSend } from "@/src/components/ui/ButtonSend";
-import TextArea from "@/src/components/ui/TextArea";
 
 export default async function ChatPage({
 	params,
@@ -43,10 +42,7 @@ export default async function ChatPage({
 				<section className="w-full flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-8 md:px-[25%] md:py-[18%] bg-slate-400">
 					<AssistantCard messages={messages} />
 				</section>
-				<footer className="flex w-full min-h-23.25 gap-4 px-[6.44%] py-4.25 bg-white">
-					<TextArea />
-					<ButtonSend />
-				</footer>
+				<ChatForm mode="continue" chatId={chatId} />
 			</div>
 		</div>
 	);
