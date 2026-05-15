@@ -39,12 +39,12 @@ jobs:
       }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: AI Code Review
-        uses: WillIsback/code-review@afa4841a12e85276e932982f0997b4480d3d9cfb # v0.0.4
+        uses: WillIsback/code-review@15703d49e2e5fa920a256a6270c52ff05bf7baea # v0.1.1
         with:
           vllm-url: ${{ secrets.VLLM_URL }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
