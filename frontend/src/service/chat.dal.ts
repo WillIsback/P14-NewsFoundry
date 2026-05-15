@@ -56,7 +56,7 @@ export async function postNewChatMessage(
 	content: string,
 ): Promise<ServiceResult<NewChatMessageResponse>> {
 	return fetchJson({
-		url: `${BACKEND_URL}/chats`,
+		url: `${BACKEND_URL}/chats/message`,
 		method: "POST",
 		requestData: { content },
 		successSchema: chatNewChatMessage201Schema,

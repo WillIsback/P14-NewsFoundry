@@ -12,7 +12,7 @@ export default function TextArea() {
           focus:outline-none focus:placeholder:text-transparent transition-colors duration-200
           focus:cursor-text"
 				placeholder="Tapez votre message ici..."
-				name="textarea"
+				name="content"
 			/>
 		</>
 	);

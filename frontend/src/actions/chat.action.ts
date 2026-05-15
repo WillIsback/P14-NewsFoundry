@@ -1,4 +1,6 @@
 "use server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
 	getChats,
 	getMessages,
@@ -39,7 +41,7 @@ export async function sendNewMessage(
 	if (!result.ok) {
 		return { error: result.error.userMessage };
 	}
-	return { error: null, data: result.data };
+	redirect(`/chat/${result.data.data?.chat_id}`);
 }
 
 export async function continueChat(
@@ -56,5 +58,6 @@ export async function continueChat(
 	if (!result.ok) {
 		return { error: result.error.userMessage };
 	}
+	revalidatePath(`/chat/${chatId}`);
 	return { error: null, data: result.data };
 }

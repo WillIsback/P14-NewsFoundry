@@ -2,13 +2,12 @@ import { Suspense } from "react";
 import { fetchChats } from "@/src/actions/chat.action";
 import { fetchReviews } from "@/src/actions/review.action";
 import AssistantCard from "@/src/components/AssistantCard";
+import ChatForm from "@/src/components/ChatForm";
 import DisplayReviews from "@/src/components/DisplayReviews";
 import { ErrorBoundary } from "@/src/components/ErrorBoundary";
 import Menu from "@/src/components/Menu";
 import { MenuDrawer } from "@/src/components/MenuDrawer";
 import { SubMenuNav } from "@/src/components/SubMenuNav";
-import { ButtonSend } from "@/src/components/ui/ButtonSend";
-import TextArea from "@/src/components/ui/TextArea";
 
 export default async function HomePage({
 	searchParams,
@@ -77,10 +76,7 @@ export default async function HomePage({
 						<AssistantCard variant="welcome" />
 					)}
 				</section>
-				<footer className="flex w-full min-h-23.25 gap-4 px-[6.44%] py-4.25 bg-white">
-					<TextArea />
-					<ButtonSend disabled={defaultMode === "review"} />
-				</footer>
+				{defaultMode === "chat" && <ChatForm mode="new" />}
 			</div>
 		</div>
 	);
