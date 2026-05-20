@@ -19,12 +19,16 @@ export default async function HomePage({
 		if (r.error || !r.data) throw new Error(r.error ?? "Failed to load chats");
 		return r.data.data ?? [];
 	});
+	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
+	chatsPromise.catch(() => {});
 
 	const reviewsPromise = fetchReviews().then((r) => {
 		if (r.error || !r.data)
 			throw new Error(r.error ?? "Failed to load reviews");
 		return r.data.data ?? [];
 	});
+	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
+	reviewsPromise.catch(() => {});
 
 	return (
 		<div className="flex w-full h-full">

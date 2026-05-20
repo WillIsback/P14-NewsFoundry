@@ -19,6 +19,8 @@ export default async function ChatPage({
 		if (r.error || !r.data) throw new Error(r.error ?? "Failed to load chats");
 		return r.data.data ?? [];
 	});
+	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
+	chatsPromise.catch(() => {});
 
 	const messagesResult = await fetchMessages(chatId);
 	if (messagesResult.error) notFound();
