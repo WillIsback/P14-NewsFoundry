@@ -39,7 +39,7 @@ export default function Menu({
 			} flex-col w-fit h-full justify-between bg-slate-100`}
 		>
 			{/* Partie Haute*/}
-			<div className="w-full h-fit flex flex-col">
+			<div className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
 				<Link
 					href="/"
 					className="w-full h-22 flex items-center gap-2.5 pl-6 py-5.5 tablet:pr-16 desktop:pr-37.5 bg-slate-100 border-slate-400 border"
@@ -48,7 +48,7 @@ export default function Menu({
 					<Logo />
 				</Link>
 				{/* Historique de discussion */}
-				<nav className="w-full h-fit">
+				<nav className="w-full flex-1 min-h-0 overflow-y-auto">
 					<ul className="flex flex-col gap-0.5">
 						{/* Card Chat à implementer ici en generation par map, attention a avoir discussion id */}
 						{chats.length > 0 ? (
