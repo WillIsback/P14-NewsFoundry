@@ -19,6 +19,8 @@ export default async function ChatPage({
 		if (r.error || !r.data) throw new Error(r.error ?? "Failed to load chats");
 		return r.data.data ?? [];
 	});
+	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
+	chatsPromise.catch(() => {});
 
 	const messagesResult = await fetchMessages(chatId);
 	if (messagesResult.error) notFound();
@@ -39,7 +41,7 @@ export default async function ChatPage({
 				<ChatHeader />
 				{/* Assistant response area */}
 				{/* Home Assistant Chat Section */}
-				<section className="w-full flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-8 md:px-[25%] md:py-[18%] bg-slate-400">
+				<section className="w-full flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-8 md:px-[25%] md:py-[18%] bg-slate-400 overflow-y-auto">
 					<AssistantCard messages={messages} />
 				</section>
 				<ChatForm mode="continue" chatId={chatId} />

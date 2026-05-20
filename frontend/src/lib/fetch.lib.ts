@@ -1,5 +1,7 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import type { z } from "zod/v4";
+import { deleteSession } from "./session";
 import type { FetchJsonOptions, ServiceResult } from "./type.lib";
 
 /**
@@ -64,6 +66,12 @@ async function handleResponse<TOk>(
 			};
 		}
 		return { ok: true, status: response.status, data: parsed.data };
+	}
+
+	// Session expired or revoked — clear cookie and bounce to login
+	if (response.status === 401) {
+		await deleteSession();
+		redirect("/login");
 	}
 
 	const errorSchema = errorSchemas?.[response.status];
