@@ -3,21 +3,22 @@ import { type NextRequest, NextResponse } from "next/server";
 import { decrypt } from "@/src/lib/session";
 
 // 1. Specify protected and public routes
-const protectedRoutes = new Set(["/home", "/test"]);
+// All routes under (private) group are protected; match by prefix
 const publicRoutes = new Set(["/login", "/signup", "/"]);
 
 export default async function proxy(req: NextRequest) {
 	// 2. Check if the current route is protected or public
 	const path = req.nextUrl.pathname;
-	const isProtectedRoute = protectedRoutes.has(path);
 	const isPublicRoute = publicRoutes.has(path);
+	// Any route that is not explicitly public is considered protected
+	const isProtectedRoute = !isPublicRoute;
 
 	// 3. Decrypt the session from the cookie
 	const cookie = (await cookies()).get("session")?.value;
 	const session = await decrypt(cookie);
 
 	// 4. Redirect to /login if the user is not authenticated
-	if ((isProtectedRoute || path === "/") && !session?.userId) {
+	if (isProtectedRoute && !session?.userId) {
 		return NextResponse.redirect(new URL("/login", req.nextUrl));
 	}
 
@@ -32,8 +33,3 @@ export default async function proxy(req: NextRequest) {
 
 	return NextResponse.next();
 }
-
-// Routes Proxy should not run on
-export const config = {
-	matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
-};
