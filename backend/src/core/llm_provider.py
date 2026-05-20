@@ -84,7 +84,7 @@ class LLMRequest(BaseModel):
     system_prompt: str = Field(min_length=1)
     messages: list[LLMMessage] = Field(min_length=1)
     model: str = Field(default=LLM_MODEL)
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    temperature: float = Field(default=0.4, ge=0.0, le=2.0)
     max_tokens: int = Field(default=1024, gt=0, le=32768)
     thinking: bool = Field(default=False)
 
@@ -104,7 +104,7 @@ class LLMStructuredRequest(BaseModel):
     system_prompt: str = Field(min_length=1)
     messages: list[LLMMessage] = Field(min_length=1)
     model: str = Field(default=LLM_MODEL)
-    temperature: float = Field(default=0.3, ge=0.0, le=2.0)
+    temperature: float = Field(default=0.4, ge=0.0, le=2.0)
     max_tokens: int = Field(default=2048, gt=0, le=32768)
 
 

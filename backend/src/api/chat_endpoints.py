@@ -160,7 +160,7 @@ def build_chat_router() -> APIRouter:
             data=data,
         )
 
-    @router.post("/chats/{chat_id}/message")
+    @router.post("/chats/{chat_id}/messages")
     async def continue_chat_message(
         chat_id: int,
         body: SendMessageRequest,
