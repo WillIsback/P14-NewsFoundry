@@ -76,8 +76,6 @@ def create_app() -> FastAPI:
     from api.router import setup_routers
     from database.database import Database
     from agents import set_tracing_disabled
-    from agents import set_default_openai_client
-    from openai import AsyncOpenAI
 
     # Disable tracing — it would attempt to reach api.openai.com with our local
     # vLLM API key, causing noise in the logs.

@@ -6,7 +6,7 @@ Unit tests: mock worldnewsapi, aucun appel réseau ni LLM.
 
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -48,7 +48,9 @@ def _make_news_inner(
     )
 
 
-def _fake_api_response(articles: list[SearchNews200ResponseNewsInner]) -> SearchNews200Response:
+def _fake_api_response(
+    articles: list[SearchNews200ResponseNewsInner],
+) -> SearchNews200Response:
     return SearchNews200Response(
         offset=0,
         number=len(articles),

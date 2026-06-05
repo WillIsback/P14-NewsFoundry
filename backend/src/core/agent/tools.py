@@ -95,7 +95,9 @@ async def search_news(
         A Markdown-formatted list of articles with title, summary, date, and URL.
         Returns a message indicating no results if nothing was found.
     """
-    articles = await _search_news(query=query, language=language, max_results=max_results)
+    articles = await _search_news(
+        query=query, language=language, max_results=max_results
+    )
 
     if not articles:
         return f"Aucun article trouvé pour la recherche : « {query} »."
@@ -105,8 +107,7 @@ async def search_news(
         date_str = f" — {article.publish_date}" if article.publish_date else ""
         summary_str = f"\n> {article.summary}" if article.summary else ""
         lines.append(
-            f"**{i}. {article.title}**{date_str}{summary_str}\n"
-            f"Source : {article.url}\n"
+            f"**{i}. {article.title}**{date_str}{summary_str}\nSource : {article.url}\n"
         )
 
     return "\n---\n".join(lines)

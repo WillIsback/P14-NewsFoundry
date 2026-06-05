@@ -232,7 +232,9 @@ def create_top_news_context(
     return ctx
 
 
-def update_chat_system_prompt(session: Session, chat_id: int, system_prompt: str) -> None:
+def update_chat_system_prompt(
+    session: Session, chat_id: int, system_prompt: str
+) -> None:
     chat = session.get(Chat, chat_id)
     if chat:
         chat.system_prompt = system_prompt

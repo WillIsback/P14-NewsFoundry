@@ -470,7 +470,9 @@ class TestSearchNewsSerialize:
             _headers=None,
             _host_index=0,
         )
-        auth_settings = self.mock_client.param_serialize.call_args.kwargs["auth_settings"]
+        auth_settings = self.mock_client.param_serialize.call_args.kwargs[
+            "auth_settings"
+        ]
         assert "apiKey" in auth_settings
         assert "headerApiKey" in auth_settings
 

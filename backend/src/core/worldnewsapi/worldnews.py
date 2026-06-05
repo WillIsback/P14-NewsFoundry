@@ -212,7 +212,9 @@ class NewsApi:
         ] = None,
         text_match_indexes: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=100)]],
-            Field(description="Where to search: title, content, or both (comma-separated)."),
+            Field(
+                description="Where to search: title, content, or both (comma-separated)."
+            ),
         ] = None,
         source_country: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=2)]],
@@ -223,20 +225,34 @@ class NewsApi:
             Field(description="ISO 6391 language code of the news."),
         ] = None,
         min_sentiment: Annotated[
-            Optional[Union[Annotated[float, Field(le=1, strict=True, ge=-1)], Annotated[int, Field(le=1, strict=True, ge=-1)]]],
+            Optional[
+                Union[
+                    Annotated[float, Field(le=1, strict=True, ge=-1)],
+                    Annotated[int, Field(le=1, strict=True, ge=-1)],
+                ]
+            ],
             Field(description="Minimal sentiment in range [-1,1]."),
         ] = None,
         max_sentiment: Annotated[
-            Optional[Union[Annotated[float, Field(le=1, strict=True, ge=-1)], Annotated[int, Field(le=1, strict=True, ge=-1)]]],
+            Optional[
+                Union[
+                    Annotated[float, Field(le=1, strict=True, ge=-1)],
+                    Annotated[int, Field(le=1, strict=True, ge=-1)],
+                ]
+            ],
             Field(description="Maximal sentiment in range [-1,1]."),
         ] = None,
         earliest_publish_date: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=19)]],
-            Field(description="News must have been published after this date (YYYY-MM-DD HH:MM:SS)."),
+            Field(
+                description="News must have been published after this date (YYYY-MM-DD HH:MM:SS)."
+            ),
         ] = None,
         latest_publish_date: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=19)]],
-            Field(description="News must have been published before this date (YYYY-MM-DD HH:MM:SS)."),
+            Field(
+                description="News must have been published before this date (YYYY-MM-DD HH:MM:SS)."
+            ),
         ] = None,
         news_sources: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=10000)]],
@@ -248,7 +264,9 @@ class NewsApi:
         ] = None,
         categories: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=300)]],
-            Field(description="Comma-separated list of categories (e.g. politics,technology)."),
+            Field(
+                description="Comma-separated list of categories (e.g. politics,technology)."
+            ),
         ] = None,
         entities: Annotated[
             Optional[Annotated[str, Field(strict=True, max_length=10000)]],
@@ -277,7 +295,9 @@ class NewsApi:
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
-            Tuple[Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)], Annotated[StrictFloat, Field(gt=0)]
+            ],
         ] = None,
         _request_auth: Optional[Dict[StrictStr, Any]] = None,
         _content_type: Optional[StrictStr] = None,
@@ -334,7 +354,9 @@ class NewsApi:
             "406": None,
             "429": None,
         }
-        response_data = self.api_client.call_api(*_param, _request_timeout=_request_timeout)
+        response_data = self.api_client.call_api(
+            *_param, _request_timeout=_request_timeout
+        )
         response_data.read()
         result: SearchNews200Response = self.api_client.response_deserialize(  # type: ignore[assignment]
             response_data=response_data,

@@ -70,9 +70,7 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     # Build the input list in the OpenAI messages format expected by the Agents SDK.
     # The agent's own system prompt (instructions) is injected by the SDK automatically;
     # we only pass the conversation history here.
-    openai_messages = [
-        {"role": m.role, "content": m.content} for m in llm_messages
-    ]
+    openai_messages = [{"role": m.role, "content": m.content} for m in llm_messages]
 
     try:
         result = await asyncio.wait_for(

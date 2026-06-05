@@ -16,6 +16,7 @@ def _make_run_ctx() -> MagicMock:
     ctx.run_config.model_settings = None
     return ctx
 
+
 import pytest
 
 BACKEND_SRC = Path(__file__).resolve().parents[1] / "src"
@@ -69,6 +70,7 @@ class TestGetTopNewsTool:
     async def test_returns_non_empty_string(self, mock_api):
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             result = await get_top_news.on_invoke_tool(
                 _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
             )
@@ -79,6 +81,7 @@ class TestGetTopNewsTool:
     async def test_result_contains_cluster_titles(self, mock_api):
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             result = await get_top_news.on_invoke_tool(
                 _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
             )
@@ -88,6 +91,7 @@ class TestGetTopNewsTool:
     async def test_calls_api_with_correct_country_and_language(self, mock_api):
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             await get_top_news.on_invoke_tool(
                 _make_run_ctx(), '{"source_country":"us","language":"en"}'
             )
@@ -100,6 +104,7 @@ class TestGetTopNewsTool:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             await get_top_news.on_invoke_tool(
                 _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
             )
@@ -109,8 +114,10 @@ class TestGetTopNewsTool:
     async def test_uses_provided_date(self, mock_api):
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             await get_top_news.on_invoke_tool(
-                _make_run_ctx(), '{"source_country":"fr","language":"fr","date":"2026-05-04"}'
+                _make_run_ctx(),
+                '{"source_country":"fr","language":"fr","date":"2026-05-04"}',
             )
         assert mock_api.top_news.call_args.kwargs.get("var_date") == "2026-05-04"
 
@@ -122,6 +129,7 @@ class TestGetTopNewsTool:
         )
         with patch("core.agent.tools.get_news_api", return_value=empty_api):
             from core.agent.tools import get_top_news
+
             result = await get_top_news.on_invoke_tool(
                 _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
             )
@@ -131,6 +139,7 @@ class TestGetTopNewsTool:
     async def test_result_contains_source_url(self, mock_api):
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             result = await get_top_news.on_invoke_tool(
                 _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
             )
@@ -140,8 +149,10 @@ class TestGetTopNewsTool:
     async def test_result_contains_date_header(self, mock_api):
         with patch("core.agent.tools.get_news_api", return_value=mock_api):
             from core.agent.tools import get_top_news
+
             result = await get_top_news.on_invoke_tool(
-                _make_run_ctx(), '{"source_country":"fr","language":"fr","date":"2026-06-05"}'
+                _make_run_ctx(),
+                '{"source_country":"fr","language":"fr","date":"2026-06-05"}',
             )
         assert "2026-06-05" in result
 
