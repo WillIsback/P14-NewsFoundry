@@ -1,8 +1,17 @@
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import Session, select
 
-from database.models import Chat, Message, MessageType, PressReview, User, UserRole
+from database.models import (
+    Chat,
+    Message,
+    MessageType,
+    PressReview,
+    TopNewsContext,
+    User,
+    UserRole,
+)
 
 # Imported here for thread-safe wrappers that open their own Session
 from database.database import engine
@@ -192,3 +201,53 @@ def create_press_review_sync(
             description=description,
             content=content,
         )
+
+
+# ---------------------------------------------------------------------------
+# TopNewsContext
+# ---------------------------------------------------------------------------
+
+
+def create_top_news_context(
+    session: Session,
+    chat_id: int,
+    date: str,
+    source_country: str,
+    language: str,
+    system_prompt: str,
+    news: list[dict],
+) -> TopNewsContext:
+    ctx = TopNewsContext(
+        chat_id=chat_id,
+        date=date,
+        source_country=source_country,
+        language=language,
+        system_prompt=system_prompt,
+        news=news,
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    session.add(ctx)
+    session.commit()
+    session.refresh(ctx)
+    return ctx
+
+
+def update_chat_system_prompt(session: Session, chat_id: int, system_prompt: str) -> None:
+    chat = session.get(Chat, chat_id)
+    if chat:
+        chat.system_prompt = system_prompt
+        session.add(chat)
+        session.commit()
+
+
+def update_chat_system_prompt_sync(chat_id: int, system_prompt: str) -> None:
+    with Session(engine) as session:
+        update_chat_system_prompt(session, chat_id, system_prompt)
+
+
+def get_top_news_context_by_chat(
+    session: Session, chat_id: int
+) -> Optional[TopNewsContext]:
+    return session.exec(
+        select(TopNewsContext).where(TopNewsContext.chat_id == chat_id)
+    ).first()

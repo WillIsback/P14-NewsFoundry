@@ -16,24 +16,37 @@ from api.models import (
 from core.auth import verify_user
 from core.llm_provider import (
     LLMMessage,
-    LLMRequest,
-    call_llm,
     compact_history_if_needed,
 )
-from core.prompts import CHAT_PROMPT
+from core.config import LLM_TIMEOUT_SECONDS
 from database.crud import (
     create_chat_sync,
     create_message_sync,
     get_chat_by_id_sync,
     get_chats_by_user_sync,
     get_messages_by_chat_sync,
+    update_chat_system_prompt_sync,
 )
 from database.models import MessageType, User
+from agents import Runner
+from core.agent.search_agent import chat_agent, generate_instructions
 
 
 async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     """Load history, compact if needed, call LLM, persist both messages."""
     now = datetime.now(timezone.utc).isoformat()
+
+    # Ensure the chat has a frozen system prompt (generated on first message).
+    # Using the stored prompt guarantees conversation continuity across days.
+    chat = await asyncio.to_thread(get_chat_by_id_sync, chat_id)
+    if chat and not chat.system_prompt:
+        frozen_prompt = generate_instructions()
+        await asyncio.to_thread(update_chat_system_prompt_sync, chat_id, frozen_prompt)
+        agent_instructions = frozen_prompt
+    else:
+        agent_instructions = chat.system_prompt if chat else generate_instructions()
+
+    active_agent = chat_agent.clone(instructions=agent_instructions)
 
     history = await asyncio.to_thread(get_messages_by_chat_sync, chat_id)
     llm_messages = [
@@ -42,6 +55,7 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
             content=m.content,
         )
         for m in history
+        if m.content  # skip messages with empty content (e.g. failed LLM responses)
     ]
     # Validate/sanitize user content using LLMMessage validator
     try:
@@ -53,10 +67,19 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
 
     llm_messages, ctx_info = await compact_history_if_needed(llm_messages)
 
+    # Build the input list in the OpenAI messages format expected by the Agents SDK.
+    # The agent's own system prompt (instructions) is injected by the SDK automatically;
+    # we only pass the conversation history here.
+    openai_messages = [
+        {"role": m.role, "content": m.content} for m in llm_messages
+    ]
+
     try:
-        llm_response = await call_llm(
-            LLMRequest(system_prompt=CHAT_PROMPT, messages=llm_messages)
+        result = await asyncio.wait_for(
+            Runner.run(active_agent, input=openai_messages),
+            timeout=LLM_TIMEOUT_SECONDS,
         )
+        response_content = result.final_output
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="LLM request timed out"
@@ -80,7 +103,7 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     ai_msg = await asyncio.to_thread(
         create_message_sync,
         chat_id,
-        llm_response.content,
+        response_content,
         ai_timestamp,
         MessageType.AI,
     )

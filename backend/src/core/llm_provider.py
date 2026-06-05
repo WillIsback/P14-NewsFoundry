@@ -106,6 +106,7 @@ class LLMStructuredRequest(BaseModel):
     model: str = Field(default=LLM_MODEL)
     temperature: float = Field(default=0.4, ge=0.0, le=2.0)
     max_tokens: int = Field(default=2048, gt=0, le=32768)
+    timeout: float | None = Field(default=None, gt=0, description="Override LLM_TIMEOUT_SECONDS for this request.")
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +142,8 @@ async def call_llm(request: LLMRequest) -> LLMResponse:
     messages = _build_openai_messages(request.system_prompt, request.messages)
 
     extra_body: dict[str, Any] = {}
-    if request.thinking:
+    if not request.thinking:
+        # Qwen3 enables thinking mode by default; disable it for plain responses.
         extra_body["chat_template_kwargs"] = {"enable_thinking": False}
 
     async with _semaphore:
@@ -186,6 +188,7 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
     # features are incompatible (free-form reasoning vs. strict JSON schema).
     extra_body: dict[str, Any] = {"chat_template_kwargs": {"enable_thinking": False}}
 
+    effective_timeout = request.timeout if request.timeout is not None else LLM_TIMEOUT_SECONDS
     async with _semaphore:
         completion = await asyncio.wait_for(
             _client.beta.chat.completions.parse(
@@ -196,7 +199,7 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
                 response_format=schema,
                 extra_body=extra_body,
             ),
-            timeout=LLM_TIMEOUT_SECONDS,
+            timeout=effective_timeout,
         )
 
     parsed = completion.choices[0].message.parsed
