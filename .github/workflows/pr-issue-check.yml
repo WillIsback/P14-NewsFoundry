@@ -12,6 +12,7 @@ jobs:
   validate-pr:
     name: Validate PR Links Issue
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: Check PR body references an issue
         env:
