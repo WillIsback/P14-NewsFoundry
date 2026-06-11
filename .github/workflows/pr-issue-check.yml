@@ -16,7 +16,12 @@ jobs:
       - name: Check PR body references an issue
         env:
           PR_BODY: "${{ github.event.pull_request.body }}"
+          PR_ACTOR: "${{ github.actor }}"
         run: |
+          if [ "$PR_ACTOR" = "dependabot[bot]" ]; then
+            echo "✅ Dependabot PR — issue link check skipped."
+            exit 0
+          fi
           if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves)[[:space:]]+#[0-9]+'; then
             echo "✅ PR references an issue. Ready for review."
           else
