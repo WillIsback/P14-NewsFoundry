@@ -75,6 +75,11 @@ def create_app() -> FastAPI:
     # Import only after config validation, to avoid early crashes from transitive imports.
     from api.router import setup_routers
     from database.database import Database
+    from agents import set_tracing_disabled
+
+    # Disable tracing — it would attempt to reach api.openai.com with our local
+    # vLLM API key, causing noise in the logs.
+    set_tracing_disabled(True)
 
     db = Database()
 

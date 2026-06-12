@@ -2,7 +2,7 @@ import { defineConfig } from '@kubb/core';
 import { pluginOas } from '@kubb/plugin-oas';
 import { pluginZod } from '@kubb/plugin-zod';
 
-const openApiUrl = process.env.KUBB_OPENAPI_URL ?? 'http://127.0.0.1:8000/openapi.json';
+const openApiUrl = process.env.KUBB_OPENAPI_URL ?? 'http://127.0.0.1:8000/api/openapi.json';
 
 export default defineConfig({
   root: '.',

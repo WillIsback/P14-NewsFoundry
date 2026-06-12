@@ -56,6 +56,12 @@ SEED_DEFAULT_USER = os.getenv("SEED_DEFAULT_USER", "false").lower() == "true"
 DEFAULT_USER_EMAIL: str | None = os.getenv("DEFAULT_USER_EMAIL")
 DEFAULT_USER_CREDENTIALS: str | None = os.getenv("DEFAULT_USER_PASSWORD")
 
+# WorldNewsAPI
+WORLDNEWSAPI_KEY: str = os.getenv("WORLDNEWSAPI_KEY", "")
+# En mode mock (ENVIRONMENT != "production"), retourne des données fixes
+# pour éviter d'atteindre le rate-limit pendant le développement local.
+WORLDNEWS_MOCK: bool = os.getenv("ENVIRONMENT", "development") != "production"
+
 # LLM Provider
 LLM_BASE_URL: str | None = os.getenv("LLM_BASE_URL")  # e.g. http://localhost:8000/v1
 LLM_API_KEY: str = os.getenv("LLM_API_KEY", "EMPTY")

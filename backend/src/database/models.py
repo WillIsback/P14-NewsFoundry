@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Optional
 
+from sqlalchemy import JSON, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -79,7 +80,9 @@ class Chat(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     date: str = Field(default=None)
+    system_prompt: Optional[str] = Field(default=None)
     messages: list[Message] = Relationship()
+    top_news_context: Optional["TopNewsContext"] = Relationship()
 
 
 class PressReview(SQLModel, table=True):
@@ -102,3 +105,29 @@ class PressReview(SQLModel, table=True):
     title: str = Field()
     description: str = Field()
     content: str = Field()
+
+
+class TopNewsContext(SQLModel, table=True):
+    """TopNewsContext model persisting the news pipeline result for a chat.
+
+    Attributes:
+        id: Auto-generated primary key.
+        chat_id: FK to the chat this context belongs to (unique: one context per chat).
+        date: Date of the news fetch (YYYY-MM-DD).
+        source_country: ISO 3166 country code (max 2 chars).
+        language: ISO 6391 language code (max 2 chars).
+        system_prompt: Full system prompt built from labeled clusters.
+        news: JSON array of labeled cluster dicts.
+        created_at: ISO-8601 timestamp of when the context was created.
+    """
+
+    __tablename__ = "topnewscontext"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    chat_id: int = Field(foreign_key="chat.id", unique=True, index=True)
+    date: str = Field()
+    source_country: str = Field(max_length=2)
+    language: str = Field(max_length=2)
+    system_prompt: str = Field()
+    news: list = Field(default=[], sa_column=Column(JSON, nullable=False))
+    created_at: str = Field()

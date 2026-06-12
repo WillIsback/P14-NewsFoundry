@@ -34,7 +34,7 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(BACKEND_ROOT / ".env")
 
-from core.config import ENVIRONMENT  # noqa: E402
+from core.config import DEFAULT_USER_CREDENTIALS, ENVIRONMENT  # noqa: E402
 from core.security import hash_password  # noqa: E402
 from database.database import engine  # noqa: E402
 from database.models import Chat, Message, MessageType, PressReview, User, UserRole  # noqa: E402
@@ -51,7 +51,9 @@ if ENVIRONMENT == "production":
 # Fixture data
 # ---------------------------------------------------------------------------
 SEED_EMAIL = "test@test.com"
-SEED_PASSWORD = "test1234"
+# Use the configured credential so seed and init_db() always agree.
+# Falls back to "test1234" only when the env var is not set (e.g. CI).
+SEED_PASSWORD = DEFAULT_USER_CREDENTIALS or "test1234"
 
 CHATS: list[dict] = [
     {
