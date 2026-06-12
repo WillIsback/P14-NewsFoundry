@@ -1,25 +1,22 @@
-"""Generic LLM call layer built on the AsyncOpenAI client.
+"""Couche d'appel LLM construite sur le client AsyncOpenAI.
 
-Provides two entry points:
-- ``call_llm``            — plain text response, optional thinking mode
-- ``call_llm_structured`` — structured output (Pydantic model), no thinking
+Deux points d'entrée publics :
+- ``call_llm``            — réponse texte brut, mode thinking optionnel
+- ``call_llm_structured`` — sortie structurée (modèle Pydantic), sans thinking
 
-Both entry points share:
-- Input sanitisation (length cap, control-char strip)
-- Asyncio semaphore for max-concurrency control
-- Per-call timeout via asyncio.wait_for
-- Typed request / response Pydantic models
+Helpers partagés déplacés dans ``utils.utils`` :
+- Sanitization / nettoyage des entrées → ``sanitize_text``
+- Estimation de tokens              → ``estimate_tokens``
+- Modèle de message                 → ``LLMMessage``
 """
 
 from __future__ import annotations
 
 import asyncio
-import re
-import unicodedata
 from typing import Any, TypeVar
 
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from core.config import (
     LLM_API_KEY,
@@ -28,13 +25,13 @@ from core.config import (
     LLM_COMPACT_THRESHOLD_RATIO,
     LLM_CONTEXT_WINDOW_TOKENS,
     LLM_MAX_CONCURRENT,
-    LLM_MAX_INPUT_CHARS,
     LLM_MODEL,
     LLM_TIMEOUT_SECONDS,
 )
+from utils.utils import LLMMessage, estimate_tokens  # noqa: F401 — re-exported
 
 # ---------------------------------------------------------------------------
-# Shared client (singleton)
+# Client partagé (singleton)
 # ---------------------------------------------------------------------------
 
 _client = AsyncOpenAI(
@@ -42,44 +39,19 @@ _client = AsyncOpenAI(
     base_url=LLM_BASE_URL,
 )
 
-# Semaphore prevents saturating the LLM server with concurrent requests.
+# Le sémaphore évite de saturer le serveur LLM avec des requêtes concurrentes.
 _semaphore = asyncio.Semaphore(LLM_MAX_CONCURRENT)
 
 T = TypeVar("T", bound=BaseModel)
 
-# ---------------------------------------------------------------------------
-# Control characters to strip (everything below U+0020 except tab/newline)
-# ---------------------------------------------------------------------------
-_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-
 
 # ---------------------------------------------------------------------------
-# Pydantic schemas for call inputs
+# Schémas Pydantic pour les appels LLM
 # ---------------------------------------------------------------------------
-
-
-class LLMMessage(BaseModel):
-    """A single chat message."""
-
-    role: str = Field(pattern=r"^(system|user|assistant)$")
-    content: str = Field(min_length=1)
-
-    @field_validator("content")
-    @classmethod
-    def sanitize_content(cls, v: str) -> str:
-        # Strip dangerous control characters (prompt injection vector)
-        v = _CONTROL_CHAR_RE.sub("", v)
-        # Normalize unicode to NFC to prevent homoglyph attacks
-        v = unicodedata.normalize("NFC", v)
-        if len(v) > LLM_MAX_INPUT_CHARS:
-            raise ValueError(
-                f"Message content exceeds maximum length of {LLM_MAX_INPUT_CHARS} characters"
-            )
-        return v
 
 
 class LLMRequest(BaseModel):
-    """Input schema for a plain-text LLM call."""
+    """Paramètres d'un appel LLM texte brut."""
 
     system_prompt: str = Field(min_length=1)
     messages: list[LLMMessage] = Field(min_length=1)
@@ -90,7 +62,7 @@ class LLMRequest(BaseModel):
 
 
 class LLMResponse(BaseModel):
-    """Output schema for a plain-text LLM call."""
+    """Résultat d'un appel LLM texte brut."""
 
     content: str
     model: str
@@ -99,7 +71,7 @@ class LLMResponse(BaseModel):
 
 
 class LLMStructuredRequest(BaseModel):
-    """Input schema for a structured-output LLM call."""
+    """Paramètres d'un appel LLM à sortie structurée."""
 
     system_prompt: str = Field(min_length=1)
     messages: list[LLMMessage] = Field(min_length=1)
@@ -107,12 +79,12 @@ class LLMStructuredRequest(BaseModel):
     temperature: float = Field(default=0.4, ge=0.0, le=2.0)
     max_tokens: int = Field(default=2048, gt=0, le=32768)
     timeout: float | None = Field(
-        default=None, gt=0, description="Override LLM_TIMEOUT_SECONDS for this request."
+        default=None, gt=0, description="Override LLM_TIMEOUT_SECONDS pour cet appel."
     )
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
+# Helper interne
 # ---------------------------------------------------------------------------
 
 
@@ -125,27 +97,25 @@ def _build_openai_messages(
 
 
 # ---------------------------------------------------------------------------
-# Public entry points
+# Points d'entrée publics
 # ---------------------------------------------------------------------------
 
 
 async def call_llm(request: LLMRequest) -> LLMResponse:
-    """Send a plain-text chat completion request to the LLM.
+    """Envoie une requête chat completion texte brut au LLM.
 
-    Supports optional thinking mode via ``extra_body`` (vLLM-compatible).
-    Thinking mode and structured output are mutually exclusive — use
-    ``call_llm_structured`` for JSON schema enforcement.
+    Supporte le mode thinking via ``extra_body`` (compatible vLLM).
+    Thinking et sortie structurée sont mutuellement exclusifs.
 
     Raises:
-        TimeoutError: if the LLM takes longer than ``LLM_TIMEOUT_SECONDS``.
-        APIStatusError: on 4xx/5xx responses from the provider.
-        APIConnectionError: on network-level failures.
+        TimeoutError: si le LLM dépasse ``LLM_TIMEOUT_SECONDS``.
+        APIStatusError: sur des réponses 4xx/5xx du provider.
+        APIConnectionError: sur des erreurs réseau.
     """
     messages = _build_openai_messages(request.system_prompt, request.messages)
 
     extra_body: dict[str, Any] = {}
     if not request.thinking:
-        # Qwen3 enables thinking mode by default; disable it for plain responses.
         extra_body["chat_template_kwargs"] = {"enable_thinking": False}
 
     async with _semaphore:
@@ -172,22 +142,17 @@ async def call_llm(request: LLMRequest) -> LLMResponse:
 
 
 async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) -> T:
-    """Send a structured-output chat completion request to the LLM.
+    """Envoie une requête à sortie structurée et valide contre ``schema``.
 
-    The response is parsed and validated against ``schema`` (a Pydantic model).
-    Thinking mode is intentionally disabled here — the two features are
-    incompatible (free-form reasoning vs. strict JSON schema).
+    Le mode thinking est intentionnellement désactivé — incompatible avec
+    le schéma JSON strict.
 
     Raises:
-        TimeoutError: if the LLM takes longer than ``LLM_TIMEOUT_SECONDS``.
-        APIStatusError: on 4xx/5xx responses from the provider.
-        APIConnectionError: on network-level failures.
-        ValidationError: if the response does not match ``schema``.
+        TimeoutError: si le LLM dépasse ``LLM_TIMEOUT_SECONDS``.
+        APIStatusError: sur des réponses 4xx/5xx du provider.
+        ValidationError: si la réponse ne correspond pas à ``schema``.
     """
     messages = _build_openai_messages(request.system_prompt, request.messages)
-
-    # Thinking mode is intentionally disabled for structured output — the two
-    # features are incompatible (free-form reasoning vs. strict JSON schema).
     extra_body: dict[str, Any] = {"chat_template_kwargs": {"enable_thinking": False}}
 
     effective_timeout = (
@@ -214,22 +179,17 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
 
 
 # ---------------------------------------------------------------------------
-# Context window management
+# Gestion de la fenêtre de contexte
 # ---------------------------------------------------------------------------
 
 
 class ContextWindowInfo(BaseModel):
-    """Snapshot of context window usage — returned to the frontend."""
+    """Instantané de l'utilisation de la fenêtre de contexte — renvoyé au frontend."""
 
     used_tokens: int
     limit_tokens: int
     usage_ratio: float  # 0.0 – 1.0
     was_compacted: bool
-
-
-def estimate_tokens(text: str) -> int:
-    """Rough token count: ~4 characters per token (GPT-family heuristic)."""
-    return max(1, len(text) // 4)
 
 
 def _estimate_history_tokens(messages: list[LLMMessage]) -> int:
@@ -251,26 +211,18 @@ def _build_context_info(
 async def compact_history_if_needed(
     messages: list[LLMMessage],
 ) -> tuple[list[LLMMessage], ContextWindowInfo]:
-    """Summarize old messages when the history approaches the context limit.
+    """Résume les anciens messages quand l'historique approche la limite.
 
-    Keeps the ``LLM_COMPACT_RECENT_KEEP`` most recent messages verbatim and
-    replaces everything before them with a single condensed summary produced
-    by the LLM. The current session is preserved — nothing is deleted from
-    the database.
-
-    This function must be called **before** ``call_llm``, not inside it, to
-    avoid nested semaphore acquisition.
+    Conserve les ``LLM_COMPACT_RECENT_KEEP`` messages récents verbatim et
+    remplace le reste par un résumé condensé produit par le LLM.
 
     Args:
-        messages: Ordered list of conversation messages (oldest first).
+        messages: Liste ordonnée de messages (plus ancien en premier).
 
     Returns:
-        (compacted_messages, context_info) where ``context_info`` carries
-        the token usage snapshot and the ``was_compacted`` flag for the
-        frontend.
+        (messages_compactés, context_info)
     """
-    # Import here to avoid circular import (prompts → llm_provider)
-    from core.prompts import COMPACTION_PROMPT
+    from core.prompts import COMPACTION_PROMPT  # évite l'import circulaire
 
     compact_threshold = int(LLM_CONTEXT_WINDOW_TOKENS * LLM_COMPACT_THRESHOLD_RATIO)
     current_tokens = _estimate_history_tokens(messages)

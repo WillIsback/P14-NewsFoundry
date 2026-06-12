@@ -461,20 +461,60 @@ class NewsApi:
         )
 
 
-def get_news_api() -> NewsApi:
-    """Retourne une instance NewsApi configurée avec la clé du .env."""
-    from core.config import WORLDNEWSAPI_KEY  # noqa: PLC0415
+def get_news_api() -> "NewsApi":
+    """Retourne une instance NewsApi configurée.
 
-    logger.debug(
-        "get_news_api — initialisation (clé présente: %s)", bool(WORLDNEWSAPI_KEY)
-    )
+    En développement (``WORLDNEWS_MOCK=True``), retourne un wrapper qui
+    intercepte les appels et renvoie des données fixes — évite d'atteindre
+    le rate-limit de 50 points/jour de l'API gratuite.
 
+    En production (``ENVIRONMENT=production``), appelle l'API réelle.
+    """
+    from core.config import WORLDNEWS_MOCK, WORLDNEWSAPI_KEY  # noqa: PLC0415
+
+    if WORLDNEWS_MOCK:
+        logger.info("get_news_api — mode MOCK activé (ENVIRONMENT != production)")
+        return _MockNewsApi()  # type: ignore[return-value]
+
+    logger.debug("get_news_api — mode RÉEL (clé présente: %s)", bool(WORLDNEWSAPI_KEY))
     configuration = Configuration(host="https://api.worldnewsapi.com")
     configuration.api_key["apiKey"] = WORLDNEWSAPI_KEY
     configuration.api_key["headerApiKey"] = WORLDNEWSAPI_KEY
-
     api_client = ApiClient(configuration)
     return NewsApi(api_client)
+
+
+class _MockNewsApi:
+    """Implémentation factice de NewsApi pour le développement local.
+
+    Respecte la même interface que ``NewsApi`` (duck typing) afin d'être
+    interchangeable sans modifier les consommateurs.
+    """
+
+    def top_news(
+        self,
+        source_country: str = "fr",
+        language: str = "fr",
+        var_date: Optional[str] = None,
+        **kwargs,
+    ) -> "TopNews200Response":
+        from core.worldnewsapi.mock_data import make_top_news_mock
+
+        effective_date = var_date or __import__("datetime").date.today().isoformat()
+        logger.debug("_MockNewsApi.top_news — date=%s", effective_date)
+        return make_top_news_mock(date=effective_date)
+
+    def search_news(
+        self,
+        text: Optional[str] = None,
+        language: Optional[str] = None,
+        number: Optional[int] = None,
+        **kwargs,
+    ) -> "SearchNews200Response":
+        from core.worldnewsapi.mock_data import make_search_news_mock
+
+        logger.debug("_MockNewsApi.search_news — query=%s", text)
+        return make_search_news_mock(query=text or "")
 
 
 def main() -> None:

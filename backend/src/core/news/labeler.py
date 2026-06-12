@@ -8,7 +8,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from core.llm_provider import LLMMessage, LLMStructuredRequest, call_llm_structured
+from core.llm_provider import LLMStructuredRequest, call_llm_structured
+from utils.utils import LLMMessage
 from core.news.reducer import ClusterInput
 from core.prompts import CLUSTER_LABELING_PROMPT
 

@@ -3,7 +3,6 @@ from typing import Annotated
 
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import ValidationError
 
 from api.models import (
     ApiResponse,
@@ -15,9 +14,9 @@ from api.models import (
 )
 from core.auth import verify_user
 from core.llm_provider import (
-    LLMMessage,
     compact_history_if_needed,
 )
+from utils.utils import LLMMessage, sanitize_text
 from core.config import LLM_TIMEOUT_SECONDS
 from database.crud import (
     create_chat_sync,
@@ -57,10 +56,10 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
         for m in history
         if m.content  # skip messages with empty content (e.g. failed LLM responses)
     ]
-    # Validate/sanitize user content using LLMMessage validator
+    # Validate/sanitize user content
     try:
-        sanitized_content = LLMMessage(role="user", content=content).content
-    except ValidationError as exc:
+        sanitized_content = sanitize_text(content)
+    except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
     llm_messages.append(LLMMessage(role="user", content=sanitized_content))

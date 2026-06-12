@@ -12,7 +12,8 @@ from api.models import (
     success_response,
 )
 from core.auth import verify_user
-from core.llm_provider import LLMMessage, LLMStructuredRequest, call_llm_structured
+from core.llm_provider import LLMStructuredRequest, call_llm_structured
+from utils.utils import LLMMessage
 from core.prompts import PRESS_REVIEW_PROMPT
 from database.crud import (
     create_press_review_sync,

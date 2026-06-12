@@ -45,6 +45,29 @@ export const apiResponseMessageDataSchema = z.object({
 	},
 });
 
+export const newsContextPublicSchema = z.object({
+	id: z.int(),
+	chat_id: z.int(),
+	date: z.string(),
+	source_country: z.string(),
+	language: z.string(),
+	system_prompt: z.string(),
+	news: z.array(z.object({}).catchall(z.any())),
+	created_at: z.string(),
+});
+
+export const apiResponseNewsContextPublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([newsContextPublicSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
 export const reviewPublicSchema = z.object({
 	id: z.int(),
 	title: z.string(),
@@ -73,7 +96,7 @@ export const messagePublicSchema = z.object({
 });
 
 /**
- * @description Snapshot of context window usage — returned to the frontend.
+ * @description Instantané de l\'utilisation de la fenêtre de contexte — renvoyé au frontend.
  */
 export const contextWindowInfoSchema = z
 	.object({
@@ -82,7 +105,9 @@ export const contextWindowInfoSchema = z
 		usage_ratio: z.number(),
 		was_compacted: z.boolean(),
 	})
-	.describe("Snapshot of context window usage — returned to the frontend.");
+	.describe(
+		"Instantané de l'utilisation de la fenêtre de contexte — renvoyé au frontend.",
+	);
 
 export const sendMessageResponseSchema = z.object({
 	chat_id: z.int(),
@@ -91,7 +116,7 @@ export const sendMessageResponseSchema = z.object({
 	},
 	get context() {
 		return contextWindowInfoSchema.describe(
-			"Snapshot of context window usage — returned to the frontend.",
+			"Instantané de l'utilisation de la fenêtre de contexte — renvoyé au frontend.",
 		);
 	},
 });
@@ -193,6 +218,15 @@ export const loginRequestSchema = z.object({
 	password: z.string(),
 });
 
+export const newsContextRequestSchema = z.object({
+	chat_id: z.int(),
+	date: z.optional(
+		z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.null()]),
+	),
+	source_country: z.optional(z.string().max(2).default("fr")),
+	language: z.optional(z.string().max(2).default("fr")),
+});
+
 export const sendMessageRequestSchema = z.object({
 	content: z.string().min(1).max(8000),
 });
@@ -272,28 +306,6 @@ export const chatGetMessagesQueryResponseSchema = z.lazy(
 	() => chatGetMessages200Schema,
 );
 
-/**
- * @description Successful Response
- */
-export const chatNewChatMessage201Schema = z.lazy(
-	() => apiResponseSendMessageResponseSchema,
-);
-
-/**
- * @description Validation Error
- */
-export const chatNewChatMessage422Schema = z.lazy(
-	() => HTTPValidationErrorSchema,
-);
-
-export const chatNewChatMessageMutationRequestSchema = z.lazy(
-	() => sendMessageRequestSchema,
-);
-
-export const chatNewChatMessageMutationResponseSchema = z.lazy(
-	() => chatNewChatMessage201Schema,
-);
-
 export const chatContinueChatMessagePathParamsSchema = z.object({
 	chat_id: z.coerce.number().int(),
 });
@@ -323,6 +335,28 @@ export const chatContinueChatMessageMutationResponseSchema = z.lazy(
 /**
  * @description Successful Response
  */
+export const chatNewChatMessage201Schema = z.lazy(
+	() => apiResponseSendMessageResponseSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const chatNewChatMessage422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const chatNewChatMessageMutationRequestSchema = z.lazy(
+	() => sendMessageRequestSchema,
+);
+
+export const chatNewChatMessageMutationResponseSchema = z.lazy(
+	() => chatNewChatMessage201Schema,
+);
+
+/**
+ * @description Successful Response
+ */
 export const reviewGetReviews200Schema = z.lazy(
 	() => apiResponseListReviewPublicSchema,
 );
@@ -345,6 +379,16 @@ export const reviewCreateReview422Schema = z.lazy(
 	() => HTTPValidationErrorSchema,
 );
 
+/**
+ * @description LLM provider error
+ */
+export const reviewCreateReview502Schema = z.any();
+
+/**
+ * @description LLM request timed out
+ */
+export const reviewCreateReview504Schema = z.any();
+
 export const reviewCreateReviewMutationRequestSchema = z.lazy(
 	() => createReviewRequestSchema,
 );
@@ -356,6 +400,43 @@ export const reviewCreateReviewMutationResponseSchema = z.lazy(
 /**
  * @description Successful Response
  */
-export const hello200Schema = z.lazy(() => apiResponseMessageDataSchema);
+export const newsCreateNewsContext201Schema = z.lazy(
+	() => apiResponseNewsContextPublicSchema,
+);
 
-export const helloQueryResponseSchema = z.lazy(() => hello200Schema);
+/**
+ * @description Validation Error
+ */
+export const newsCreateNewsContext422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const newsCreateNewsContextMutationRequestSchema = z.lazy(
+	() => newsContextRequestSchema,
+);
+
+export const newsCreateNewsContextMutationResponseSchema = z.lazy(
+	() => newsCreateNewsContext201Schema,
+);
+
+export const newsGetNewsContextPathParamsSchema = z.object({
+	chat_id: z.coerce.number().int(),
+});
+
+/**
+ * @description Successful Response
+ */
+export const newsGetNewsContext200Schema = z.lazy(
+	() => apiResponseNewsContextPublicSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const newsGetNewsContext422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const newsGetNewsContextQueryResponseSchema = z.lazy(
+	() => newsGetNewsContext200Schema,
+);

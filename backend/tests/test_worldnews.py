@@ -551,19 +551,28 @@ class TestGetNewsApi:
     """Vérifie que get_news_api configure correctement l'ApiClient."""
 
     def test_returns_news_api_instance(self):
-        with patch("core.config.WORLDNEWSAPI_KEY", "fake-key-for-test"):
+        with (
+            patch("core.config.WORLDNEWSAPI_KEY", "fake-key-for-test"),
+            patch("core.config.WORLDNEWS_MOCK", False),
+        ):
             api = get_news_api()
         assert isinstance(api, NewsApi)
 
     def test_api_key_is_set_in_configuration(self):
-        with patch("core.config.WORLDNEWSAPI_KEY", "my-secret-key"):
+        with (
+            patch("core.config.WORLDNEWSAPI_KEY", "my-secret-key"),
+            patch("core.config.WORLDNEWS_MOCK", False),
+        ):
             api = get_news_api()
         config = api.api_client.configuration
         assert config.api_key.get("apiKey") == "my-secret-key"
         assert config.api_key.get("headerApiKey") == "my-secret-key"
 
     def test_host_is_worldnewsapi(self):
-        with patch("core.config.WORLDNEWSAPI_KEY", "fake-key-for-test"):
+        with (
+            patch("core.config.WORLDNEWSAPI_KEY", "fake-key-for-test"),
+            patch("core.config.WORLDNEWS_MOCK", False),
+        ):
             api = get_news_api()
         assert "worldnewsapi.com" in api.api_client.configuration.host
 
