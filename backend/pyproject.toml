@@ -17,6 +17,7 @@ dependencies = [
     "openai>=2.36.0",
     "sentry-sdk>=2.60.0",
     "openai-agents>=0.17.4",
+    "worldnewsapi>=2.2.0",
 ]
 
 [tool.pytest.ini_options]

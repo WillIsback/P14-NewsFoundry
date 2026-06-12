@@ -72,6 +72,7 @@ dependencies = [
     { name = "sentry-sdk" },
     { name = "sqlmodel" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "worldnewsapi" },
 ]
 
 [package.dev-dependencies]
@@ -96,6 +97,7 @@ requires-dist = [
     { name = "sentry-sdk", specifier = ">=2.60.0" },
     { name = "sqlmodel", specifier = ">=0.0.38" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.46.0" },
+    { name = "worldnewsapi", specifier = ">=2.2.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1413,11 +1415,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.7.0"
+version = "2.0.7"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602 }
+sdist = { url = "https://files.pythonhosted.org/packages/af/47/b215df9f71b4fdba1025fc05a77db2ad243fa0926755a52c5e71659f4e3c/urllib3-2.0.7.tar.gz", hash = "sha256:c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84", size = 282546 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087 },
+    { url = "https://files.pythonhosted.org/packages/d2/b2/b157855192a68541a91ba7b2bbcb91f1b4faa51f8bae38d8005c034be524/urllib3-2.0.7-py3-none-any.whl", hash = "sha256:fdb6d215c776278489906c2f8916e6e7d4f5a9b602ccbcfdf7f016fc8da0596e", size = 124213 },
 ]
 
 [[package]]
@@ -1551,4 +1553,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/86/eb/20b6cdf273913d0ad05a6a14aed4b9a85591c18a987a3d47f20fa13dcc47/websockets-15.0.1-cp313-cp313-win32.whl", hash = "sha256:ba9e56e8ceeeedb2e080147ba85ffcd5cd0711b89576b83784d8605a7df455fa", size = 176393 },
     { url = "https://files.pythonhosted.org/packages/1b/6c/c65773d6cab416a64d191d6ee8a8b1c68a09970ea6909d16965d26bfed1e/websockets-15.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561", size = 176837 },
     { url = "https://files.pythonhosted.org/packages/fa/a8/5b41e0da817d64113292ab1f8247140aac61cbf6cfd085d6a0fa77f4984f/websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f", size = 169743 },
+]
+
+[[package]]
+name = "worldnewsapi"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/11/7da9de319fcf8af9ca43bb4835bc622a99117d1706d2b437d9b4a75bacc2/worldnewsapi-2.2.0.tar.gz", hash = "sha256:fa36d2f8a6a5a8ec98a5194149395c3da410cb2eb20ddb570116c1e3ab57e6a7", size = 34214 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/c4/be2d858a778ce9b60fe1316eb076f53c2e4af3970e65c57cbab96045ecbd/worldnewsapi-2.2.0-py3-none-any.whl", hash = "sha256:e769c7ebce429f028148224feb84eb922cda3bc3c4bc54a090c93db8887c1aa0", size = 51287 },
 ]
