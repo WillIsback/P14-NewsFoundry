@@ -11,9 +11,12 @@ TS_SOCKET=/app/.tailscale/tailscaled.sock
 TS_STATEDIR=/app/.tailscale
 
 echo "[entrypoint] starting tailscaled (userspace networking)…"
+# SOCKS5 (raw TCP tunnel) plutôt que le proxy HTTP sortant : ce dernier fait
+# hang les POST /chat/completions vers vLLM (les GET passent, les POST non).
+# L'app route le LLM via LLM_PROXY_URL=socks5://localhost:1055.
 tailscaled \
   --tun=userspace-networking \
-  --outbound-http-proxy-listen=localhost:1055 \
+  --socks5-server=localhost:1055 \
   --statedir="$TS_STATEDIR" \
   --socket="$TS_SOCKET" &
 
