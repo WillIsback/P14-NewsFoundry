@@ -13,10 +13,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from openai import AsyncOpenAI
 from agents import Agent, ModelSettings, OpenAIChatCompletionsModel
 
-from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
+from core.config import LLM_MODEL
+from core.llm_client import build_llm_client
 from core.agent.tools import get_top_news, search_news
 
 
@@ -50,7 +50,7 @@ def _build_instructions(ctx, agent) -> str:
     return generate_instructions()
 
 
-_openai_client = AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+_openai_client = build_llm_client()
 
 chat_agent = Agent(
     name="newsfoundry_chat_agent",
