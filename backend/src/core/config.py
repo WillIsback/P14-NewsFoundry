@@ -66,6 +66,9 @@ WORLDNEWS_MOCK: bool = os.getenv("ENVIRONMENT", "development") != "production"
 LLM_BASE_URL: str | None = os.getenv("LLM_BASE_URL")  # e.g. http://localhost:8000/v1
 LLM_API_KEY: str = os.getenv("LLM_API_KEY", "EMPTY")
 LLM_MODEL: str = os.getenv("LLM_MODEL", "default")
+# Optional local proxy for LLM egress (e.g. http://localhost:1055 — Tailscale
+# outbound HTTP proxy inside the container). Empty in dev/CI → direct calls.
+LLM_PROXY_URL: str | None = os.getenv("LLM_PROXY_URL")
 LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
 LLM_MAX_CONCURRENT: int = int(os.getenv("LLM_MAX_CONCURRENT", "5"))
 LLM_MAX_INPUT_CHARS: int = int(os.getenv("LLM_MAX_INPUT_CHARS", "8000"))
