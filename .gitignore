@@ -17,3 +17,6 @@ wheels/
 actions-runner/
 OC-P14/
 OC-P14/*
+.vercel
+
+docs/superpowers
