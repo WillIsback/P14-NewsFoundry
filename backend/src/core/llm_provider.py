@@ -15,12 +15,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any, TypeVar
 
-from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
 from core.config import (
-    LLM_API_KEY,
-    LLM_BASE_URL,
     LLM_COMPACT_RECENT_KEEP,
     LLM_COMPACT_THRESHOLD_RATIO,
     LLM_CONTEXT_WINDOW_TOKENS,
@@ -28,16 +25,14 @@ from core.config import (
     LLM_MODEL,
     LLM_TIMEOUT_SECONDS,
 )
+from core.llm_client import build_llm_client
 from utils.utils import LLMMessage, estimate_tokens  # noqa: F401 — re-exported
 
 # ---------------------------------------------------------------------------
 # Client partagé (singleton)
 # ---------------------------------------------------------------------------
 
-_client = AsyncOpenAI(
-    api_key=LLM_API_KEY,
-    base_url=LLM_BASE_URL,
-)
+_client = build_llm_client()
 
 # Le sémaphore évite de saturer le serveur LLM avec des requêtes concurrentes.
 _semaphore = asyncio.Semaphore(LLM_MAX_CONCURRENT)

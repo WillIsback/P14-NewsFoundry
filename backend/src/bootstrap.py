@@ -41,8 +41,7 @@ from core.security import hash_password
 from database.database import run_migrations
 from database.models import Chat, Message, MessageType, PressReview, User, UserRole
 from agents import set_default_openai_client
-from openai import AsyncOpenAI
-from core.config import LLM_API_KEY, LLM_BASE_URL
+from core.llm_client import build_llm_client
 
 # ---------------------------------------------------------------------------
 # Fixture data (same as dev seed, linked to the admin user)
@@ -458,7 +457,7 @@ Examples:
     sys.exit(0)
 
 
-set_default_openai_client(AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL))
+set_default_openai_client(build_llm_client())
 
 if __name__ == "__main__":
     main()

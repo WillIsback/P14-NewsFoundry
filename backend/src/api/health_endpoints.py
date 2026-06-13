@@ -18,16 +18,15 @@ import time
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from openai import AsyncOpenAI
 
 from core.config import (
     ENVIRONMENT,
-    LLM_API_KEY,
     LLM_BASE_URL,
     LLM_MODEL,
     LLM_TIMEOUT_SECONDS,
     WORLDNEWS_MOCK,
 )
+from core.llm_client import build_llm_client
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ async def _check_llm() -> dict:
         return {"status": "error", "detail": "LLM_BASE_URL not configured"}
 
     try:
-        client = AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+        client = build_llm_client()
         t0 = time.monotonic()
         models = await asyncio.wait_for(
             client.models.list(), timeout=_HEALTH_LLM_TIMEOUT
