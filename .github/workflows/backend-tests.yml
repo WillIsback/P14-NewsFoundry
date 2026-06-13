@@ -72,8 +72,9 @@ jobs:
         env:
           # L'URL Railway de production — Railway déploie avant que ce job tourne
           BASE_URL: ${{ vars.RAILWAY_BACKEND_URL || 'https://p14-newsfoundry-production.up.railway.app' }}
-          DEFAULT_USER_EMAIL: ${{ secrets.DEFAULT_USER_EMAIL }}
-          DEFAULT_USER_PASSWORD: ${{ secrets.DEFAULT_USER_PASSWORD }}
+          # Compte de test = compte admin créé par bootstrap.py (secrets ADMIN_*)
+          DEFAULT_USER_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          DEFAULT_USER_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           # Le runner self-hosted a accès au LLM via Tailscale
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
