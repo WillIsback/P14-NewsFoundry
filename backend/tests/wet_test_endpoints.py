@@ -40,8 +40,19 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
-TEST_EMAIL = os.getenv("DEFAULT_USER_EMAIL", os.getenv("TEST_EMAIL", "test@test.com"))
-TEST_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", os.getenv("TEST_PASSWORD", "test"))
+# Use `or`-chaining so an empty secret (GitHub expands missing secrets to "")
+# doesn't shadow the fallback default — os.getenv(key, default) returns "" when
+# the var is set-but-empty, whereas `os.getenv(key) or fallback` keeps looking.
+TEST_EMAIL = (
+    os.getenv("DEFAULT_USER_EMAIL")
+    or os.getenv("TEST_EMAIL")
+    or "test@test.com"
+)
+TEST_PASSWORD = (
+    os.getenv("DEFAULT_USER_PASSWORD")
+    or os.getenv("TEST_PASSWORD")
+    or "test"
+)
 
 LLM_TIMEOUT = 180  # secondes — le LLM local peut être lent
 # Étapes consommant le LLM et/ou l'API WorldNews. Désactivées par défaut pour
@@ -143,18 +154,32 @@ def get_json(r: httpx.Response) -> dict:
 # ── 1. Santé du serveur ───────────────────────────────────────────────────────
 
 
+_HEALTH_RETRIES = 3
+_HEALTH_BACKOFF = [5, 10, 20]  # secondes entre tentatives
+
+
 def test_health(client: httpx.Client) -> bool:
     section("1 · Santé du serveur")
     name = "Serveur accessible (GET / → 2xx/4xx, pas de ConnectError)"
-    try:
-        r = client.get("/")
-        if r.status_code in (200, 404, 422):
-            results.ok(name, f"HTTP {r.status_code}")
-        else:
+    # Railway cold-starts can take several seconds after a deploy — retry briefly.
+    last_exc: Exception | None = None
+    for attempt in range(_HEALTH_RETRIES):
+        try:
+            r = client.get("/")
+            if r.status_code in (200, 404, 422):
+                results.ok(name, f"HTTP {r.status_code}")
+                last_exc = None
+                break
             results.fail(name, f"statut inattendu : {r.status_code}")
             return False
-    except httpx.ConnectError as exc:
-        results.fail(name, f"impossible de joindre {BASE_URL}: {exc}")
+        except httpx.ConnectError as exc:
+            last_exc = exc
+            if attempt < _HEALTH_RETRIES - 1:
+                wait = _HEALTH_BACKOFF[attempt]
+                print(f"  {YELLOW}⟳{RESET}  ConnectError — retry dans {wait}s ({attempt + 1}/{_HEALTH_RETRIES - 1})")
+                time.sleep(wait)
+    if last_exc is not None:
+        results.fail(name, f"impossible de joindre {BASE_URL} après {_HEALTH_RETRIES} tentatives: {last_exc}")
         return False
 
     name = "GET /api/v1/health — DB + LLM joignables → status ok"
