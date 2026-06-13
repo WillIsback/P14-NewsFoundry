@@ -67,6 +67,17 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
 
     llm_messages.append(LLMMessage(role="user", content=sanitized_content))
 
+    # Persist the user message BEFORE calling the LLM, so it survives a timeout,
+    # a client disconnect (CancelledError), or an LLM error — the chat is never
+    # left empty and the user's query is never lost.
+    await asyncio.to_thread(
+        create_message_sync,
+        chat_id,
+        sanitized_content,
+        now,
+        MessageType.USER,
+    )
+
     llm_messages, ctx_info = await compact_history_if_needed(llm_messages)
 
     # Build the input list in the OpenAI messages format expected by the Agents SDK.
@@ -103,16 +114,7 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
             status_code=status.HTTP_502_BAD_GATEWAY, detail="LLM provider error"
         )
 
-    # Persist user message first (chronological order)
-    await asyncio.to_thread(
-        create_message_sync,
-        chat_id,
-        sanitized_content,
-        now,
-        MessageType.USER,
-    )
-
-    # Persist AI response
+    # Persist AI response (the user message was already persisted before the LLM call)
     ai_timestamp = datetime.now(timezone.utc).isoformat()
     ai_msg = await asyncio.to_thread(
         create_message_sync,

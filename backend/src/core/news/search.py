@@ -54,6 +54,7 @@ async def search_news(
         number=capped,
         sort="publish-time",
         sort_direction="DESC",
+        _request_timeout=(5, 25),  # (connect, read) — évite un hang qui bloque le run
     )
 
     articles = response.news or []

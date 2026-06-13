@@ -54,6 +54,7 @@ async def get_top_news(
         source_country=source_country,
         language=language,
         var_date=effective_date,
+        _request_timeout=(5, 25),  # (connect, read) — évite un hang qui bloque le run
     )
 
     clusters = reduce_clusters(response, top_n=TOP_NEWS_CLUSTERS)
