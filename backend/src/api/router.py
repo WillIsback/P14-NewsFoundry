@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from api.authentication_endpoints import build_authentication_router
 from api.chat_endpoints import build_chat_router
+from api.health_endpoints import build_health_router
 from api.news_endpoints import build_news_router
 from api.review_endpoints import build_review_router
 from core.config import API_V1_PREFIX
@@ -22,3 +23,6 @@ def setup_routers(app: FastAPI, db: Database) -> None:
 
     news_router = build_news_router()
     app.include_router(news_router, prefix=API_V1_PREFIX)
+
+    health_router = build_health_router()
+    app.include_router(health_router, prefix=API_V1_PREFIX)
