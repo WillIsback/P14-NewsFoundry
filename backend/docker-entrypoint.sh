@@ -17,6 +17,19 @@ tailscaled \
   --statedir="$TS_STATEDIR" \
   --socket="$TS_SOCKET" &
 
+# Wait for the tailscaled control socket before calling `tailscale up`,
+# otherwise `up` races the daemon and fails with "failed to connect".
+echo "[entrypoint] waiting for tailscaled socket…"
+i=0
+while [ ! -S "$TS_SOCKET" ]; do
+  i=$((i + 1))
+  if [ "$i" -ge 100 ]; then
+    echo "[entrypoint] ERROR: tailscaled socket not ready after 10s — aborting" >&2
+    exit 1
+  fi
+  sleep 0.1
+done
+
 echo "[entrypoint] bringing tailscale up…"
 # `tailscale up` blocks until the node is authenticated and Running; with
 # `set -e`, an auth failure aborts the container (visible failed deploy).
