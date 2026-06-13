@@ -44,6 +44,14 @@ TEST_EMAIL = os.getenv("DEFAULT_USER_EMAIL", os.getenv("TEST_EMAIL", "test@test.
 TEST_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD", os.getenv("TEST_PASSWORD", "test"))
 
 LLM_TIMEOUT = 180  # secondes — le LLM local peut être lent
+# Étapes consommant le LLM et/ou l'API WorldNews. Désactivées par défaut pour
+# préserver le quota WorldNewsAPI et éviter les timeouts sous GPU partagé en CI.
+# Activer avec WET_TEST_LLM=1 pour une exécution complète (local / GPU libre).
+RUN_LLM_STEPS = os.getenv("WET_TEST_LLM", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
 
 # ── ANSI colours ─────────────────────────────────────────────────────────────
 
@@ -260,6 +268,15 @@ def test_chats_basic(client: httpx.Client, headers: dict) -> int | None:
         return None
     results.ok(name)
 
+    name = "GET /chats/999999/messages — chat inexistant → 404"
+    r = client.get("/api/v1/chats/999999/messages", headers=headers)
+    if assert_status(name, r, 404):
+        results.ok(name)
+
+    if not RUN_LLM_STEPS:
+        print(f"  {DIM}↷ génération LLM ignorée (WET_TEST_LLM non activé){RESET}")
+        return None
+
     name = "POST /chats/message — premier message → 201 + chat_id + content + context"
     t0 = time.time()
     r = client.post(
@@ -289,11 +306,6 @@ def test_chats_basic(client: httpx.Client, headers: dict) -> int | None:
             results.ok(name, f"{len(msgs)} messages")
         else:
             results.fail(name, f"attendu ≥2, reçu {len(msgs)}")
-
-    name = "GET /chats/999999/messages — chat inexistant → 404"
-    r = client.get("/api/v1/chats/999999/messages", headers=headers)
-    if assert_status(name, r, 404):
-        results.ok(name)
 
     return chat_id
 
@@ -482,42 +494,44 @@ def test_reviews(client: httpx.Client, headers: dict) -> None:
         return
     results.ok(name)
 
-    sample_articles = (
-        "Article 1 : L'IA générative transforme les rédactions. "
-        "Les journaux adoptent des outils d'IA pour accélérer la production de contenu. "
-        "Certains craignent une perte de qualité éditoriale.\n\n"
-        "Article 2 : OpenAI lance GPT-5, son modèle le plus puissant. "
-        "Les experts saluent les progrès en raisonnement mais soulèvent des questions éthiques."
-    )
-    name = "POST /reviews — création via LLM structuré → 201 + title + content"
-    t0 = time.time()
-    r = client.post(
-        "/api/v1/reviews",
-        json={"articles": sample_articles},
-        headers=headers,
-        timeout=LLM_TIMEOUT,
-    )
-    elapsed = time.time() - t0
-    if not assert_status(name, r, 201):
-        return
-    body = get_json(r)
-    ok = (
-        assert_field(name, body, "data", "id")
-        and assert_field(name, body, "data", "title")
-        and assert_field(name, body, "data", "content")
-    )
-    if ok:
-        title = body["data"]["title"]
-        results.ok(name, f"{elapsed:.1f}s — titre : {title!r}")
+    if RUN_LLM_STEPS:
+        sample_articles = (
+            "Article 1 : L'IA générative transforme les rédactions. "
+            "Les journaux adoptent des outils d'IA pour accélérer la production de contenu. "
+            "Certains craignent une perte de qualité éditoriale.\n\n"
+            "Article 2 : OpenAI lance GPT-5, son modèle le plus puissant. "
+            "Les experts saluent les progrès en raisonnement mais soulèvent des questions éthiques."
+        )
+        name = "POST /reviews — création via LLM structuré → 201 + title + content"
+        t0 = time.time()
+        r = client.post(
+            "/api/v1/reviews",
+            json={"articles": sample_articles},
+            headers=headers,
+            timeout=LLM_TIMEOUT,
+        )
+        elapsed = time.time() - t0
+        if assert_status(name, r, 201):
+            body = get_json(r)
+            ok = (
+                assert_field(name, body, "data", "id")
+                and assert_field(name, body, "data", "title")
+                and assert_field(name, body, "data", "content")
+            )
+            if ok:
+                title = body["data"]["title"]
+                results.ok(name, f"{elapsed:.1f}s — titre : {title!r}")
 
-    name = "GET /reviews — après création → ≥1 review"
-    r = client.get("/api/v1/reviews", headers=headers)
-    if assert_status(name, r, 200):
-        reviews = get_json(r).get("data", [])
-        if len(reviews) >= 1:
-            results.ok(name, f"{len(reviews)} review(s)")
-        else:
-            results.fail(name, "attendu ≥1 review après création, reçu 0")
+            name = "GET /reviews — après création → ≥1 review"
+            r = client.get("/api/v1/reviews", headers=headers)
+            if assert_status(name, r, 200):
+                reviews = get_json(r).get("data", [])
+                if len(reviews) >= 1:
+                    results.ok(name, f"{len(reviews)} review(s)")
+                else:
+                    results.fail(name, "attendu ≥1 review après création, reçu 0")
+    else:
+        print(f"  {DIM}↷ génération de review ignorée (WET_TEST_LLM non activé){RESET}")
 
     name = "POST /reviews — articles vides → 422"
     r = client.post("/api/v1/reviews", json={"articles": ""}, headers=headers)
@@ -564,6 +578,10 @@ def main() -> int:
     print(f"  Serveur : {CYAN}{BASE_URL}{RESET}")
     print(f"  Compte  : {TEST_EMAIL}")
     print(f"  Timeout : {LLM_TIMEOUT}s par appel LLM")
+    mode = (
+        "complet (LLM + WorldNews)" if RUN_LLM_STEPS else "léger (connectivité/contrat)"
+    )
+    print(f"  Mode    : {mode}")
     print(f"{'═' * 60}")
 
     with httpx.Client(base_url=BASE_URL, timeout=30) as client:
@@ -600,11 +618,12 @@ def main() -> int:
             except Exception:
                 results.fail("suite system_prompt", traceback.format_exc())
 
-        # 5. Agent routing
-        try:
-            test_agent_routing(client, headers)
-        except Exception:
-            results.fail("suite agent routing", traceback.format_exc())
+        # 5. Agent routing — consomme l'API WorldNews (désactivé par défaut)
+        if RUN_LLM_STEPS:
+            try:
+                test_agent_routing(client, headers)
+            except Exception:
+                results.fail("suite agent routing", traceback.format_exc())
 
         # 7. Press Reviews
         try:
