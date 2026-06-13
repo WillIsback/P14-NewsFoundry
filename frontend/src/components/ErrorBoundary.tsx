@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { Component, type ReactNode } from "react";
 
 interface Props {
@@ -17,7 +18,11 @@ export class ErrorBoundary extends Component<Props, State> {
 		this.state = { hasError: false };
 	}
 
-	static getDerivedStateFromError(): State {
+	static getDerivedStateFromError(error: unknown): State {
+		// Let Next.js control-flow errors (e.g. NEXT_REDIRECT thrown by
+		// redirect()) bubble up to the framework instead of rendering the
+		// fallback UI, so an expired session redirects to /login.
+		unstable_rethrow(error);
 		return { hasError: true };
 	}
 

@@ -1,5 +1,5 @@
 import "server-only";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import type { z } from "zod/v4";
 import { deleteSession } from "./session";
 import type { FetchJsonOptions, ServiceResult } from "./type.lib";
@@ -130,6 +130,10 @@ export async function fetchJson<TReq, TOk>(
 		});
 		return await handleResponse(response, successSchema, errorSchemas);
 	} catch (error) {
+		// `redirect()` (called in handleResponse on 401) throws a NEXT_REDIRECT
+		// control-flow error. Re-throw Next.js internal errors so the framework
+		// can handle them, instead of masking them as a generic network error.
+		unstable_rethrow(error);
 		if (error instanceof DOMException && error.name === "AbortError") {
 			return {
 				ok: false,
