@@ -1,5 +1,5 @@
 import "server-only";
-import { jwtVerify, SignJWT } from "jose";
+import { decodeJwt, jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import type { SessionTokenPayload } from "./type.lib";
 
@@ -17,12 +17,33 @@ const encodedKey = new TextEncoder().encode(secretKey);
  * @param payload - The session token payload to encrypt.
  * @returns A signed JWT string.
  */
-export async function encrypt(payload: SessionTokenPayload) {
+export async function encrypt(payload: SessionTokenPayload, expiresAt: Date) {
 	return new SignJWT(payload)
 		.setProtectedHeader({ alg: "HS256" })
 		.setIssuedAt()
-		.setExpirationTime("7d")
+		.setExpirationTime(Math.floor(expiresAt.getTime() / 1000))
 		.sign(encodedKey);
+}
+
+/**
+ * Derives the session expiry from the backend access token's `exp` claim, so the
+ * frontend session lifetime stays in sync with the backend token. This avoids a
+ * valid frontend cookie wrapping an already-expired backend token (which caused
+ * silent 401s after the backend token lapsed).
+ *
+ * Falls back to 30 minutes (the backend ACCESS_TOKEN_EXPIRE_MINUTES default) if
+ * the token cannot be decoded or has no `exp` claim.
+ */
+function getAccessTokenExpiry(accessToken: string): Date {
+	try {
+		const { exp } = decodeJwt(accessToken);
+		if (typeof exp === "number") {
+			return new Date(exp * 1000);
+		}
+	} catch {
+		// Fall through to the default below.
+	}
+	return new Date(Date.now() + 30 * 60 * 1000);
 }
 
 /**
@@ -64,12 +85,15 @@ export async function decrypt(
  * @param accessToken - The backend-issued JWT access token.
  */
 export async function createSession(userId: string, accessToken: string) {
-	const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-	const session = await encrypt({
-		userId,
-		expiresAt: expiresAt.toISOString(),
-		accessToken,
-	});
+	const expiresAt = getAccessTokenExpiry(accessToken);
+	const session = await encrypt(
+		{
+			userId,
+			expiresAt: expiresAt.toISOString(),
+			accessToken,
+		},
+		expiresAt,
+	);
 	const cookieStore = await cookies();
 
 	cookieStore.set("session", session, {
