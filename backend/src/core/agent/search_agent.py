@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from agents import Agent, ModelSettings, OpenAIChatCompletionsModel
 
-from core.config import LLM_MODEL
+from core.config import AGENT_MAX_TOKENS, LLM_MODEL
 from core.llm_client import build_llm_client
 from core.agent.tools import get_top_news, search_news
 
@@ -62,6 +62,8 @@ chat_agent = Agent(
     ),
     model_settings=ModelSettings(
         temperature=0.4,
+        # Borne la génération — résilience sous contention GPU partagée.
+        max_tokens=AGENT_MAX_TOKENS,
         # Désactive le thinking mode (Qwen3) — incompatible avec les tool calls.
         extra_body={"chat_template_kwargs": {"enable_thinking": False}},
     ),

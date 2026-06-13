@@ -71,6 +71,10 @@ LLM_MODEL: str = os.getenv("LLM_MODEL", "default")
 LLM_PROXY_URL: str | None = os.getenv("LLM_PROXY_URL")
 LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
 LLM_MAX_CONCURRENT: int = int(os.getenv("LLM_MAX_CONCURRENT", "5"))
+# Bound the agent's generation to stay resilient under shared-GPU contention.
+AGENT_MAX_TOKENS: int = int(os.getenv("AGENT_MAX_TOKENS", "800"))
+# Number of top-news clusters returned to the agent (smaller = shorter context/output).
+TOP_NEWS_CLUSTERS: int = int(os.getenv("TOP_NEWS_CLUSTERS", "5"))
 LLM_MAX_INPUT_CHARS: int = int(os.getenv("LLM_MAX_INPUT_CHARS", "8000"))
 LLM_CONTEXT_WINDOW_TOKENS: int = int(os.getenv("LLM_CONTEXT_WINDOW_TOKENS", "36000"))
 # Trigger compaction when history reaches this fraction of the context window (0.0–1.0)

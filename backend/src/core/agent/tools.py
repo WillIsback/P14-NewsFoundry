@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 
 from agents import function_tool
 
+from core.config import TOP_NEWS_CLUSTERS
 from core.news.search import search_news as _search_news
 from core.worldnewsapi.worldnews import get_news_api
 
@@ -55,7 +56,7 @@ async def get_top_news(
         var_date=effective_date,
     )
 
-    clusters = reduce_clusters(response, top_n=10)
+    clusters = reduce_clusters(response, top_n=TOP_NEWS_CLUSTERS)
 
     if not clusters:
         return f"Aucune actualité trouvée pour le {effective_date}."
