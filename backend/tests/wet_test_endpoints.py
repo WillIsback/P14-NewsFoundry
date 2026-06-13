@@ -142,12 +142,56 @@ def test_health(client: httpx.Client) -> bool:
         r = client.get("/")
         if r.status_code in (200, 404, 422):
             results.ok(name, f"HTTP {r.status_code}")
-            return True
-        results.fail(name, f"statut inattendu : {r.status_code}")
-        return False
+        else:
+            results.fail(name, f"statut inattendu : {r.status_code}")
+            return False
     except httpx.ConnectError as exc:
         results.fail(name, f"impossible de joindre {BASE_URL}: {exc}")
         return False
+
+    name = "GET /api/v1/health — DB + LLM joignables → status ok"
+    try:
+        r = client.get("/api/v1/health", timeout=20)
+    except httpx.ConnectError as exc:
+        results.fail(name, f"ConnectError: {exc}")
+        return False
+
+    body = get_json(r)
+    overall = body.get("status", "unknown")
+    subsystems = body.get("subsystems", {})
+    db_status = subsystems.get("db", {}).get("status", "?")
+    llm_status = subsystems.get("llm", {}).get("status", "?")
+    llm_latency = subsystems.get("llm", {}).get("latency_ms")
+    env = body.get("environment", "?")
+    worldnews_mock = body.get("worldnews_mock")
+
+    detail = (
+        f"overall={overall} db={db_status} llm={llm_status}"
+        + (f" llm_latency={llm_latency}ms" if llm_latency else "")
+        + f" env={env} worldnews_mock={worldnews_mock}"
+    )
+
+    if overall == "ok":
+        results.ok(name, detail)
+    elif overall == "degraded":
+        # Degraded n'est pas bloquant — le serveur peut fonctionner partiellement
+        results.fail(name, f"DEGRADED — {detail}")
+        # Log les détails complets pour faciliter le diagnostic
+        print(f"       {YELLOW}Détail subsystems :{RESET} {subsystems}")
+        return False
+    else:
+        results.fail(name, f"ERREUR — {detail}")
+        print(f"       {RED}Détail subsystems :{RESET} {subsystems}")
+        return False
+
+    # Avertissement explicite si worldnews_mock=False en dehors de la prod attendue
+    if worldnews_mock is False and env != "production":
+        print(
+            f"       {YELLOW}⚠ worldnews_mock=False en env={env!r} "
+            f"— risque de consommer le quota WorldNewsAPI{RESET}"
+        )
+
+    return True
 
 
 # ── 2. Authentification ───────────────────────────────────────────────────────

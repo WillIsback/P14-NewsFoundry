@@ -1,7 +1,9 @@
+import asyncio
+import logging
 from datetime import datetime, timezone
 from typing import Annotated
 
-import asyncio
+from agents import Runner
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.models import (
@@ -12,12 +14,12 @@ from api.models import (
     SendMessageResponse,
     success_response,
 )
+from core.agent.search_agent import chat_agent, generate_instructions
 from core.auth import verify_user
+from core.config import LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
 from core.llm_provider import (
     compact_history_if_needed,
 )
-from utils.utils import LLMMessage, sanitize_text
-from core.config import LLM_TIMEOUT_SECONDS
 from database.crud import (
     create_chat_sync,
     create_message_sync,
@@ -27,8 +29,9 @@ from database.crud import (
     update_chat_system_prompt_sync,
 )
 from database.models import MessageType, User
-from agents import Runner
-from core.agent.search_agent import chat_agent, generate_instructions
+from utils.utils import LLMMessage, sanitize_text
+
+logger = logging.getLogger(__name__)
 
 
 async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
@@ -78,10 +81,24 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
         )
         response_content = result.final_output
     except asyncio.TimeoutError:
+        logger.error(
+            "[chat] LLM timeout after %.1fs — chat_id=%s base_url=%s model=%s",
+            LLM_TIMEOUT_SECONDS,
+            chat_id,
+            LLM_BASE_URL,
+            LLM_MODEL,
+        )
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="LLM request timed out"
         )
-    except Exception:
+    except Exception as exc:
+        logger.error(
+            "[chat] LLM provider error — chat_id=%s exc=%r base_url=%s model=%s",
+            chat_id,
+            exc,
+            LLM_BASE_URL,
+            LLM_MODEL,
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="LLM provider error"
         )

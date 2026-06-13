@@ -1,0 +1,79 @@
+name: Production Smoke Test
+
+# Déclenché manuellement ou via l'API Railway après un déploiement réussi.
+# Usage manuel : Actions → "Production Smoke Test" → Run workflow
+# Usage Railway : POST /api/github/dispatches (webhook post-deploy)
+#
+# Ce job frappe uniquement /api/v1/health — pas de LLM call, pas de données
+# créées — il valide uniquement la connectivité infra (DB + LLM via Tailscale).
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_url:
+        description: "URL du backend Railway à tester"
+        required: false
+        default: "https://p14-newsfoundry-production.up.railway.app"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: Health check post-déploiement
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: "Health check — DB + LLM"
+        env:
+          BACKEND_URL: ${{ github.event.inputs.backend_url || 'https://p14-newsfoundry-production.up.railway.app' }}
+        run: |
+          echo "🔍 Smoke test → ${BACKEND_URL}/api/v1/health"
+
+          # Retry 3 fois avec 10s d'intervalle (Railway peut mettre quelques
+          # secondes à être prêt après le déploiement)
+          for attempt in 1 2 3; do
+            echo "Tentative ${attempt}/3..."
+            response=$(curl -sf --max-time 20 "${BACKEND_URL}/api/v1/health" || true)
+
+            if [ -z "$response" ]; then
+              echo "  ⏳ Pas de réponse, on attend 10s..."
+              sleep 10
+              continue
+            fi
+
+            echo "  Réponse : $response"
+
+            overall=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))")
+            db_status=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('subsystems',{}).get('db',{}).get('status','?'))")
+            llm_status=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('subsystems',{}).get('llm',{}).get('status','?'))")
+            llm_detail=$(echo "$response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('subsystems',{}).get('llm',{}).get('detail',''))")
+
+            echo ""
+            echo "  overall  : $overall"
+            echo "  db       : $db_status"
+            echo "  llm      : $llm_status"
+            [ -n "$llm_detail" ] && echo "  llm detail: $llm_detail"
+
+            if [ "$overall" = "ok" ]; then
+              echo ""
+              echo "✅ Smoke test réussi — production opérationnelle."
+              exit 0
+            elif [ "$overall" = "degraded" ]; then
+              echo ""
+              echo "⚠️  Production DEGRADED — vérifier la connectivité Tailscale/LLM."
+              echo "    DB=$db_status  LLM=$llm_status  detail=${llm_detail}"
+              exit 1
+            else
+              echo "  ❌ Statut=$overall — DB=$db_status  LLM=$llm_status"
+              if [ $attempt -lt 3 ]; then
+                sleep 10
+              fi
+            fi
+          done
+
+          echo ""
+          echo "❌ Smoke test échoué après 3 tentatives."
+          echo "   Vérifier : Tailscale Railway→vLLM, DATABASE_URL, LLM_BASE_URL"
+          exit 1

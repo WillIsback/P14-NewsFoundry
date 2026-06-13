@@ -40,3 +40,43 @@ jobs:
           ENVIRONMENT: testing
           CI: "true"
         run: uv run pytest tests/ -v --tb=short
+
+  # ── Wet test E2E — Runner self-hosted avec accès au LLM via Tailscale ──────
+  # Ce job tourne uniquement après un push sur main (pas sur les PR) car il
+  # cible le backend Railway de production et consomme de vrais tokens LLM.
+  # Il est intentionnellement séparé du job pytest (qui mocke tout) pour
+  # valider la parité dev/prod sur la chaîne complète : Vercel → Railway → LLM.
+  wet-test:
+    name: E2E wet test (Railway + LLM)
+    # Seulement sur push main, pas sur PR — évite les doubles runs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    timeout-minutes: 15
+    needs: test  # pytest doit passer avant de lancer le wet test
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run wet tests against Railway production
+        env:
+          # L'URL Railway de production — Railway déploie avant que ce job tourne
+          BASE_URL: ${{ vars.RAILWAY_BACKEND_URL || 'https://p14-newsfoundry-production.up.railway.app' }}
+          DEFAULT_USER_EMAIL: ${{ secrets.DEFAULT_USER_EMAIL }}
+          DEFAULT_USER_PASSWORD: ${{ secrets.DEFAULT_USER_PASSWORD }}
+          # Le runner self-hosted a accès au LLM via Tailscale
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+        run: uv run python tests/wet_test_endpoints.py
+
