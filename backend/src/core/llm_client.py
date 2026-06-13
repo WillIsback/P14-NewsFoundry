@@ -10,15 +10,20 @@ from __future__ import annotations
 
 import httpx
 from openai import AsyncOpenAI
+from types import EllipsisType
 
 from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_PROXY_URL
 
 
-def build_llm_client(proxy_url: str | None = ...) -> AsyncOpenAI:
+def build_llm_client(proxy_url: str | None | EllipsisType = ...) -> AsyncOpenAI:
     """Construit un AsyncOpenAI, proxifié si un proxy est configuré.
 
     proxy_url=... (sentinelle) → lit ``LLM_PROXY_URL`` depuis la config.
     Passer explicitement ``None`` force l'absence de proxy.
+
+    Le ``AsyncOpenAI`` retourné est propriétaire du ``httpx.AsyncClient`` créé ;
+    l'appelant est responsable de fermer le client ``AsyncOpenAI`` (ce qui ferme
+    le client httpx sous-jacent).
     """
     if proxy_url is ...:
         proxy_url = LLM_PROXY_URL

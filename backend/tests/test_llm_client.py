@@ -18,7 +18,7 @@ def test_build_llm_client_uses_proxy_when_url_provided():
         assert kwargs["http_client"] is fake_http_client
 
 
-def test_build_llm_client_no_proxy_when_url_empty():
+def test_build_llm_client_no_proxy_when_url_is_none():
     with (
         patch.object(llm_client, "httpx") as mock_httpx,
         patch.object(llm_client, "AsyncOpenAI") as mock_openai,
