@@ -127,6 +127,31 @@ class TestGenerateChatReview:
             r = client_with_chat.post("/api/v1/chats/1/review", headers=headers)
             assert r.status_code == 502
 
+    def test_generate_review_success(self, client_with_chat):
+        from unittest.mock import MagicMock
+
+        from core.agent.press_review_agent import PressReviewOutput, ArticleSummary
+
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        mock_result = MagicMock()
+        mock_result.final_output = PressReviewOutput(
+            title="Revue de presse test",
+            summary="Synthèse générale de test",
+            articles=[
+                ArticleSummary(title="Article 1", summary="Résumé article 1"),
+            ],
+        )
+
+        with patch("agents.Runner.run", return_value=mock_result):
+            r = client_with_chat.post("/api/v1/chats/1/review", headers=headers)
+        assert r.status_code == 201
+        data = r.json()
+        assert data["success"] is True
+        assert data["data"]["title"] == "Revue de presse test"
+        assert data["data"]["description"] == "Synthèse générale de test"
+
 
 class TestGetChatReviews:
     def test_get_chat_reviews_requires_auth(self, client_with_chat):
