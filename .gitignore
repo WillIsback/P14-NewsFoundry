@@ -23,3 +23,8 @@ docs/superpowers
 
 # Frontend test outputs
 frontend/coverage/
+
+# Playwright E2E
+frontend/e2e/fixtures/.auth/
+frontend/playwright-report/
+frontend/test-results/
