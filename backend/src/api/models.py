@@ -91,6 +91,16 @@ class ReviewPublic(BaseModel):
     content: str
 
 
+class ChatReviewPublic(BaseModel):
+    """Press review generated from a chat conversation."""
+
+    id: int
+    title: str
+    description: str
+    content: str
+    chat_id: int
+
+
 class CreateReviewRequest(BaseModel):
     articles: str = Field(min_length=1, max_length=32000)
 

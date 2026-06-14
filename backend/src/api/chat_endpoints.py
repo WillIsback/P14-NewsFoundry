@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from api.models import (
     ApiResponse,
     ChatPublic,
+    ChatReviewPublic,
     MessagePublic,
     SendMessageRequest,
     SendMessageResponse,
@@ -26,6 +27,7 @@ from database.crud import (
     get_chat_by_id_sync,
     get_chats_by_user_sync,
     get_messages_by_chat_sync,
+    update_chat_press_review_sync,
     update_chat_system_prompt_sync,
 )
 from database.models import MessageType, User
@@ -216,6 +218,81 @@ def build_chat_router() -> APIRouter:
             status=status.HTTP_200_OK,
             message="Message sent",
             data=data,
+        )
+
+    @router.post("/chats/{chat_id}/review", status_code=status.HTTP_201_CREATED)
+    async def generate_chat_review(
+        chat_id: int,
+        current_user: Annotated[User, Depends(verify_user)],
+    ) -> ApiResponse[ChatReviewPublic]:
+        """Generate a press review from the chat's message history."""
+        from agents import Runner
+        from core.agent.press_review_agent import press_review_agent
+
+        chat = await asyncio.to_thread(get_chat_by_id_sync, chat_id)
+        if not chat or chat.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+            )
+
+        messages = await asyncio.to_thread(get_messages_by_chat_sync, chat_id)
+        if not messages:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No messages to generate a review from",
+            )
+
+        llm_messages = [
+            {
+                "role": "user" if m.type == MessageType.USER else "assistant",
+                "content": m.content,
+            }
+            for m in messages
+            if m.content
+        ]
+
+        try:
+            result = await asyncio.wait_for(
+                Runner.run(press_review_agent, input=llm_messages),
+                timeout=LLM_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            logger.error("[review] LLM timeout — chat_id=%s", chat_id)
+            raise HTTPException(status_code=504, detail="LLM request timed out")
+        except Exception as exc:
+            logger.error(
+                "[review] LLM provider error — chat_id=%s exc=%r", chat_id, exc
+            )
+            raise HTTPException(status_code=502, detail="LLM provider error")
+
+        output = result.final_output
+        if output is None:
+            raise HTTPException(
+                status_code=502, detail="LLM returned an empty response"
+            )
+
+        articles_json = output.model_dump_json()
+        now = datetime.now(timezone.utc).isoformat()
+
+        await asyncio.to_thread(
+            update_chat_press_review_sync,
+            chat_id,
+            output.title,
+            output.summary,
+            articles_json,
+            now,
+        )
+
+        return success_response(
+            status=status.HTTP_201_CREATED,
+            message="Press review generated",
+            data=ChatReviewPublic(
+                id=chat_id,
+                title=output.title,
+                description=output.summary,
+                content=articles_json,
+                chat_id=chat_id,
+            ),
         )
 
     return router
