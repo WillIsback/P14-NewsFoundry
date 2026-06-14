@@ -7,6 +7,8 @@ par la couche de persistance.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field
 
 from agents import Agent, ModelSettings, OpenAIChatCompletionsModel
@@ -38,23 +40,27 @@ class PressReviewOutput(BaseModel):
     )
 
 
-_instructions = (
-    "You are NewsFoundry, an AI assistant specialized in press review analysis.\n\n"
-    "Your task is to synthesize the provided chat conversation into a structured "
-    "press review. Identify the key articles and topics discussed, extract factual "
-    "information, and organize them into a coherent review with a title, general "
-    "summary, and individual article summaries. Be factual and cite sources when "
-    "they are mentioned in the conversation.\n\n"
-    "If the conversation does not contain any article or news discussion, generate "
-    "a review based on the main topics discussed, with a single article entry "
-    "summarizing the key exchange."
-)
+def _build_instructions(ctx, agent) -> str:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return (
+        "You are NewsFoundry, an AI assistant specialized in press review analysis.\n\n"
+        f"Today's date is: {today}.\n\n"
+        "Your task is to synthesize the provided chat conversation into a structured "
+        "press review. Identify the key articles and topics discussed, extract factual "
+        "information, and organize them into a coherent review with a title, general "
+        "summary, and individual article summaries. Be factual and cite sources when "
+        "they are mentioned in the conversation.\n\n"
+        "If the conversation does not contain any article or news discussion, generate "
+        "a review based on the main topics discussed, with a single article entry "
+        "summarizing the key exchange."
+    )
+
 
 _openai_client = build_llm_client()
 
 press_review_agent = Agent[None](
     name="newsfoundry_press_review_agent",
-    instructions=_instructions,
+    instructions=_build_instructions,
     tools=[],
     output_type=PressReviewOutput,
     model=OpenAIChatCompletionsModel(
