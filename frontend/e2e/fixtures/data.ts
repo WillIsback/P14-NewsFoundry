@@ -6,6 +6,13 @@ export const TOKEN_USER_A = "mock-token-user-a";
 export const TOKEN_USER_B = "mock-token-user-b";
 export const TOKEN_ERROR = "mock-token-error";
 
+// Tokens pour les scénarios d'erreur par endpoint (unhappy paths)
+export const TOKEN_CHATS_500 = "mock-token-chats-500";
+export const TOKEN_NEWCHAT_500 = "mock-token-newchat-500";
+export const TOKEN_CONTINUE_500 = "mock-token-continue-500";
+export const TOKEN_GENERATE_REVIEW_500 = "mock-token-generate-review-500";
+export const TOKEN_SESSION_EXPIRED = "mock-token-session-expired";
+
 export const PASSWORD_OK = "password-a";
 export const PASSWORD_WRONG = "wrong-password";
 

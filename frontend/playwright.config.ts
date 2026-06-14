@@ -12,6 +12,8 @@ export default defineConfig({
 		baseURL: "http://localhost:3000",
 		storageState: "e2e/fixtures/.auth/user-a.json",
 		trace: "on-first-retry",
+		screenshot: "on",
+		video: "retain-on-failure",
 	},
 	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 	webServer: [

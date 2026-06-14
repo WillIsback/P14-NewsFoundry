@@ -47,16 +47,35 @@ async function writeStorageState(
 export default async function globalSetup(): Promise<void> {
 	const authDir = path.join(__dirname, "fixtures/.auth");
 
-	const [userAJwt, userBJwt, userErrorJwt] = await Promise.all([
+	const [
+		userAJwt,
+		userBJwt,
+		userErrorJwt,
+		chats500Jwt,
+		newChat500Jwt,
+		continue500Jwt,
+		generateReview500Jwt,
+		sessionExpiredJwt,
+	] = await Promise.all([
 		generateSessionCookie("user-a@test.com", "mock-token-user-a"),
 		generateSessionCookie("user-b@test.com", "mock-token-user-b"),
 		generateSessionCookie("user-error@test.com", "mock-token-error"),
+		generateSessionCookie("user-a@test.com", "mock-token-chats-500"),
+		generateSessionCookie("user-a@test.com", "mock-token-newchat-500"),
+		generateSessionCookie("user-a@test.com", "mock-token-continue-500"),
+		generateSessionCookie("user-a@test.com", "mock-token-generate-review-500"),
+		generateSessionCookie("user-a@test.com", "mock-token-session-expired"),
 	]);
 
 	await Promise.all([
 		writeStorageState(`${authDir}/user-a.json`, userAJwt),
 		writeStorageState(`${authDir}/user-b.json`, userBJwt),
 		writeStorageState(`${authDir}/user-error.json`, userErrorJwt),
+		writeStorageState(`${authDir}/chats-500.json`, chats500Jwt),
+		writeStorageState(`${authDir}/newchat-500.json`, newChat500Jwt),
+		writeStorageState(`${authDir}/continue-500.json`, continue500Jwt),
+		writeStorageState(`${authDir}/generate-review-500.json`, generateReview500Jwt),
+		writeStorageState(`${authDir}/session-expired.json`, sessionExpiredJwt),
 	]);
 
 	console.log("[globalSetup] Auth storage states generated in", authDir);

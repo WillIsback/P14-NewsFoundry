@@ -45,7 +45,11 @@ export default async function HomePage({
 		<div className="flex w-full h-full">
 			<ErrorBoundary
 				fallback={
-					<aside className="hidden tablet:flex w-fit h-full bg-slate-100" />
+					<aside className="hidden tablet:flex flex-col min-w-45 h-full bg-slate-100 border-r border-slate-400 px-6 py-4">
+						<p className="text-body-xs text-red-500">
+							Impossible de charger les discussions.
+						</p>
+					</aside>
 				}
 			>
 				<Suspense
