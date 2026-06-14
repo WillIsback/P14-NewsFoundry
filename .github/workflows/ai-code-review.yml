@@ -44,9 +44,10 @@ jobs:
           fetch-depth: 0
 
       - name: AI Code Review
-        uses: WillIsback/code-review@d3a3d9a0b8ea2b751532ac1d4fd825aefccf9114 # v0.3.0
+        uses: WillIsback/code-review@5cee9703d96586b08ece272d6753d612f712ede5 # v0.4.0
         with:
           vllm-url: ${{ secrets.VLLM_URL }}
+          vllm-api-key: ${{ secrets.VLLM_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vllm-model: ${{ vars.VLLM_MODEL || '' }}
           vllm-timeout: ${{ vars.VLLM_TIMEOUT || '120' }}
