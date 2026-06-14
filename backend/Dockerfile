@@ -32,10 +32,15 @@ COPY --chown=appuser:appuser scripts/ ./scripts/
 COPY --chown=appuser:appuser src/ ./src/
 
 # Use the venv python directly (no uv in runtime)
+# LLAMA_INDEX_CACHE_DIR doit pointer vers un répertoire accessible à appuser
+# (--no-create-home → /home/appuser n'existe pas, LlamaIndex ne peut pas y écrire).
+RUN mkdir -p /app/.llama_index_cache && chown appuser:appuser /app/.llama_index_cache
+
 ENV PATH="/app/.venv/bin:$PATH" \
   PYTHONUNBUFFERED=1 \
   PYTHONDONTWRITEBYTECODE=1 \
-  HF_HOME=/app/.hf_cache
+  HF_HOME=/app/.hf_cache \
+  LLAMA_INDEX_CACHE_DIR=/app/.llama_index_cache
 
 COPY --chown=appuser:appuser docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh

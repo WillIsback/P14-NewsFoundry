@@ -6,13 +6,21 @@ pour éviter de recharger PyTorch à chaque appel de l'endpoint /review.
 
 from __future__ import annotations
 
+import os
+
 from llama_index.core import Document, VectorStoreIndex
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 _EMBED_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 _MAX_ARTICLES = 30
 
-_embed = HuggingFaceEmbedding(model_name=_EMBED_MODEL)
+# En Docker (HF_HOME=/app/.hf_cache), cache_folder pointe vers les poids pré-téléchargés.
+# Sans ce paramètre, LlamaIndex appellerait get_cache_dir() → ~/.cache/llama_index,
+# inaccessible quand le conteneur tourne avec --no-create-home (pas de /home/appuser).
+_embed = HuggingFaceEmbedding(
+    model_name=_EMBED_MODEL,
+    cache_folder=os.environ.get("HF_HOME"),  # None en local → comportement par défaut
+)
 
 
 def build_index_and_retrieve(
