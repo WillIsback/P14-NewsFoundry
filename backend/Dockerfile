@@ -1,6 +1,3 @@
-# ── Stage 0: Tailscale binaries (pinned) ────────────────────────────────────
-FROM tailscale/tailscale:v1.98.4 AS tailscale
-
 # ── Stage 1: install dependencies ──────────────────────────────────────────
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
 
@@ -12,9 +9,6 @@ RUN uv sync --frozen --no-dev
 
 # ── Stage 2: minimal runtime image ─────────────────────────────────────────
 FROM python:3.13-slim-bookworm
-
-# Tailscale binaries (pinned) — copied from the named stage above
-COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /usr/local/bin/
 
 WORKDIR /app
 
@@ -33,9 +27,6 @@ COPY --chown=appuser:appuser src/ ./src/
 ENV PATH="/app/.venv/bin:$PATH" \
   PYTHONUNBUFFERED=1 \
   PYTHONDONTWRITEBYTECODE=1
-
-# Writable state/socket dir for tailscaled running as non-root appuser
-RUN mkdir -p /app/.tailscale && chown appuser:appuser /app/.tailscale
 
 COPY --chown=appuser:appuser docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
