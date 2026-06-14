@@ -124,7 +124,7 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     # Fusionner les articles collectés avec les existants (dédupliqués par URL)
     if run_context.loaded_articles:
         existing: list[dict] = chat.loaded_articles or []
-        existing_urls = {a["url"] for a in existing}
+        existing_urls = {a.get("url") for a in existing if a.get("url")}
         merged = existing + [
             a for a in run_context.loaded_articles if a["url"] not in existing_urls
         ]
