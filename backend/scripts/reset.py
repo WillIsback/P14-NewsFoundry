@@ -1,17 +1,15 @@
 """
-Dev reset script — wipes the database and re-seeds it from scratch.
+Reset script — wipes the database and recreates the schema.
 
-Usage (from backend/):
-    uv run scripts/reset.py
-
-Guards:
-  - Refuses to run when ENVIRONMENT=production.
-  - Asks for confirmation before destroying data.
+Usage:
+    uv run scripts/reset.py                  (local dev)
+    python scripts/reset.py                  (Railway console / Docker)
 
 Steps:
   1. Alembic downgrade to base  (drops all tables via migration history)
-  2. Alembic upgrade to head    (recreates schema)
-  3. Seed with fixture data      (delegates to scripts/seed.py::seed())
+  2. Drop orphaned PostgreSQL enum types
+  3. Alembic upgrade to head    (recreates schema)
+  4. Seed with fixture data      (delegates to scripts/seed.py::seed())
 """
 
 from __future__ import annotations
@@ -34,18 +32,10 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(BACKEND_ROOT / ".env")
 
-from core.config import ENVIRONMENT  # noqa: E402
-
 # ---------------------------------------------------------------------------
-# Guard: production safety
+# Confirmation prompt (works in both dev and production)
 # ---------------------------------------------------------------------------
-if ENVIRONMENT == "production":
-    print("✗ Refusing to reset: ENVIRONMENT=production", file=sys.stderr)
-    sys.exit(1)
-
-# ---------------------------------------------------------------------------
-# Confirmation prompt
-# ---------------------------------------------------------------------------
+ENVIRONMENT = __import__("os").environ.get("ENVIRONMENT", "development")
 answer = input(
     f"⚠  This will DESTROY all data in the {ENVIRONMENT!r} database and re-seed it.\n"
     "   Type 'yes' to continue: "
