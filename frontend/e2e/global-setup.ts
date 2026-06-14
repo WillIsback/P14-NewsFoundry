@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { SignJWT } from "jose";
 
 const SECRET = process.env.SESSION_SECRET ?? "dev-test-secret";
@@ -46,10 +45,7 @@ async function writeStorageState(
 }
 
 export default async function globalSetup(): Promise<void> {
-	const authDir = path.join(
-		path.dirname(fileURLToPath(import.meta.url)),
-		"fixtures/.auth",
-	);
+	const authDir = path.join(__dirname, "fixtures/.auth");
 
 	const [userAJwt, userBJwt, userErrorJwt] = await Promise.all([
 		generateSessionCookie("user-a@test.com", "mock-token-user-a"),
@@ -67,7 +63,7 @@ export default async function globalSetup(): Promise<void> {
 }
 
 // Allow direct invocation via `tsx e2e/global-setup.ts` for smoke-testing
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+if (process.argv[1] && __filename === process.argv[1]) {
 	globalSetup().catch((err) => {
 		console.error(err);
 		process.exit(1);
