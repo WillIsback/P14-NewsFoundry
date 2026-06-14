@@ -34,7 +34,7 @@ test("nouveau chat : envoie un message et redirige vers /chat/1", async ({
 	await textarea.fill("Quelle est l'actualité du jour ?");
 	await page.getByRole("button", { name: /envoyer/i }).click();
 	// sendNewMessage redirects to /chat/:chat_id (chat_id=1 from newChatResponse fixture)
-	await expect(page).toHaveURL("/chat/1");
+	await page.waitForURL("/chat/1");
 });
 
 test("réponse LLM : le message IA apparaît dans la page chat", async ({
