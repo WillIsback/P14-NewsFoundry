@@ -19,7 +19,6 @@ export default defineConfig({
 			command: "pnpm exec tsx e2e/mocks/api-server.ts",
 			port: 3001,
 			reuseExistingServer: !process.env.CI,
-			stdout: "pipe",
 			stderr: "pipe",
 		},
 		{
@@ -31,7 +30,6 @@ export default defineConfig({
 				NODE_ENV: "production",
 			},
 			reuseExistingServer: !process.env.CI,
-			stdout: "pipe",
 			stderr: "pipe",
 		},
 	],
