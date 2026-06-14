@@ -85,6 +85,9 @@ class Chat(SQLModel, table=True):
     press_review_summary: Optional[str] = Field(default=None)
     press_review_articles: Optional[str] = Field(default=None)
     press_review_date: Optional[str] = Field(default=None)
+    loaded_articles: list = Field(
+        default=[], sa_column=Column(JSON, nullable=False, server_default="[]")
+    )
     messages: list[Message] = Relationship()
     top_news_context: Optional["TopNewsContext"] = Relationship()
 
