@@ -57,3 +57,5 @@ def test_update_chat_press_review(engine, chat):
 
 def test_update_chat_press_review_nonexistent_chat(engine):
     crud.update_chat_press_review_sync(999, "Title", "Summary", "[]", "2026-06-14")
+    with Session(engine) as session:
+        assert session.get(Chat, 999) is None
