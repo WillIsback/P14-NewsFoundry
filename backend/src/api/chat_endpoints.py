@@ -271,7 +271,9 @@ def build_chat_router() -> APIRouter:
             # Filtrer sur les messages utilisateur pour éviter le bruit conversationnel
             user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
             query = " ".join(user_msgs[-3:])
-            relevant = build_index_and_retrieve(articles, query, top_k=5)
+            relevant = await asyncio.to_thread(
+                build_index_and_retrieve, articles, query, top_k=5
+            )
             if relevant:
                 rag_block = "\n\n".join(
                     f"**{a['title']}** ({a['url']})\n{a['summary']}" for a in relevant

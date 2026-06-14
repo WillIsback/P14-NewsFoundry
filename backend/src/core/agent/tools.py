@@ -124,7 +124,7 @@ async def search_news(
         ctx.context.loaded_articles.append(
             {
                 "title": article.title,
-                "summary": article.summary,
+                "summary": article.summary or "",
                 "url": article.url,
             }
         )
