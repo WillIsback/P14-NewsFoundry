@@ -42,7 +42,10 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 			if (result.error) {
 				setError(result.error);
 			} else {
-				router.refresh();
+				const reviewId = result.data?.data?.id;
+				router.push(
+					reviewId ? `/?mode=review#review-${reviewId}` : "/?mode=review",
+				);
 			}
 		} catch {
 			setError("Erreur lors de la génération de la revue de presse");

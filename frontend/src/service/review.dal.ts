@@ -17,6 +17,9 @@ const BACKEND_URL = (
 
 type GetReviewsResponse = z.infer<typeof reviewGetReviews200Schema>;
 type CreateReviewResponse = z.infer<typeof reviewCreateReview201Schema>;
+type ChatReviewGenerateResponse = z.infer<
+	typeof chatGenerateChatReview201Schema
+>;
 
 async function authHeaders(): Promise<HeadersInit> {
 	const token = await getBearerToken();
@@ -50,7 +53,7 @@ export async function postCreateReview(
 
 export async function postGenerateReview(
 	chatId: number,
-): Promise<ServiceResult<CreateReviewResponse>> {
+): Promise<ServiceResult<ChatReviewGenerateResponse>> {
 	return fetchJson({
 		url: `${BACKEND_URL}/chats/${chatId}/review`,
 		method: "POST",
