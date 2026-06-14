@@ -84,12 +84,16 @@ alembic_command.upgrade(alembic_cfg, "head")
 print("      Done.")
 
 # ---------------------------------------------------------------------------
-# Re-seed
+# Re-seed (only in dev — production uses bootstrap.py release command)
 # ---------------------------------------------------------------------------
-print("[3/3] Seeding …")
-# Import here so that env.py path setup above is already in effect
-sys.path.insert(0, str(BACKEND_ROOT / "scripts"))
-from seed import seed  # noqa: E402
+if ENVIRONMENT == "production":
+    print("\nℹ Skipping seed in production. Run the release command to bootstrap:")
+    print("   python src/bootstrap.py --email admin@example.com --password …")
+else:
+    print("[3/3] Seeding …")
+    # Import here so that env.py path setup above is already in effect
+    sys.path.insert(0, str(BACKEND_ROOT / "scripts"))
+    from seed import seed  # noqa: E402
 
-seed()
+    seed()
 print("\nReset complete.")
