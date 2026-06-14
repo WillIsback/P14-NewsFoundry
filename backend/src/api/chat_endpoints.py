@@ -22,6 +22,7 @@ from core.config import LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
 from core.llm_provider import (
     compact_history_if_needed,
 )
+from core.rag.indexer import build_index_and_retrieve
 from database.crud import (
     create_chat_sync,
     create_message_sync,
@@ -263,6 +264,25 @@ def build_chat_router() -> APIRouter:
             for m in messages
             if m.content
         ]
+
+        # RAG : enrichir le contexte avec les articles sémantiquement pertinents
+        articles: list[dict] = chat.loaded_articles or []
+        if articles:
+            # Filtrer sur les messages utilisateur pour éviter le bruit conversationnel
+            user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
+            query = " ".join(user_msgs[-3:])
+            relevant = build_index_and_retrieve(articles, query, top_k=5)
+            if relevant:
+                rag_block = "\n\n".join(
+                    f"**{a['title']}** ({a['url']})\n{a['summary']}" for a in relevant
+                )
+                llm_messages = [
+                    {
+                        "role": "system",
+                        "content": f"Articles pertinents identifiés pour cette revue :\n\n{rag_block}",
+                    },
+                    *llm_messages,
+                ]
 
         try:
             result = await asyncio.wait_for(
