@@ -26,7 +26,7 @@ import {
 
 // Délai en ms que le mock attend avant de répondre pour les tokens *_TIMEOUT.
 // Doit être supérieur à FETCH_DEFAULT_TIMEOUT_MS et FETCH_CHAT_TIMEOUT_MS définis dans playwright.config.ts.
-const MOCK_SLOW_DELAY_MS = Number(process.env.MOCK_SLOW_DELAY_MS ?? 700);
+const MOCK_SLOW_DELAY_MS = Number(process.env.MOCK_SLOW_DELAY_MS ?? 1000);
 
 function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));

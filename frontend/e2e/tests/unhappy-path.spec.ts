@@ -77,10 +77,14 @@ async function attachScreenshot(
 	page: { screenshot(): Promise<Buffer> },
 	name: string,
 ) {
-	const screenshot = await page.screenshot();
-	await test
-		.info()
-		.attach(name, { body: screenshot, contentType: "image/png" });
+	try {
+		const screenshot = await page.screenshot();
+		await test
+			.info()
+			.attach(name, { body: screenshot, contentType: "image/png" });
+	} catch (err) {
+		console.warn(`[attachScreenshot] Impossible de capturer '${name}':`, err);
+	}
 }
 
 // ─── 1. Login — champs vides ─────────────────────────────────────────────────

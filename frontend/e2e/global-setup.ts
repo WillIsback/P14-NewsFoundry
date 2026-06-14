@@ -57,7 +57,7 @@ export default async function globalSetup(): Promise<void> {
 		generateReview500Jwt,
 		sessionExpiredJwt,
 		chatsTimeoutJwt,
-		newchatTimeoutJwt,
+		newChatTimeoutJwt,
 		rateLimitedChatsJwt,
 		rateLimitedPostJwt,
 	] = await Promise.all([
@@ -82,11 +82,17 @@ export default async function globalSetup(): Promise<void> {
 		writeStorageState(`${authDir}/chats-500.json`, chats500Jwt),
 		writeStorageState(`${authDir}/newchat-500.json`, newChat500Jwt),
 		writeStorageState(`${authDir}/continue-500.json`, continue500Jwt),
-		writeStorageState(`${authDir}/generate-review-500.json`, generateReview500Jwt),
+		writeStorageState(
+			`${authDir}/generate-review-500.json`,
+			generateReview500Jwt,
+		),
 		writeStorageState(`${authDir}/session-expired.json`, sessionExpiredJwt),
 		writeStorageState(`${authDir}/chats-timeout.json`, chatsTimeoutJwt),
-		writeStorageState(`${authDir}/newchat-timeout.json`, newchatTimeoutJwt),
-		writeStorageState(`${authDir}/rate-limited-chats.json`, rateLimitedChatsJwt),
+		writeStorageState(`${authDir}/newchat-timeout.json`, newChatTimeoutJwt),
+		writeStorageState(
+			`${authDir}/rate-limited-chats.json`,
+			rateLimitedChatsJwt,
+		),
 		writeStorageState(`${authDir}/rate-limited-post.json`, rateLimitedPostJwt),
 	]);
 
