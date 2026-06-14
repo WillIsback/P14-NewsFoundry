@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-import sqlmodel
 
 
 revision: str = "a1b2c3d4e5f6"
@@ -19,30 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "chat",
-        sa.Column(
-            "press_review_title", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-    )
-    op.add_column(
-        "chat",
-        sa.Column(
-            "press_review_summary", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-    )
-    op.add_column(
-        "chat",
-        sa.Column(
-            "press_review_articles", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-    )
-    op.add_column(
-        "chat",
-        sa.Column(
-            "press_review_date", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-    )
+    op.add_column("chat", sa.Column("press_review_title", sa.TEXT(), nullable=True))
+    op.add_column("chat", sa.Column("press_review_summary", sa.TEXT(), nullable=True))
+    op.add_column("chat", sa.Column("press_review_articles", sa.TEXT(), nullable=True))
+    op.add_column("chat", sa.Column("press_review_date", sa.VARCHAR(), nullable=True))
 
 
 def downgrade() -> None:
