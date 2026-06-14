@@ -1,12 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { SignJWT } from "jose";
 
-const SECRET = process.env.SESSION_SECRET;
-if (!SECRET) {
-	throw new Error("SESSION_SECRET env var is required for E2E tests");
-}
-
+const SECRET = process.env.SESSION_SECRET ?? "dev-test-secret";
 const encodedKey = new TextEncoder().encode(SECRET);
 
 async function generateSessionCookie(
@@ -49,29 +46,30 @@ async function writeStorageState(
 }
 
 export default async function globalSetup(): Promise<void> {
-	const authDir = "e2e/fixtures/.auth";
-
-	const userAJwt = await generateSessionCookie(
-		"user-a@test.com",
-		"mock-token-user-a",
-	);
-	const userBJwt = await generateSessionCookie(
-		"user-b@test.com",
-		"mock-token-user-b",
-	);
-	const userErrorJwt = await generateSessionCookie(
-		"user-error@test.com",
-		"mock-token-error",
+	const authDir = path.join(
+		path.dirname(fileURLToPath(import.meta.url)),
+		"fixtures/.auth",
 	);
 
-	await writeStorageState(`${authDir}/user-a.json`, userAJwt);
-	await writeStorageState(`${authDir}/user-b.json`, userBJwt);
-	await writeStorageState(`${authDir}/user-error.json`, userErrorJwt);
+	const [userAJwt, userBJwt, userErrorJwt] = await Promise.all([
+		generateSessionCookie("user-a@test.com", "mock-token-user-a"),
+		generateSessionCookie("user-b@test.com", "mock-token-user-b"),
+		generateSessionCookie("user-error@test.com", "mock-token-error"),
+	]);
+
+	await Promise.all([
+		writeStorageState(`${authDir}/user-a.json`, userAJwt),
+		writeStorageState(`${authDir}/user-b.json`, userBJwt),
+		writeStorageState(`${authDir}/user-error.json`, userErrorJwt),
+	]);
 
 	console.log("[globalSetup] Auth storage states generated in", authDir);
 }
 
 // Allow direct invocation via `tsx e2e/global-setup.ts` for smoke-testing
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
-	globalSetup();
+	globalSetup().catch((err) => {
+		console.error(err);
+		process.exit(1);
+	});
 }
