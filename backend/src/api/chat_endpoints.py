@@ -265,8 +265,11 @@ def build_chat_router() -> APIRouter:
             if m.content
         ]
 
-        # RAG : enrichir le contexte avec les articles sémantiquement pertinents
+        # RAG : enrichir le contexte avec les articles sémantiquement pertinents.
+        # On injecte dans les instructions de l'agent (clone) plutôt qu'en message
+        # system séparé pour éviter "System message must be at the beginning".
         articles: list[dict] = chat.loaded_articles or []
+        active_review_agent = press_review_agent
         if articles:
             # Filtrer sur les messages utilisateur pour éviter le bruit conversationnel
             user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
@@ -278,17 +281,17 @@ def build_chat_router() -> APIRouter:
                 rag_block = "\n\n".join(
                     f"**{a['title']}** ({a['url']})\n{a['summary']}" for a in relevant
                 )
-                llm_messages = [
-                    {
-                        "role": "system",
-                        "content": f"Articles pertinents identifiés pour cette revue :\n\n{rag_block}",
-                    },
-                    *llm_messages,
-                ]
+                base_instructions = press_review_agent.instructions(
+                    None, press_review_agent
+                )
+                active_review_agent = press_review_agent.clone(
+                    instructions=base_instructions
+                    + f"\n\n## Articles pertinents identifiés pour cette revue\n\n{rag_block}"
+                )
 
         try:
             result = await asyncio.wait_for(
-                Runner.run(press_review_agent, input=llm_messages),
+                Runner.run(active_review_agent, input=llm_messages),
                 timeout=LLM_TIMEOUT_SECONDS,
             )
         except asyncio.TimeoutError:
