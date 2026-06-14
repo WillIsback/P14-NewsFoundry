@@ -81,6 +81,10 @@ class Chat(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     date: str = Field(default=None)
     system_prompt: Optional[str] = Field(default=None)
+    press_review_title: Optional[str] = Field(default=None)
+    press_review_summary: Optional[str] = Field(default=None)
+    press_review_articles: Optional[str] = Field(default=None)
+    press_review_date: Optional[str] = Field(default=None)
     messages: list[Message] = Relationship()
     top_news_context: Optional["TopNewsContext"] = Relationship()
 

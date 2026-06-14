@@ -247,6 +247,26 @@ def update_chat_system_prompt_sync(chat_id: int, system_prompt: str) -> None:
         update_chat_system_prompt(session, chat_id, system_prompt)
 
 
+def update_chat_press_review(
+    session: Session, chat_id: int, title: str, summary: str, articles: str, date: str
+) -> None:
+    chat = session.get(Chat, chat_id)
+    if chat:
+        chat.press_review_title = title
+        chat.press_review_summary = summary
+        chat.press_review_articles = articles
+        chat.press_review_date = date
+        session.add(chat)
+        session.commit()
+
+
+def update_chat_press_review_sync(
+    chat_id: int, title: str, summary: str, articles: str, date: str
+) -> None:
+    with Session(engine) as session:
+        update_chat_press_review(session, chat_id, title, summary, articles, date)
+
+
 def get_top_news_context_by_chat(
     session: Session, chat_id: int
 ) -> Optional[TopNewsContext]:
