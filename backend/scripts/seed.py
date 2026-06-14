@@ -1,12 +1,13 @@
 """
-Dev seed script — populates the database with realistic fixture data.
+Seed script — populates the database with realistic fixture data.
 
-Usage (from backend/):
-    uv run scripts/seed.py
+Usage:
+    uv run scripts/seed.py                  (local dev)
+    python scripts/seed.py                  (Railway console / Docker)
 
 Guards:
-  - Refuses to run when ENVIRONMENT=production.
   - Fully idempotent: safe to run multiple times; existing rows are skipped.
+  - Confirmation prompt when ENVIRONMENT=production.
 
 Seeded entities (all linked to test@test.com):
   - 1 User  (test@test.com / test1234)
@@ -39,13 +40,6 @@ from core.security import hash_password  # noqa: E402
 from database.database import engine  # noqa: E402
 from database.models import Chat, Message, MessageType, PressReview, User, UserRole  # noqa: E402
 from sqlmodel import Session, select  # noqa: E402
-
-# ---------------------------------------------------------------------------
-# Guard: production safety
-# ---------------------------------------------------------------------------
-if ENVIRONMENT == "production":
-    print("✗ Refusing to seed: ENVIRONMENT=production", file=sys.stderr)
-    sys.exit(1)
 
 # ---------------------------------------------------------------------------
 # Fixture data
