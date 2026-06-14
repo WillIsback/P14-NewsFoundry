@@ -1,26 +1,19 @@
 """Module RAG — construction d'un index vectoriel en mémoire via LlamaIndex.
 
 Singleton `_embed` chargé une seule fois au démarrage du worker FastAPI
-pour éviter de recharger PyTorch à chaque appel de l'endpoint /review.
+pour éviter de recharger le modèle ONNX à chaque appel de l'endpoint /review.
 """
 
 from __future__ import annotations
 
-import os
-
 from llama_index.core import Document, VectorStoreIndex
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.fastembed import FastEmbedEmbedding
 
-_EMBED_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+# fastembed lit FASTEMBED_CACHE_PATH automatiquement (défini dans le Dockerfile)
+_EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 _MAX_ARTICLES = 30
 
-# En Docker (HF_HOME=/app/.hf_cache), cache_folder pointe vers les poids pré-téléchargés.
-# Sans ce paramètre, LlamaIndex appellerait get_cache_dir() → ~/.cache/llama_index,
-# inaccessible quand le conteneur tourne avec --no-create-home (pas de /home/appuser).
-_embed = HuggingFaceEmbedding(
-    model_name=_EMBED_MODEL,
-    cache_folder=os.environ.get("HF_HOME"),  # None en local → comportement par défaut
-)
+_embed = FastEmbedEmbedding(model_name=_EMBED_MODEL)
 
 
 def build_index_and_retrieve(
