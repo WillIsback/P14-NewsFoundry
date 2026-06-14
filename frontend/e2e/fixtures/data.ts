@@ -114,6 +114,12 @@ export const reviewsResponse = {
 			description: "2024-01-15T10:00:00Z",
 			content: "Contenu de la revue de presse.",
 		},
+		{
+			id: 2,
+			title: "Revue mockée",
+			description: "2024-01-15T10:05:00Z",
+			content: "Contenu de la revue mockée.",
+		},
 	],
 };
 

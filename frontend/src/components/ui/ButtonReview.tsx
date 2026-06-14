@@ -44,7 +44,9 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 			} else {
 				const reviewId = result.data?.data?.id;
 				router.push(
-					reviewId ? `/?mode=review#review-${reviewId}` : "/?mode=review",
+					reviewId
+						? `/home?mode=review#review-${reviewId}`
+						: "/home?mode=review",
 				);
 			}
 		} catch {
