@@ -22,7 +22,9 @@ describe("Message — rendu", () => {
 
 	it("affiche un élément <time> même sans timestamp (texte vide)", () => {
 		render(<Message type="user" content="Sans timestamp" />);
-		expect(screen.queryByRole("time")).toBeInTheDocument();
+		const timeEl = screen.getByRole("time");
+		expect(timeEl).toBeInTheDocument();
+		expect(timeEl).toHaveTextContent("");
 	});
 });
 
