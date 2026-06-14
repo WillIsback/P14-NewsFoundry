@@ -20,7 +20,8 @@ dependencies = [
     "httpx[socks]>=0.28.1",
     "worldnewsapi>=2.2.0",
     "llama-index-core>=0.12",
-    "llama-index-embeddings-huggingface>=0.4",
+    "llama-index-embeddings-fastembed>=0.2",
+    "fastembed>=0.4",
 ]
 
 [tool.pytest.ini_options]
