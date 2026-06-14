@@ -72,7 +72,8 @@ LLM_PROXY_URL: str | None = os.getenv("LLM_PROXY_URL")
 LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
 LLM_MAX_CONCURRENT: int = int(os.getenv("LLM_MAX_CONCURRENT", "5"))
 # Bound the agent's generation to stay resilient under shared-GPU contention.
-AGENT_MAX_TOKENS: int = int(os.getenv("AGENT_MAX_TOKENS", "800"))
+# 4096 pour absorber une revue de presse structurée complète (10+ articles).
+AGENT_MAX_TOKENS: int = int(os.getenv("AGENT_MAX_TOKENS", "4096"))
 # Number of top-news clusters returned to the agent (smaller = shorter context/output).
 TOP_NEWS_CLUSTERS: int = int(os.getenv("TOP_NEWS_CLUSTERS", "5"))
 LLM_MAX_INPUT_CHARS: int = int(os.getenv("LLM_MAX_INPUT_CHARS", "8000"))
