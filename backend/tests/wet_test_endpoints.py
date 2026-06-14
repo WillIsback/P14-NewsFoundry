@@ -539,6 +539,67 @@ def test_reviews(client: httpx.Client, headers: dict) -> None:
         results.ok(name)
 
 
+def test_chat_reviews(client: httpx.Client, headers: dict, chat_id: int) -> None:
+    section("7b · Press Reviews depuis un chat")
+
+    name = "GET /reviews/chats — authentifié → 200 + liste vide"
+    r = client.get("/api/v1/reviews/chats", headers=headers)
+    if assert_status(name, r, 200):
+        body = get_json(r)
+        if isinstance(body.get("data"), list):
+            results.ok(name, f"{len(body['data'])} review(s)")
+        else:
+            results.fail(name, "data n'est pas une liste")
+
+    if RUN_LLM_STEPS:
+        name = "POST /chats/{chat_id}/review — génération via LLM → 201"
+        t0 = time.time()
+        r = client.post(
+            f"/api/v1/chats/{chat_id}/review",
+            headers=headers,
+            timeout=LLM_TIMEOUT,
+        )
+        elapsed = time.time() - t0
+        if assert_status(name, r, 201):
+            body = get_json(r)
+            ok = (
+                assert_field(name, body, "data", "title")
+                and assert_field(name, body, "data", "description")
+                and assert_field(name, body, "data", "content")
+                and assert_field(name, body, "data", "chat_id")
+            )
+            if ok:
+                title = body["data"]["title"]
+                results.ok(name, f"{elapsed:.1f}s — titre : {title!r}")
+
+        name = "GET /reviews/chats — après génération → ≥1 review"
+        r = client.get("/api/v1/reviews/chats", headers=headers)
+        if assert_status(name, r, 200):
+            reviews = get_json(r).get("data", [])
+            if len(reviews) >= 1:
+                results.ok(name, f"{len(reviews)} review(s)")
+            else:
+                results.fail(name, "attendu ≥1 review après création, reçu 0")
+
+        name = "POST /chats/{chat_id}/review — double génération → 200"
+        r = client.post(
+            f"/api/v1/chats/{chat_id}/review",
+            headers=headers,
+            timeout=LLM_TIMEOUT,
+        )
+        if assert_status(name, r, 201):
+            results.ok(name, "régénération réussie")
+    else:
+        print(
+            f"  {DIM}↷ génération de review depuis chat ignorée (WET_TEST_LLM non activé){RESET}"
+        )
+
+    name = "POST /chats/99999/review — chat inexistant → 404"
+    r = client.post("/api/v1/chats/99999/review", headers=headers)
+    if assert_status(name, r, 404):
+        results.ok(name)
+
+
 # ── 8. Validation sécurité / isolation ───────────────────────────────────────
 
 
@@ -630,6 +691,13 @@ def main() -> int:
             test_reviews(client, headers)
         except Exception:
             results.fail("suite reviews", traceback.format_exc())
+
+        # 7b. Press Reviews depuis un chat
+        if chat_id is not None:
+            try:
+                test_chat_reviews(client, headers, chat_id)
+            except Exception:
+                results.fail("suite chat reviews", traceback.format_exc())
 
         # 8. Sécurité
         try:

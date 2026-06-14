@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from api.models import (
     ApiResponse,
+    ChatReviewPublic,
     CreateReviewRequest,
     ReviewPublic,
     success_response,
@@ -17,6 +18,7 @@ from utils.utils import LLMMessage
 from core.prompts import PRESS_REVIEW_PROMPT
 from database.crud import (
     create_press_review_sync,
+    get_chats_by_user_sync,
     get_press_reviews_by_user_sync,
 )
 from database.models import User
@@ -99,6 +101,41 @@ def build_review_router() -> APIRouter:
                 description=review.description,
                 content=review.content,
             ),
+        )
+
+    @router.get("/reviews/chats")
+    def get_chat_reviews(
+        current_user: Annotated[User, Depends(verify_user)],
+    ) -> ApiResponse[list[ChatReviewPublic]]:
+        """Return press reviews generated from chats."""
+        chats = get_chats_by_user_sync(current_user.id)
+        reviews = []
+        for c in chats:
+            if c.press_review_title is None:
+                continue
+            raw = c.press_review_articles
+            if raw:
+                try:
+                    import json
+
+                    json.loads(raw)
+                except json.JSONDecodeError:
+                    raw = "[]"
+            else:
+                raw = "[]"
+            reviews.append(
+                ChatReviewPublic(
+                    id=c.id,
+                    title=c.press_review_title,
+                    description=c.press_review_summary,
+                    content=raw,
+                    chat_id=c.id,
+                )
+            )
+        return success_response(
+            status=status.HTTP_200_OK,
+            message="Chat reviews retrieved",
+            data=reviews,
         )
 
     return router

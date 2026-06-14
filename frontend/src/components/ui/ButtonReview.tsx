@@ -1,3 +1,9 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { generateReview } from "@/src/actions/review.action";
+
 function ReviewIcon() {
 	return (
 		<svg
@@ -16,15 +22,48 @@ function ReviewIcon() {
 	);
 }
 
-function ButtonReview() {
+interface ButtonReviewProps {
+	chatId?: number;
+}
+
+function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
+	const router = useRouter();
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const handleClick = async () => {
+		if (!chatId || loading) return;
+
+		setLoading(true);
+		setError(null);
+
+		try {
+			const result = await generateReview(chatId);
+			if (result.error) {
+				setError(result.error);
+			} else {
+				router.refresh();
+			}
+		} catch {
+			setError("Erreur lors de la génération de la revue de presse");
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	return (
-		<button
-			type="button"
-			className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100 px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
-		>
-			<ReviewIcon />
-			Générer une revue de presse
-		</button>
+		<div className="flex flex-col items-end gap-1">
+			<button
+				type="button"
+				onClick={handleClick}
+				disabled={loading}
+				className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100 px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
+			>
+				<ReviewIcon />
+				{loading ? "Génération..." : "Générer une revue de presse"}
+			</button>
+			{error && <p className="text-red-500 text-body-xs">{error}</p>}
+		</div>
 	);
 }
 

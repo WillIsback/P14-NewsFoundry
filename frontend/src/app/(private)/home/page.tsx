@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { fetchChats } from "@/src/actions/chat.action";
-import { fetchReviews } from "@/src/actions/review.action";
+import { fetchChatReviews, fetchReviews } from "@/src/actions/review.action";
 import AssistantCard from "@/src/components/AssistantCard";
 import ChatForm from "@/src/components/ChatForm";
 import DisplayReviews from "@/src/components/DisplayReviews";
@@ -19,16 +19,27 @@ export default async function HomePage({
 		if (r.error || !r.data) throw new Error(r.error ?? "Failed to load chats");
 		return r.data.data ?? [];
 	});
-	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
-	chatsPromise.catch(() => {});
+	chatsPromise.catch((err: unknown) => {
+		console.error("[chats] Failed to load:", err);
+	});
 
 	const reviewsPromise = fetchReviews().then((r) => {
 		if (r.error || !r.data)
 			throw new Error(r.error ?? "Failed to load reviews");
 		return r.data.data ?? [];
 	});
-	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
-	reviewsPromise.catch(() => {});
+	reviewsPromise.catch((err: unknown) => {
+		console.error("[reviews] Failed to load:", err);
+	});
+
+	const chatReviewsPromise = fetchChatReviews().then((r) => {
+		if (r.error || !r.data)
+			throw new Error(r.error ?? "Failed to load chat reviews");
+		return r.data.data ?? [];
+	});
+	chatReviewsPromise.catch((err: unknown) => {
+		console.error("[chatReviews] Failed to load:", err);
+	});
 
 	return (
 		<div className="flex w-full h-full">
@@ -73,7 +84,10 @@ export default async function HomePage({
 									<p className="text-slate-100">Chargement des revues...</p>
 								}
 							>
-								<DisplayReviews reviewsPromise={reviewsPromise} />
+								<DisplayReviews
+									reviewsPromise={reviewsPromise}
+									chatReviewsPromise={chatReviewsPromise}
+								/>
 							</Suspense>
 						</ErrorBoundary>
 					) : (
