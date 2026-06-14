@@ -19,16 +19,19 @@ interface PressReviewProps {
 	title: string;
 	description: string;
 	content: string;
+	date?: string;
 }
 
 export default function PressReview({
 	title,
 	description,
 	content,
+	date,
 }: Readonly<PressReviewProps>) {
 	const [copied, setCopied] = useState(false);
+	const rawDate = date ?? description;
 	const formattedDate = format(
-		new Date(description),
+		new Date(rawDate),
 		"eeee d MMMM yyyy 'à' HH:mm",
 		{ locale: fr },
 	);
