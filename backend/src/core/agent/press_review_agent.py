@@ -24,7 +24,11 @@ class ArticleSummary(BaseModel):
     summary: str = Field(description="Résumé concis de l'article (2-3 phrases)")
     source: str | None = Field(
         default=None,
-        description="URL source ou nom de la publication si mentionné dans la conversation",
+        description=(
+            "Full URL of the article (e.g. https://lemonde.fr/...). "
+            "ALWAYS use the URL, never the publication name alone. "
+            "Leave null only if no URL is available in the conversation or context."
+        ),
     )
 
 
@@ -48,8 +52,11 @@ def _build_instructions(ctx, agent) -> str:
         "Your task is to synthesize the provided chat conversation into a structured "
         "press review. Identify the key articles and topics discussed, extract factual "
         "information, and organize them into a coherent review with a title, general "
-        "summary, and individual article summaries. Be factual and cite sources when "
-        "they are mentioned in the conversation.\n\n"
+        "summary, and individual article summaries.\n\n"
+        "IMPORTANT: For each article's 'source' field, you MUST use the full URL "
+        "(e.g. https://...) found in the conversation or context. Never use a "
+        "publication name as the source — always use the URL. If no URL is available "
+        "for a specific article, leave 'source' as null.\n\n"
         "If the conversation does not contain any article or news discussion, generate "
         "a review based on the main topics discussed, with a single article entry "
         "summarizing the key exchange."
