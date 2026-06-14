@@ -15,8 +15,9 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 
-from agents import function_tool
+from agents import RunContextWrapper, function_tool
 
+from core.agent.context import ChatRunContext
 from core.config import TOP_NEWS_CLUSTERS
 from core.news.search import search_news as _search_news
 from core.worldnewsapi.worldnews import get_news_api
@@ -24,6 +25,7 @@ from core.worldnewsapi.worldnews import get_news_api
 
 @function_tool
 async def get_top_news(
+    ctx: RunContextWrapper[ChatRunContext],
     source_country: str = "fr",
     language: str = "fr",
     date: str | None = None,
@@ -67,6 +69,15 @@ async def get_top_news(
         title = cluster.titles[0] if cluster.titles else "Sans titre"
         summary = cluster.summaries[0] if cluster.summaries else ""
         summary_str = f"\n> {summary}" if summary else ""
+
+        ctx.context.loaded_articles.append(
+            {
+                "title": title,
+                "summary": summary,
+                "url": cluster.top_url,
+            }
+        )
+
         lines.append(
             f"**{i}. {title}** ({cluster.article_count} articles){summary_str}\n"
             f"Source : {cluster.top_url}\n"
@@ -77,6 +88,7 @@ async def get_top_news(
 
 @function_tool
 async def search_news(
+    ctx: RunContextWrapper[ChatRunContext],
     query: str,
     language: str = "fr",
     max_results: int = 10,
@@ -108,6 +120,15 @@ async def search_news(
     for i, article in enumerate(articles, 1):
         date_str = f" — {article.publish_date}" if article.publish_date else ""
         summary_str = f"\n> {article.summary}" if article.summary else ""
+
+        ctx.context.loaded_articles.append(
+            {
+                "title": article.title,
+                "summary": article.summary or "",
+                "url": article.url,
+            }
+        )
+
         lines.append(
             f"**{i}. {article.title}**{date_str}{summary_str}\nSource : {article.url}\n"
         )

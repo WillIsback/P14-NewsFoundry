@@ -278,3 +278,18 @@ def get_top_news_context_by_chat(
     return session.exec(
         select(TopNewsContext).where(TopNewsContext.chat_id == chat_id)
     ).first()
+
+
+def update_chat_loaded_articles(session: Session, chat_id: int, articles: list) -> None:
+    chat = session.get(Chat, chat_id)
+    if not chat:
+        logger.warning("Chat %s not found for loaded_articles update", chat_id)
+        return
+    chat.loaded_articles = articles
+    session.add(chat)
+    session.commit()
+
+
+def update_chat_loaded_articles_sync(chat_id: int, articles: list) -> None:
+    with Session(engine) as session:
+        update_chat_loaded_articles(session, chat_id, articles)

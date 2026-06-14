@@ -9,11 +9,14 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-def _make_run_ctx() -> MagicMock:
-    """Construit un RunContextWrapper factice suffisant pour on_invoke_tool."""
+def _make_run_ctx(chat_id: int = 1) -> MagicMock:
+    """Construit un RunContextWrapper avec un vrai ChatRunContext."""
+    from core.agent.context import ChatRunContext
+
     ctx = MagicMock()
     ctx.run_config = MagicMock()
     ctx.run_config.model_settings = None
+    ctx.context = ChatRunContext(chat_id=chat_id)
     return ctx
 
 
@@ -156,6 +159,20 @@ class TestGetTopNewsTool:
             )
         assert "2026-06-05" in result
 
+    @pytest.mark.asyncio
+    async def test_get_top_news_populates_loaded_articles(self, mock_api):
+        ctx = _make_run_ctx()
+        with patch("core.agent.tools.get_news_api", return_value=mock_api):
+            from core.agent.tools import get_top_news
+
+            await get_top_news.on_invoke_tool(
+                ctx, '{"source_country":"fr","language":"fr"}'
+            )
+        # 3 clusters dans _make_top_news_response(3)
+        assert len(ctx.context.loaded_articles) == 3
+        urls = [a["url"] for a in ctx.context.loaded_articles]
+        assert "https://example.com/cluster1/article1" in urls
+
 
 # ── Tests search_news tool (smoke) ────────────────────────────────────────────
 
@@ -195,3 +212,27 @@ class TestSearchNewsTool:
                 '{"query":"sujetintrouvable","language":"fr","max_results":5}',
             )
         assert "Aucun article" in result
+
+    @pytest.mark.asyncio
+    async def test_search_news_populates_loaded_articles(self):
+        from core.news.search import SearchArticle
+
+        mock_articles = [
+            SearchArticle(
+                title="IA en France",
+                url="https://example.com/ia",
+                summary="OpenAI sort un nouveau modèle.",
+                publish_date="2026-06-14",
+            )
+        ]
+        ctx = _make_run_ctx()
+        with patch("core.agent.tools._search_news", return_value=mock_articles):
+            from core.agent.tools import search_news
+
+            await search_news.on_invoke_tool(
+                ctx, '{"query":"IA","language":"fr","max_results":5}'
+            )
+        assert len(ctx.context.loaded_articles) == 1
+        assert ctx.context.loaded_articles[0]["url"] == "https://example.com/ia"
+        assert ctx.context.loaded_articles[0]["title"] == "IA en France"
+        assert "OpenAI" in ctx.context.loaded_articles[0]["summary"]
