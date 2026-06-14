@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Message — snapshots > snapshot message IA (sans timestamp pour stabilité CI) 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-col h-fit justify-center gap-4 px-4 py-4 rounded-[10px] bg-slate-300 w-full"
+  >
+    <div
+      class="text-slate-dark wrap-normal text-body-s"
+    >
+      <p>
+        Snapshot IA
+      </p>
+    </div>
+    <time
+      class="text-[#717182]"
+    />
+  </div>
+</DocumentFragment>
+`;
+
+exports[`Message — snapshots > snapshot message utilisateur (sans timestamp pour stabilité CI) 1`] = `
+<DocumentFragment>
+  <div
+    class="flex flex-col h-fit justify-center gap-4 px-4 py-4 rounded-[10px] bg-slate-dark w-fit"
+  >
+    <p
+      class="text-slate-white wrap-normal"
+    >
+      Snapshot user
+    </p>
+    <time
+      class="text-slate-300"
+    />
+  </div>
+</DocumentFragment>
+`;
