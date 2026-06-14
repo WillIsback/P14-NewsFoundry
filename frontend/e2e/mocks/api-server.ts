@@ -43,8 +43,11 @@ function requireAuth(
 
 // POST /auth/login
 app.post("/auth/login", (req, res) => {
-	const body = req.body as { email?: string; password?: string };
-	if (body.email === USER_A_EMAIL && body.password === PASSWORD_OK) {
+	const body = req.body as Record<string, unknown>;
+	const email = typeof body?.email === "string" ? body.email : undefined;
+	const password =
+		typeof body?.password === "string" ? body.password : undefined;
+	if (email === USER_A_EMAIL && password === PASSWORD_OK) {
 		res.json(loginOkResponse);
 	} else {
 		res.status(422).json({ detail: [] });
@@ -64,7 +67,7 @@ app.get("/chats", (req, res) => {
 	}
 });
 
-// POST /chats/message — new chat (IMPORTANT: /chats/message not /chats)
+// /chats/message creates a new chat; POST /chats is the list endpoint
 app.post("/chats/message", (req, res) => {
 	const token = requireAuth(req, res);
 	if (!token) return;
@@ -76,6 +79,10 @@ app.get("/chats/:chatId/messages", (req, res) => {
 	const token = requireAuth(req, res);
 	if (!token) return;
 	const chatId = Number(req.params.chatId);
+	if (Number.isNaN(chatId)) {
+		res.status(400).json({ detail: "Invalid chat ID" });
+		return;
+	}
 	if (token === TOKEN_USER_B && (chatId === 1 || chatId === 2)) {
 		res.status(404).json({ detail: "Not found" });
 		return;
@@ -94,7 +101,7 @@ app.post("/chats/:chatId/messages", (req, res) => {
 	res.json(continueChatResponse);
 });
 
-// POST /chats/:chatId/review — generate review (IMPORTANT: /chats/:id/review not /reviews/generate/:id)
+// review generation lives under the chat resource, not under /reviews
 app.post("/chats/:chatId/review", (req, res) => {
 	const token = requireAuth(req, res);
 	if (!token) return;
@@ -108,7 +115,7 @@ app.get("/reviews", (req, res) => {
 	res.json(reviewsResponse);
 });
 
-// GET /reviews/chats (IMPORTANT: /reviews/chats not /chats/:id/reviews)
+// chat reviews are fetched from /reviews/chats (not per-chat sub-resource)
 app.get("/reviews/chats", (req, res) => {
 	const token = requireAuth(req, res);
 	if (!token) return;
@@ -119,5 +126,5 @@ const server = app.listen(3001, "127.0.0.1", () => {
 	console.log("[mock-api] Server running on http://localhost:3001");
 });
 
-process.on("SIGTERM", () => server.close());
-process.on("SIGINT", () => server.close());
+process.on("SIGTERM", () => server.close(() => process.exit(0)));
+process.on("SIGINT", () => server.close(() => process.exit(0)));
