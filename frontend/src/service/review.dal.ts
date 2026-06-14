@@ -4,8 +4,10 @@ import { fetchJson } from "@/src/lib/fetch.lib";
 import { getBearerToken } from "@/src/lib/session";
 import type { ServiceResult } from "@/src/lib/type.lib";
 import {
+	chatGenerateChatReview201Schema,
 	reviewCreateReview201Schema,
 	reviewCreateReview422Schema,
+	reviewGetChatReviews200Schema,
 	reviewGetReviews200Schema,
 } from "@/src/models/gen";
 
@@ -52,7 +54,7 @@ export async function postGenerateReview(
 	return fetchJson({
 		url: `${BACKEND_URL}/chats/${chatId}/review`,
 		method: "POST",
-		successSchema: reviewCreateReview201Schema,
+		successSchema: chatGenerateChatReview201Schema,
 		headers: await authHeaders(),
 		timeoutMs: 60_000,
 		fetchOptions: { cache: "no-store" },
@@ -65,7 +67,7 @@ export async function getChatReviews(): Promise<
 	return fetchJson({
 		url: `${BACKEND_URL}/reviews/chats`,
 		method: "GET",
-		successSchema: reviewGetReviews200Schema,
+		successSchema: reviewGetChatReviews200Schema,
 		headers: await authHeaders(),
 		fetchOptions: { cache: "no-store" },
 	});

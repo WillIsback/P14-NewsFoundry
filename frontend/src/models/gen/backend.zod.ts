@@ -29,6 +29,31 @@ export const apiResponseAccessTokenDataSchema = z.object({
 	},
 });
 
+/**
+ * @description Press review generated from a chat conversation.
+ */
+export const chatReviewPublicSchema = z
+	.object({
+		id: z.int(),
+		title: z.string(),
+		description: z.string(),
+		content: z.string(),
+		chat_id: z.int(),
+	})
+	.describe("Press review generated from a chat conversation.");
+
+export const apiResponseChatReviewPublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([chatReviewPublicSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
 export const messageDataSchema = z.object({
 	message: z.string(),
 });
@@ -161,6 +186,27 @@ export const apiResponseListChatPublicSchema = z.object({
 	message: z.string(),
 	get data() {
 		return z.union([z.array(chatPublicSchema), z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
+export const apiResponseListChatReviewPublicSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z
+			.union([
+				z.array(
+					chatReviewPublicSchema.describe(
+						"Press review generated from a chat conversation.",
+					),
+				),
+				z.null(),
+			])
+			.optional();
 	},
 	get error() {
 		return z.union([apiErrorSchema, z.null()]).optional();
@@ -354,6 +400,28 @@ export const chatNewChatMessageMutationResponseSchema = z.lazy(
 	() => chatNewChatMessage201Schema,
 );
 
+export const chatGenerateChatReviewPathParamsSchema = z.object({
+	chat_id: z.coerce.number().int(),
+});
+
+/**
+ * @description Successful Response
+ */
+export const chatGenerateChatReview201Schema = z.lazy(
+	() => apiResponseChatReviewPublicSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const chatGenerateChatReview422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const chatGenerateChatReviewMutationResponseSchema = z.lazy(
+	() => chatGenerateChatReview201Schema,
+);
+
 /**
  * @description Successful Response
  */
@@ -400,6 +468,17 @@ export const reviewCreateReviewMutationResponseSchema = z.lazy(
 /**
  * @description Successful Response
  */
+export const reviewGetChatReviews200Schema = z.lazy(
+	() => apiResponseListChatReviewPublicSchema,
+);
+
+export const reviewGetChatReviewsQueryResponseSchema = z.lazy(
+	() => reviewGetChatReviews200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
 export const newsCreateNewsContext201Schema = z.lazy(
 	() => apiResponseNewsContextPublicSchema,
 );
@@ -440,3 +519,19 @@ export const newsGetNewsContext422Schema = z.lazy(
 export const newsGetNewsContextQueryResponseSchema = z.lazy(
 	() => newsGetNewsContext200Schema,
 );
+
+/**
+ * @description Successful Response
+ */
+export const healthHealthCheck200Schema = z.any();
+
+export const healthHealthCheckQueryResponseSchema = z.lazy(
+	() => healthHealthCheck200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
+export const hello200Schema = z.lazy(() => apiResponseMessageDataSchema);
+
+export const helloQueryResponseSchema = z.lazy(() => hello200Schema);

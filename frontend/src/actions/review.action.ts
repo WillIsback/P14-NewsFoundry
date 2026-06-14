@@ -1,4 +1,7 @@
 "use server";
+
+import { revalidatePath } from "next/cache";
+
 import {
 	getChatReviews,
 	getReviews,
@@ -35,11 +38,14 @@ export async function createReview(
 	return { error: null, data: result.data };
 }
 
-export async function generateReview(chatId: number) {
+export async function generateReview(
+	chatId: number,
+): Promise<{ error: string | null; data?: unknown }> {
 	const result = await postGenerateReview(chatId);
 	if (!result.ok) {
 		return { error: result.error.userMessage, data: null };
 	}
+	revalidatePath("/");
 	return { error: null, data: result.data };
 }
 

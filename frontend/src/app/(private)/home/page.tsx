@@ -31,7 +31,8 @@ export default async function HomePage({
 	reviewsPromise.catch(() => {});
 
 	const chatReviewsPromise = fetchChatReviews().then((r) => {
-		if (r.error || !r.data) return [];
+		if (r.error || !r.data)
+			throw new Error(r.error ?? "Failed to load chat reviews");
 		return r.data.data ?? [];
 	});
 	chatReviewsPromise.catch(() => {});
