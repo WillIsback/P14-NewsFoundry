@@ -12,6 +12,8 @@ export default defineConfig({
 		baseURL: "http://localhost:3000",
 		storageState: "e2e/fixtures/.auth/user-a.json",
 		trace: "on-first-retry",
+		screenshot: "on",
+		video: "retain-on-failure",
 	},
 	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 	webServer: [
@@ -22,12 +24,16 @@ export default defineConfig({
 			stderr: "pipe",
 		},
 		{
-			command: "pnpm start",
+			// Pipe stdout+stderr vers un fichier log lisible par la fixture serverLogs.
+			command: "bash -c 'pnpm start 2>&1 | tee -a /tmp/nextjs-e2e.log'",
 			port: 3000,
 			env: {
 				SESSION_SECRET: process.env.SESSION_SECRET ?? "dev-test-secret",
 				BACKEND_URL: "http://localhost:3001",
 				NODE_ENV: "production",
+				// Abaissé pour les tests — le mock timeout répond après MOCK_SLOW_DELAY_MS (700ms).
+				FETCH_DEFAULT_TIMEOUT_MS: "500",
+				FETCH_CHAT_TIMEOUT_MS: "500",
 			},
 			reuseExistingServer: !process.env.CI,
 			stderr: "pipe",

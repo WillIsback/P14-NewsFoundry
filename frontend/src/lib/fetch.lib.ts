@@ -98,6 +98,26 @@ async function handleResponse<TOk>(
  * and Next.js extended fetch options (cache, revalidate, tags).
  * Input validation and retry are the caller responsibility.
  */
+function logError(
+	url: string,
+	result: {
+		error: { kind: string; code: string; message: string };
+		status: number;
+	},
+) {
+	console.error(
+		"[fetchJson]",
+		JSON.stringify({
+			kind: result.error.kind,
+			code: result.error.code,
+			status: result.status,
+			url,
+			message: result.error.message,
+			ts: new Date().toISOString(),
+		}),
+	);
+}
+
 export async function fetchJson<TReq, TOk>(
 	options: FetchJsonOptions<TReq, TOk>,
 ): Promise<ServiceResult<TOk>> {
@@ -107,7 +127,8 @@ export async function fetchJson<TReq, TOk>(
 		requestData,
 		successSchema,
 		errorSchemas,
-		timeoutMs = 10_000,
+		// FETCH_DEFAULT_TIMEOUT_MS lets tests override the default without touching callsites.
+		timeoutMs = Number(process.env.FETCH_DEFAULT_TIMEOUT_MS ?? 10_000),
 		headers,
 		fetchOptions,
 	} = options;
@@ -128,35 +149,41 @@ export async function fetchJson<TReq, TOk>(
 			signal: controller.signal,
 			...fetchOptions,
 		});
-		return await handleResponse(response, successSchema, errorSchemas);
+		const result = await handleResponse(response, successSchema, errorSchemas);
+		if (!result.ok) logError(url, result);
+		return result;
 	} catch (error) {
 		// `redirect()` (called in handleResponse on 401) throws a NEXT_REDIRECT
 		// control-flow error. Re-throw Next.js internal errors so the framework
 		// can handle them, instead of masking them as a generic network error.
 		unstable_rethrow(error);
 		if (error instanceof DOMException && error.name === "AbortError") {
-			return {
-				ok: false,
+			const result = {
+				ok: false as const,
 				status: 0,
 				error: {
-					kind: "timeout",
+					kind: "timeout" as const,
 					code: "REQUEST_TIMEOUT",
 					message: `Timeout apres ${String(timeoutMs)}ms`,
 					userMessage: "Le serveur met trop de temps a repondre",
 				},
 			};
+			logError(url, result);
+			return result;
 		}
 		const message = error instanceof Error ? error.message : "Unknown error";
-		return {
-			ok: false,
+		const result = {
+			ok: false as const,
 			status: 0,
 			error: {
-				kind: "network",
+				kind: "network" as const,
 				code: "NETWORK_ERROR",
 				message,
 				userMessage: "Probleme de connexion, verifiez votre reseau",
 			},
 		};
+		logError(url, result);
+		return result;
 	} finally {
 		clearTimeout(timeoutId);
 	}
