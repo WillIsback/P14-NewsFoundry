@@ -26,15 +26,16 @@ Le frontend NewsFoundry dispose de tests unitaires et composant via Vitest (issu
 frontend/
 ├── playwright.config.ts
 └── e2e/
-    ├── global-setup.ts               # Génère user-a.json et user-b.json avant les tests
+    ├── global-setup.ts               # Génère user-a.json, user-b.json et user-error.json avant les tests
     ├── mocks/
     │   └── api-server.ts             # Serveur Express mock (port 3001)
     ├── fixtures/
-    │   ├── auth.ts                   # Playwright fixture : contextes user-a / user-b
+    │   ├── auth.ts                   # Playwright fixture : contextes user-a / user-b / user-error
     │   ├── data.ts                   # Données JSON de test (chats, messages, reviews)
     │   └── .auth/                    # storageState générés (gitignorés)
     │       ├── user-a.json
-    │       └── user-b.json
+    │       ├── user-b.json
+    │       └── user-error.json
     └── tests/
         ├── auth.spec.ts
         ├── chat.spec.ts
@@ -49,12 +50,15 @@ Le serveur Express tourne sur `http://localhost:3001`. Next.js le cible via `BAC
 
 ### Utilisateurs fictifs
 
-| | User A | User B |
-|---|---|---|
-| email | `user-a@test.com` | `user-b@test.com` |
-| Bearer token | `mock-token-user-a` | `mock-token-user-b` |
-| Chats | Chat #1 ("Discussion IA"), Chat #2 | Chat #3 |
-| Accès `/chats/1/messages` | ✅ 200 | ❌ 404 |
+| | User A | User B | User Error |
+| --- | --- | --- | --- |
+| email | `user-a@test.com` | `user-b@test.com` | `user-error@test.com` |
+| Bearer token | `mock-token-user-a` | `mock-token-user-b` | `mock-token-error` |
+| Chats | Chat #1, Chat #2 | Chat #3 | — |
+| Accès `/chats/1/messages` | ✅ 200 | ❌ 404 | — |
+| `GET /chats` | ✅ 200 | ✅ 200 | ❌ 500 |
+
+**User Error** est une troisième fixture dédiée aux scénarios d'erreur serveur. Le mock retourne 500 sur tous les endpoints dès que le Bearer token est `mock-token-error`. Cela évite toute mutation d'état partagé entre tests parallèles.
 
 ### Endpoints mock couverts
 
@@ -128,7 +132,7 @@ Les `storageState` JSON (cookies de session) sont sauvegardés dans `e2e/fixture
 
 ### `errors.spec.ts`
 - Login avec mauvais mot de passe → message d'erreur visible (`role="status"`)
-- Mock retourne 500 sur `/chats` → `ErrorBoundary` affiche un message d'erreur
+- Contexte `user-error` (token `mock-token-error`) navigue vers `/home` → mock retourne 500 sur `/chats` → `ErrorBoundary` affiche un message d'erreur
 
 ## Configuration Playwright
 
@@ -146,7 +150,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'node e2e/mocks/api-server.js',
+      command: 'npx tsx e2e/mocks/api-server.ts',
       port: 3001,
       reuseExistingServer: !process.env.CI,
     },
@@ -169,16 +173,20 @@ Fichier séparé de `frontend-tests.yml` (Vitest). Déclenché sur PR et push ve
 
 ```yaml
 steps:
-  - actions/checkout
-  - actions/setup-node (Node 20)
-  - npm install -g pnpm
-  - pnpm install --frozen-lockfile
-  - pnpm exec playwright install --with-deps chromium
-  - pnpm build                                      # next build
-    env: SESSION_SECRET, BACKEND_URL=http://localhost:3001
-  - pnpm exec playwright test
-    env: SESSION_SECRET, BACKEND_URL=http://localhost:3001
-  - upload-artifact: playwright-report/ (si toujours)
+  - uses: actions/checkout
+  - uses: actions/setup-node (Node 20)
+  - run: npm install -g pnpm
+  - run: pnpm install --frozen-lockfile
+  - run: pnpm exec playwright install --with-deps chromium
+  - run: pnpm build
+    env:
+      SESSION_SECRET: ${{ secrets.E2E_SESSION_SECRET }}
+      BACKEND_URL: http://localhost:3001
+  - run: pnpm exec playwright test
+    env:
+      SESSION_SECRET: ${{ secrets.E2E_SESSION_SECRET }}
+      BACKEND_URL: http://localhost:3001
+  - uses: actions/upload-artifact (si always(), path: playwright-report/)
 ```
 
 **Secret GitHub à créer :** `E2E_SESSION_SECRET` (valeur générée via `openssl rand -hex 32`, indépendante de la prod).
@@ -187,7 +195,8 @@ steps:
 
 ```json
 "e2e": "playwright test",
-"e2e:ui": "playwright test --ui",
+"e2e:local": "pnpm build && playwright test",
+"e2e:ui": "pnpm build && playwright test --ui",
 "e2e:headed": "playwright test --headed"
 ```
 
@@ -202,10 +211,10 @@ test-results/
 ## Dépendances à installer
 
 ```bash
-pnpm add -D @playwright/test express @types/express
+pnpm add -D @playwright/test express @types/express tsx
 ```
 
-`jose` est déjà installé (utilisé par `session.ts`).
+`jose` est déjà installé (utilisé par `session.ts`). `tsx` permet d'exécuter `api-server.ts` directement sans étape de transpilation.
 
 ## Décisions clés
 
@@ -217,3 +226,7 @@ pnpm add -D @playwright/test express @types/express
 | `reuseExistingServer: !process.env.CI` | Permet de garder les serveurs actifs en développement local |
 | `storageState` user-a par défaut | Les tests fonctionnels n'ont pas à gérer l'auth sauf `auth.spec.ts` |
 | `pnpm build` avant les tests CI | Comportement de production, évite les faux positifs liés au dev mode |
+| `tsx` pour le mock server | Évite une étape de transpilation, exécution directe du TypeScript |
+| Token `mock-token-error` pour les 500 | Comportement d'erreur déterministe sans mutation d'état partagé entre tests |
+| `e2e:local` = `pnpm build && playwright test` | Évite les erreurs "`.next/` introuvable" pour les développeurs en local |
+| SIGTERM/SIGINT dans `api-server.ts` | Fermeture propre du port 3001, évite les erreurs `EADDRINUSE` en local |
