@@ -20,3 +20,6 @@ OC-P14/*
 .vercel
 
 docs/superpowers
+
+# Frontend test outputs
+frontend/coverage/

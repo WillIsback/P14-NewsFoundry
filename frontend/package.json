@@ -7,6 +7,10 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "eslint",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:coverage": "vitest run --coverage",
+		"test:ui": "vitest --ui",
 		"gen:models": "kubb generate",
 		"gen:tokens": "node scripts/generate-tokens-css.mjs"
 	},
