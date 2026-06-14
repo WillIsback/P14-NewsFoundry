@@ -114,39 +114,46 @@ from llama_index.core import VectorStoreIndex, Document
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 _EMBED_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+_MAX_ARTICLES = 30  # plafond CPU — au-delà, l'indexation devient trop lente sur Railway
+
+# Singleton : chargé une seule fois au démarrage du worker FastAPI
+_embed = HuggingFaceEmbedding(model_name=_EMBED_MODEL)
+
 
 def build_index_and_retrieve(
     articles: list[dict],
     query: str,
     top_k: int = 5,
 ) -> list[dict]:
-    embed = HuggingFaceEmbedding(model_name=_EMBED_MODEL)
+    capped = articles[:_MAX_ARTICLES]
     docs = [
         Document(
             text=f"{a['title']}\n\n{a['summary']}",
             metadata={"title": a["title"], "url": a["url"]},
         )
-        for a in articles
+        for a in capped
     ]
-    index = VectorStoreIndex.from_documents(docs, embed_model=embed)
-    nodes = index.as_retriever(similarity_top_k=top_k).retrieve(query)
+    index = VectorStoreIndex.from_documents(docs, embed_model=_embed)
+    nodes = index.as_retriever(similarity_top_k=min(top_k, len(capped))).retrieve(query)
     return [
         {"title": n.metadata["title"], "summary": n.text, "url": n.metadata["url"]}
         for n in nodes
     ]
 ```
 
-**Note :** l'index n'est pas persisté en base de données. Il est reconstruit à chaque appel de l'endpoint `/review`.
+**Note :** l'index n'est pas persisté en base de données. Il est reconstruit à chaque appel de l'endpoint `/review`. Le plafond `_MAX_ARTICLES = 30` garantit un temps de réponse acceptable sur CPU sans GPU.
 
 ### Enrichissement dans `POST /chats/{id}/review` (`api/chat_endpoints.py`)
 
 ```python
 relevant = []
-if chat.loaded_articles:
-    articles = json.loads(chat.loaded_articles)
-    if articles:
-        query = " ".join(m["content"] for m in llm_messages[-4:])
-        relevant = build_index_and_retrieve(articles, query, top_k=5)
+articles: list[dict] = chat.loaded_articles or []  # JSON column — déjà désérialisé
+if articles:
+    # N'utiliser que les messages utilisateur récents pour la query RAG
+    # (évite le bruit conversationnel des messages AI de transition)
+    user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
+    query = " ".join(user_msgs[-3:])
+    relevant = build_index_and_retrieve(articles, query, top_k=5)
 
 if relevant:
     rag_block = "\n\n".join(
@@ -183,7 +190,7 @@ Le container Railway est éphémère et l'utilisateur `appuser` est créé avec 
 
 2. **Définir `HF_HOME`** vers un chemin accessible à `appuser` (pas de home dir) — `/app/.hf_cache` est dans le workdir de l'app, toujours accessible.
 
-3. **RAM** : le modèle consomme ~300 Mo. Railway Hobby (512 Mo total) est juste — Railway Pro ou Hobby+ est recommandé pour cette feature.
+3. **RAM** : le modèle consomme ~300 Mo en mémoire résidente. Le plan Railway Hobby (8 Go RAM par replica) offre largement assez de marge — aucune contrainte mémoire.
 
 ---
 
