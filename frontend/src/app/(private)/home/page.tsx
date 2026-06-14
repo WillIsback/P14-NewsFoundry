@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { fetchChats } from "@/src/actions/chat.action";
-import { fetchReviews } from "@/src/actions/review.action";
+import { fetchChatReviews, fetchReviews } from "@/src/actions/review.action";
 import AssistantCard from "@/src/components/AssistantCard";
 import ChatForm from "@/src/components/ChatForm";
 import DisplayReviews from "@/src/components/DisplayReviews";
@@ -29,6 +29,12 @@ export default async function HomePage({
 	});
 	// Suppress unhandledRejection: rejection is delegated to ErrorBoundary via use()
 	reviewsPromise.catch(() => {});
+
+	const chatReviewsPromise = fetchChatReviews().then((r) => {
+		if (r.error || !r.data) return [];
+		return r.data.data ?? [];
+	});
+	chatReviewsPromise.catch(() => {});
 
 	return (
 		<div className="flex w-full h-full">
@@ -73,7 +79,10 @@ export default async function HomePage({
 									<p className="text-slate-100">Chargement des revues...</p>
 								}
 							>
-								<DisplayReviews reviewsPromise={reviewsPromise} />
+								<DisplayReviews
+									reviewsPromise={reviewsPromise}
+									chatReviewsPromise={chatReviewsPromise}
+								/>
 							</Suspense>
 						</ErrorBoundary>
 					) : (

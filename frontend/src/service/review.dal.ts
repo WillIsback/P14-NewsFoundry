@@ -45,3 +45,28 @@ export async function postCreateReview(
 		fetchOptions: { cache: "no-store" },
 	});
 }
+
+export async function postGenerateReview(
+	chatId: number,
+): Promise<ServiceResult<CreateReviewResponse>> {
+	return fetchJson({
+		url: `${BACKEND_URL}/chats/${chatId}/review`,
+		method: "POST",
+		successSchema: reviewCreateReview201Schema,
+		headers: await authHeaders(),
+		timeoutMs: 60_000,
+		fetchOptions: { cache: "no-store" },
+	});
+}
+
+export async function getChatReviews(): Promise<
+	ServiceResult<GetReviewsResponse>
+> {
+	return fetchJson({
+		url: `${BACKEND_URL}/reviews/chats`,
+		method: "GET",
+		successSchema: reviewGetReviews200Schema,
+		headers: await authHeaders(),
+		fetchOptions: { cache: "no-store" },
+	});
+}

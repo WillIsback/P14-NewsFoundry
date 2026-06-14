@@ -38,7 +38,7 @@ export default async function ChatPage({
 			{/* Main content area */}
 			<div className=" w-full h-full flex flex-col">
 				{/* Partie Header */}
-				<ChatHeader />
+				<ChatHeader chatId={chatId} />
 				{/* Assistant response area */}
 				{/* Home Assistant Chat Section */}
 				<section className="w-full flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-8 md:px-[25%] md:py-[18%] bg-slate-400 overflow-y-auto">

@@ -1,5 +1,10 @@
 "use server";
-import { getReviews, postCreateReview } from "@/src/service/review.dal";
+import {
+	getChatReviews,
+	getReviews,
+	postCreateReview,
+	postGenerateReview,
+} from "@/src/service/review.dal";
 
 export type ReviewActionState = {
 	error: string | null;
@@ -26,6 +31,22 @@ export async function createReview(
 	const result = await postCreateReview(articles.trim());
 	if (!result.ok) {
 		return { error: result.error.userMessage };
+	}
+	return { error: null, data: result.data };
+}
+
+export async function generateReview(chatId: number) {
+	const result = await postGenerateReview(chatId);
+	if (!result.ok) {
+		return { error: result.error.userMessage, data: null };
+	}
+	return { error: null, data: result.data };
+}
+
+export async function fetchChatReviews() {
+	const result = await getChatReviews();
+	if (!result.ok) {
+		return { error: result.error.userMessage, data: null };
 	}
 	return { error: null, data: result.data };
 }
