@@ -202,7 +202,8 @@ describe('Message — rendu', () => {
   })
   it('affiche le contenu IA avec Markdown (gras)', () => {
     render(<Message type="ai" content="**important**" />)
-    expect(screen.getByRole('strong')).toHaveTextContent('important')
+    const el = screen.getByText('important')
+    expect(el.closest('strong')).toBeInTheDocument()
   })
   it('affiche un élément <time> quand timestamp fourni', () => {
     render(<Message type="user" content="Test" timestamp="2024-01-15T10:00:00Z" />)
