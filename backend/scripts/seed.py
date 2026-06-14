@@ -42,6 +42,19 @@ from database.models import Chat, Message, MessageType, PressReview, User, UserR
 from sqlmodel import Session, select  # noqa: E402
 
 # ---------------------------------------------------------------------------
+# Guard: refuse to seed in production (hardcoded test credentials are
+# not suitable for a live environment).
+# ---------------------------------------------------------------------------
+if ENVIRONMENT == "production":
+    print(
+        "✗ Refusing to seed: hardcoded credentials not safe in production.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+# ---------------------------------------------------------------------------
+# Fixture data
+# ---------------------------------------------------------------------------
 # Fixture data
 # ---------------------------------------------------------------------------
 SEED_EMAIL = "test@test.com"
