@@ -99,6 +99,7 @@ class ChatReviewPublic(BaseModel):
     description: str
     content: str
     chat_id: int
+    date: str
 
 
 class CreateReviewRequest(BaseModel):

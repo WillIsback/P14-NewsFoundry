@@ -292,6 +292,7 @@ def build_chat_router() -> APIRouter:
                 description=output.summary,
                 content=articles_json,
                 chat_id=chat_id,
+                date=now,
             ),
         )
 

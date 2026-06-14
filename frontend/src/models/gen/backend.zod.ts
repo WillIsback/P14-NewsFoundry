@@ -39,6 +39,7 @@ export const chatReviewPublicSchema = z
 		description: z.string(),
 		content: z.string(),
 		chat_id: z.int(),
+		date: z.string(),
 	})
 	.describe("Press review generated from a chat conversation.");
 

@@ -130,6 +130,7 @@ def build_review_router() -> APIRouter:
                     description=c.press_review_summary,
                     content=raw,
                     chat_id=c.id,
+                    date=c.press_review_date or "",
                 )
             )
         return success_response(
