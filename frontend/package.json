@@ -41,14 +41,21 @@
 		"@kubb/plugin-oas": "^4.37.5",
 		"@kubb/plugin-zod": "^4.37.5",
 		"@tailwindcss/postcss": "^4",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"@testing-library/user-event": "^14.6.1",
 		"@types/node": "^20",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
+		"@vitejs/plugin-react": "^6.0.2",
+		"@vitest/coverage-v8": "^4.1.8",
 		"ai-devops-toolkit": "github:WillIsback/ai-devops-toolkit",
 		"eslint": "^9",
 		"eslint-config-next": "16.2.4",
+		"jsdom": "^29.1.1",
 		"prettier": "^3.8.3",
 		"tailwindcss": "^4",
-		"typescript": "^5"
+		"typescript": "^5",
+		"vitest": "^4.1.8"
 	}
 }
