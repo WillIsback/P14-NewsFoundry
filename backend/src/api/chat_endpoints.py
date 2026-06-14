@@ -15,6 +15,7 @@ from api.models import (
     SendMessageResponse,
     success_response,
 )
+from core.agent.context import ChatRunContext
 from core.agent.search_agent import chat_agent, generate_instructions
 from core.auth import verify_user
 from core.config import LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
@@ -27,6 +28,7 @@ from database.crud import (
     get_chat_by_id_sync,
     get_chats_by_user_sync,
     get_messages_by_chat_sync,
+    update_chat_loaded_articles_sync,
     update_chat_press_review_sync,
     update_chat_system_prompt_sync,
 )
@@ -87,9 +89,11 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     # we only pass the conversation history here.
     openai_messages = [{"role": m.role, "content": m.content} for m in llm_messages]
 
+    run_context = ChatRunContext(chat_id=chat_id)
+
     try:
         result = await asyncio.wait_for(
-            Runner.run(active_agent, input=openai_messages),
+            Runner.run(active_agent, input=openai_messages, context=run_context),
             timeout=LLM_TIMEOUT_SECONDS,
         )
         response_content = result.final_output
@@ -115,6 +119,15 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="LLM provider error"
         )
+
+    # Fusionner les articles collectés avec les existants (dédupliqués par URL)
+    if run_context.loaded_articles:
+        existing: list[dict] = chat.loaded_articles or []
+        existing_urls = {a["url"] for a in existing}
+        merged = existing + [
+            a for a in run_context.loaded_articles if a["url"] not in existing_urls
+        ]
+        await asyncio.to_thread(update_chat_loaded_articles_sync, chat_id, merged)
 
     # Persist AI response (the user message was already persisted before the LLM call)
     ai_timestamp = datetime.now(timezone.utc).isoformat()
