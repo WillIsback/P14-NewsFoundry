@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 from typing import Optional
 
 from sqlmodel import Session, select
@@ -15,6 +16,8 @@ from database.models import (
 
 # Imported here for thread-safe wrappers that open their own Session
 from database.database import engine
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # User
@@ -251,13 +254,15 @@ def update_chat_press_review(
     session: Session, chat_id: int, title: str, summary: str, articles: str, date: str
 ) -> None:
     chat = session.get(Chat, chat_id)
-    if chat:
-        chat.press_review_title = title
-        chat.press_review_summary = summary
-        chat.press_review_articles = articles
-        chat.press_review_date = date
-        session.add(chat)
-        session.commit()
+    if not chat:
+        logger.warning("Chat %s not found for press review update", chat_id)
+        return
+    chat.press_review_title = title
+    chat.press_review_summary = summary
+    chat.press_review_articles = articles
+    chat.press_review_date = date
+    session.add(chat)
+    session.commit()
 
 
 def update_chat_press_review_sync(

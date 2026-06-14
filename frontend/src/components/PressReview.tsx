@@ -86,11 +86,16 @@ export default function PressReview({
 		</svg>
 	);
 
-	const handleCopy = () => {
+	const handleCopy = async () => {
 		const textToCopy = articles
 			? articles.map((a) => `**${a.title}**\n${a.summary}`).join("\n\n")
 			: content;
-		navigator.clipboard.writeText(textToCopy);
+		try {
+			await navigator.clipboard.writeText(textToCopy);
+		} catch {
+			setCopied(false);
+			return;
+		}
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	};
@@ -117,9 +122,10 @@ export default function PressReview({
 			<div className="text-slate-dark wrap-normal text-body-s w-full">
 				{articles ? (
 					<div className="flex flex-col gap-6">
-						{articles.map((article) => (
+						{articles.map((article, index) => (
 							<div
-								key={article.title}
+								// biome-ignore lint/suspicious/noArrayIndexKey: articles lack stable IDs; composite key prevents duplicate-title collisions
+								key={`${article.title}-${index}`}
 								className="border-l-2 border-slate-300 pl-4"
 							>
 								<h5 className="font-semibold">{article.title}</h5>

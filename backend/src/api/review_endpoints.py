@@ -109,17 +109,29 @@ def build_review_router() -> APIRouter:
     ) -> ApiResponse[list[ChatReviewPublic]]:
         """Return press reviews generated from chats."""
         chats = get_chats_by_user_sync(current_user.id)
-        reviews = [
-            ChatReviewPublic(
-                id=c.id,
-                title=c.press_review_title,
-                description=c.press_review_summary,
-                content=c.press_review_articles or "[]",
-                chat_id=c.id,
+        reviews = []
+        for c in chats:
+            if c.press_review_title is None:
+                continue
+            raw = c.press_review_articles
+            if raw:
+                try:
+                    import json
+
+                    json.loads(raw)
+                except json.JSONDecodeError:
+                    raw = "[]"
+            else:
+                raw = "[]"
+            reviews.append(
+                ChatReviewPublic(
+                    id=c.id,
+                    title=c.press_review_title,
+                    description=c.press_review_summary,
+                    content=raw,
+                    chat_id=c.id,
+                )
             )
-            for c in chats
-            if c.press_review_title is not None
-        ]
         return success_response(
             status=status.HTTP_200_OK,
             message="Chat reviews retrieved",
