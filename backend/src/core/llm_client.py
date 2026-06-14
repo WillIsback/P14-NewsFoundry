@@ -28,7 +28,15 @@ def build_llm_client(proxy_url: str | None | EllipsisType = ...) -> AsyncOpenAI:
     if proxy_url is ...:
         proxy_url = LLM_PROXY_URL
 
-    http_client = httpx.AsyncClient(proxy=proxy_url) if proxy_url else None
+    # Configuration anti-hang : Désactivation stricte du Keep-Alive
+    # indispensable pour éviter les blocages (TCP blackholes) via le SOCKS5 userspace Tailscale.
+    http_client = httpx.AsyncClient(
+        proxy=proxy_url if proxy_url else None,
+        timeout=120.0,  # Un timeout généreux pour les longues générations
+        limits=httpx.Limits(max_keepalive_connections=0, keepalive_expiry=0.0),
+        headers={"Connection": "close"},
+    )
+
     return AsyncOpenAI(
         api_key=LLM_API_KEY,
         base_url=LLM_BASE_URL,
