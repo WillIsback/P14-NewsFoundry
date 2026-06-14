@@ -21,6 +21,7 @@ COPY --from=builder --chown=appuser:appuser /app/.venv ./.venv
 # Copy application code
 COPY --chown=appuser:appuser alembic.ini ./
 COPY --chown=appuser:appuser alembic/ ./alembic/
+COPY --chown=appuser:appuser scripts/ ./scripts/
 COPY --chown=appuser:appuser src/ ./src/
 
 # Use the venv python directly (no uv in runtime)
