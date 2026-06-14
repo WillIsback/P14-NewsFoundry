@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-
+import type { z } from "zod/v4";
+import type { chatGenerateChatReview201Schema } from "@/src/models/gen";
 import {
 	getChatReviews,
 	getReviews,
@@ -13,6 +14,10 @@ export type ReviewActionState = {
 	error: string | null;
 	data?: unknown;
 };
+
+type ChatGenerateReviewResponse = z.infer<
+	typeof chatGenerateChatReview201Schema
+>;
 
 export async function fetchReviews() {
 	const result = await getReviews();
@@ -40,7 +45,7 @@ export async function createReview(
 
 export async function generateReview(
 	chatId: number,
-): Promise<{ error: string | null; data?: unknown }> {
+): Promise<{ error: string | null; data: ChatGenerateReviewResponse | null }> {
 	const result = await postGenerateReview(chatId);
 	if (!result.ok) {
 		return { error: result.error.userMessage, data: null };

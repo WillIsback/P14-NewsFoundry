@@ -16,6 +16,7 @@ const markdownComponents: Components = {
 };
 
 interface PressReviewProps {
+	id?: string | number;
 	title: string;
 	description: string;
 	content: string;
@@ -23,6 +24,7 @@ interface PressReviewProps {
 }
 
 export default function PressReview({
+	id,
 	title,
 	description,
 	content,
@@ -104,7 +106,10 @@ export default function PressReview({
 	};
 
 	return (
-		<article className="w-fit h-fit items-center justify-center flex flex-col gap-7.5 px-10 py-10 rounded-[14px] bg-white">
+		<article
+			id={id ? `review-${id}` : undefined}
+			className="w-fit h-fit items-center justify-center flex flex-col gap-7.5 px-10 py-10 rounded-[14px] bg-white scroll-mt-24"
+		>
 			<header className="w-full flex flex-row flex-1 justify-between">
 				<div className="flex flex-col gap-2">
 					<h4>{title}</h4>

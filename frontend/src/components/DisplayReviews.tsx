@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import PressReview from "./PressReview";
 
 interface ReviewItem {
@@ -21,6 +21,13 @@ export default function DisplayReviews({
 	const reviews = use(reviewsPromise);
 	const chatReviews = use(chatReviewsPromise);
 	const allReviews = [...reviews, ...chatReviews];
+
+	useEffect(() => {
+		if (window.location.hash) {
+			const el = document.getElementById(window.location.hash.slice(1));
+			el?.scrollIntoView({ behavior: "smooth", block: "start" });
+		}
+	}, []);
 
 	return (
 		<div className="flex flex-col h-full min-h-0">
