@@ -17,6 +17,7 @@ from agents import Agent, ModelSettings, OpenAIChatCompletionsModel
 
 from core.config import AGENT_MAX_TOKENS, LLM_MODEL
 from core.llm_client import build_llm_client
+from core.agent.context import ChatRunContext
 from core.agent.tools import get_top_news, search_news
 
 
@@ -52,7 +53,7 @@ def _build_instructions(ctx, agent) -> str:
 
 _openai_client = build_llm_client()
 
-chat_agent = Agent(
+chat_agent = Agent[ChatRunContext](
     name="newsfoundry_chat_agent",
     instructions=_build_instructions,
     tools=[get_top_news, search_news],
