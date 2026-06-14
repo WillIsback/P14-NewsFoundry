@@ -13,6 +13,14 @@ export const TOKEN_CONTINUE_500 = "mock-token-continue-500";
 export const TOKEN_GENERATE_REVIEW_500 = "mock-token-generate-review-500";
 export const TOKEN_SESSION_EXPIRED = "mock-token-session-expired";
 
+// Tokens timeout — le mock répond après MOCK_SLOW_DELAY_MS (> FETCH_DEFAULT/CHAT_TIMEOUT_MS)
+export const TOKEN_CHATS_TIMEOUT = "mock-token-chats-timeout";
+export const TOKEN_NEWCHAT_TIMEOUT = "mock-token-newchat-timeout";
+
+// Tokens rate limit — le mock répond 429 Too Many Requests
+export const TOKEN_RATE_LIMITED_CHATS = "mock-token-rate-limited-chats";
+export const TOKEN_RATE_LIMITED_POST = "mock-token-rate-limited-post";
+
 export const PASSWORD_OK = "password-a";
 export const PASSWORD_WRONG = "wrong-password";
 

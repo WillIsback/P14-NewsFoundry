@@ -11,14 +11,26 @@ import {
 	PASSWORD_OK,
 	reviewsResponse,
 	TOKEN_CHATS_500,
+	TOKEN_CHATS_TIMEOUT,
 	TOKEN_CONTINUE_500,
 	TOKEN_ERROR,
 	TOKEN_GENERATE_REVIEW_500,
 	TOKEN_NEWCHAT_500,
+	TOKEN_NEWCHAT_TIMEOUT,
+	TOKEN_RATE_LIMITED_CHATS,
+	TOKEN_RATE_LIMITED_POST,
 	TOKEN_SESSION_EXPIRED,
 	TOKEN_USER_B,
 	USER_A_EMAIL,
 } from "../fixtures/data.js";
+
+// Délai en ms que le mock attend avant de répondre pour les tokens *_TIMEOUT.
+// Doit être supérieur à FETCH_DEFAULT_TIMEOUT_MS et FETCH_CHAT_TIMEOUT_MS définis dans playwright.config.ts.
+const MOCK_SLOW_DELAY_MS = Number(process.env.MOCK_SLOW_DELAY_MS ?? 700);
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 const app = express();
 app.use(express.json());
@@ -67,11 +79,20 @@ app.post("/auth/login", (req, res) => {
 });
 
 // GET /chats
-app.get("/chats", (req, res) => {
+app.get("/chats", async (req, res) => {
 	const token = requireAuth(req, res);
 	if (!token) return;
 	if (token === TOKEN_CHATS_500) {
 		res.status(500).json({ detail: "Internal server error" });
+		return;
+	}
+	if (token === TOKEN_CHATS_TIMEOUT) {
+		await delay(MOCK_SLOW_DELAY_MS);
+		res.json(chatsUserA);
+		return;
+	}
+	if (token === TOKEN_RATE_LIMITED_CHATS) {
+		res.status(429).json({ detail: "Too Many Requests" });
 		return;
 	}
 	if (token === TOKEN_USER_B) {
@@ -83,11 +104,20 @@ app.get("/chats", (req, res) => {
 });
 
 // POST /chats/message — crée un nouveau chat
-app.post("/chats/message", (req, res) => {
+app.post("/chats/message", async (req, res) => {
 	const token = requireAuth(req, res);
 	if (!token) return;
 	if (token === TOKEN_NEWCHAT_500) {
 		res.status(500).json({ detail: "Internal server error" });
+		return;
+	}
+	if (token === TOKEN_NEWCHAT_TIMEOUT) {
+		await delay(MOCK_SLOW_DELAY_MS);
+		res.status(201).json(newChatResponse);
+		return;
+	}
+	if (token === TOKEN_RATE_LIMITED_POST) {
+		res.status(429).json({ detail: "Too Many Requests" });
 		return;
 	}
 	res.status(201).json(newChatResponse);

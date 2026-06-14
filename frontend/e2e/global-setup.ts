@@ -56,6 +56,10 @@ export default async function globalSetup(): Promise<void> {
 		continue500Jwt,
 		generateReview500Jwt,
 		sessionExpiredJwt,
+		chatsTimeoutJwt,
+		newchatTimeoutJwt,
+		rateLimitedChatsJwt,
+		rateLimitedPostJwt,
 	] = await Promise.all([
 		generateSessionCookie("user-a@test.com", "mock-token-user-a"),
 		generateSessionCookie("user-b@test.com", "mock-token-user-b"),
@@ -65,6 +69,10 @@ export default async function globalSetup(): Promise<void> {
 		generateSessionCookie("user-a@test.com", "mock-token-continue-500"),
 		generateSessionCookie("user-a@test.com", "mock-token-generate-review-500"),
 		generateSessionCookie("user-a@test.com", "mock-token-session-expired"),
+		generateSessionCookie("user-a@test.com", "mock-token-chats-timeout"),
+		generateSessionCookie("user-a@test.com", "mock-token-newchat-timeout"),
+		generateSessionCookie("user-a@test.com", "mock-token-rate-limited-chats"),
+		generateSessionCookie("user-a@test.com", "mock-token-rate-limited-post"),
 	]);
 
 	await Promise.all([
@@ -76,6 +84,10 @@ export default async function globalSetup(): Promise<void> {
 		writeStorageState(`${authDir}/continue-500.json`, continue500Jwt),
 		writeStorageState(`${authDir}/generate-review-500.json`, generateReview500Jwt),
 		writeStorageState(`${authDir}/session-expired.json`, sessionExpiredJwt),
+		writeStorageState(`${authDir}/chats-timeout.json`, chatsTimeoutJwt),
+		writeStorageState(`${authDir}/newchat-timeout.json`, newchatTimeoutJwt),
+		writeStorageState(`${authDir}/rate-limited-chats.json`, rateLimitedChatsJwt),
+		writeStorageState(`${authDir}/rate-limited-post.json`, rateLimitedPostJwt),
 	]);
 
 	console.log("[globalSetup] Auth storage states generated in", authDir);

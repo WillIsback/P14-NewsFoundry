@@ -63,7 +63,8 @@ export async function postNewChatMessage(
 		errorSchemas: { 422: chatNewChatMessage422Schema },
 		headers: await authHeaders(),
 		// L'agent (WorldNews + 2 appels LLM) dépasse le défaut de 10s.
-		timeoutMs: 120_000,
+		// FETCH_CHAT_TIMEOUT_MS permet aux tests d'abaisser cette valeur sans toucher le code.
+		timeoutMs: Number(process.env.FETCH_CHAT_TIMEOUT_MS ?? 120_000),
 		fetchOptions: { cache: "no-store" },
 	});
 }
@@ -80,7 +81,7 @@ export async function postContinueChatMessage(
 		errorSchemas: { 422: chatContinueChatMessage422Schema },
 		headers: await authHeaders(),
 		// L'agent (WorldNews + 2 appels LLM) dépasse le défaut de 10s.
-		timeoutMs: 120_000,
+		timeoutMs: Number(process.env.FETCH_CHAT_TIMEOUT_MS ?? 120_000),
 		fetchOptions: { cache: "no-store" },
 	});
 }

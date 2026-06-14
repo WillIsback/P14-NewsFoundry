@@ -1,16 +1,24 @@
-import { expect, test as base } from "@playwright/test";
+import fs from "node:fs/promises";
+import { test as base, expect } from "@playwright/test";
 import {
 	CHATS_500_STATE,
+	CHATS_TIMEOUT_STATE,
 	CONTINUE_500_STATE,
 	GENERATE_REVIEW_500_STATE,
 	NEWCHAT_500_STATE,
+	NEWCHAT_TIMEOUT_STATE,
 	NO_AUTH_STATE,
+	RATE_LIMITED_CHATS_STATE,
+	RATE_LIMITED_POST_STATE,
 	SESSION_EXPIRED_STATE,
 	USER_ERROR_STATE,
 } from "../fixtures/auth.js";
 
+const SERVER_LOG_FILE = "/tmp/nextjs-e2e.log";
+
 // Fixture qui capture les erreurs/warnings console côté browser et les attache au rapport HTML.
-const test = base.extend<{ consoleLogs: string[] }>({
+// Capture aussi les logs serveur Next.js (stdout/stderr via tee dans playwright.config.ts).
+const test = base.extend<{ consoleLogs: string[]; serverLogs: string[] }>({
 	consoleLogs: async ({ page }, use, testInfo) => {
 		const logs: string[] = [];
 		page.on("console", (msg) => {
@@ -23,17 +31,56 @@ const test = base.extend<{ consoleLogs: string[] }>({
 		});
 		await use(logs);
 		if (logs.length > 0) {
-			await testInfo.attach("console-logs", {
+			await testInfo.attach("console-logs-browser", {
 				body: logs.join("\n"),
 				contentType: "text/plain",
 			});
 		}
 	},
+
+	// biome-ignore lint/correctness/noEmptyPattern: Playwright fixture API requiert un destructuring objet
+	serverLogs: async ({}, use, testInfo) => {
+		let startOffset = 0;
+		try {
+			const stat = await fs.stat(SERVER_LOG_FILE);
+			startOffset = stat.size;
+		} catch {
+			/* fichier absent au premier lancement */
+		}
+		await use([]);
+		try {
+			const stat = await fs.stat(SERVER_LOG_FILE);
+			const newBytes = stat.size - startOffset;
+			if (newBytes > 0) {
+				const fd = await fs.open(SERVER_LOG_FILE, "r");
+				const buf = Buffer.alloc(newBytes);
+				await fd.read(buf, 0, newBytes, startOffset);
+				await fd.close();
+				const lines = buf
+					.toString("utf-8")
+					.split("\n")
+					.filter((l) => l.trim());
+				if (lines.length > 0) {
+					await testInfo.attach("server-logs-nextjs", {
+						body: lines.join("\n"),
+						contentType: "text/plain",
+					});
+				}
+			}
+		} catch {
+			/* log non disponible */
+		}
+	},
 });
 
-async function attachScreenshot(page: { screenshot(): Promise<Buffer> }, name: string) {
+async function attachScreenshot(
+	page: { screenshot(): Promise<Buffer> },
+	name: string,
+) {
 	const screenshot = await page.screenshot();
-	await test.info().attach(name, { body: screenshot, contentType: "image/png" });
+	await test
+		.info()
+		.attach(name, { body: screenshot, contentType: "image/png" });
 }
 
 // ─── 1. Login — champs vides ─────────────────────────────────────────────────
@@ -231,5 +278,96 @@ test.describe("reviews — GET /reviews 500", () => {
 			page.getByText("Impossible de charger les revues de presse."),
 		).toBeVisible();
 		await attachScreenshot(page, "reviews-500-errorboundary");
+	});
+});
+
+// ─── 11. Timeout — GET /chats (sidebar) ──────────────────────────────────────
+
+test.describe("timeout — GET /chats sidebar", () => {
+	test.use({ storageState: CHATS_TIMEOUT_STATE });
+
+	// FETCH_DEFAULT_TIMEOUT_MS=500ms (playwright.config.ts) < MOCK_SLOW_DELAY_MS=700ms (api-server.ts)
+	// → fetchJson déclenche AbortError → userMessage "Le serveur met trop de temps a repondre"
+	// → chatsPromise rejette → ErrorBoundary sidebar affiche le fallback
+	test("timeout sidebar : ErrorBoundary affiche le fallback avec log [fetchJson:timeout]", async ({
+		page,
+		consoleLogs: _,
+		serverLogs: __,
+	}) => {
+		test.setTimeout(10_000);
+		await page.goto("/home");
+		await expect(
+			page.getByText("Impossible de charger les discussions."),
+		).toBeVisible();
+		await attachScreenshot(page, "sidebar-chats-timeout");
+	});
+});
+
+// ─── 12. Timeout — POST /chats/message (ChatForm) ────────────────────────────
+
+test.describe("timeout — POST /chats/message ChatForm", () => {
+	test.use({ storageState: NEWCHAT_TIMEOUT_STATE });
+
+	// FETCH_CHAT_TIMEOUT_MS=500ms < MOCK_SLOW_DELAY_MS=700ms
+	// → fetchJson AbortError → userMessage "Le serveur met trop de temps a repondre"
+	// → ChatForm affiche l'alerte accessible (sr-only)
+	test("timeout POST chat : alerte avec message de timeout", async ({
+		page,
+		consoleLogs: _,
+		serverLogs: __,
+	}) => {
+		test.setTimeout(10_000);
+		await page.goto("/home");
+		await page.getByLabel("Message").fill("Question longue");
+		await page.getByRole("button", { name: /envoyer/i }).click();
+		const alert = page.locator('p[role="alert"]');
+		await expect(alert).toBeAttached();
+		await expect(alert).toContainText(
+			"Le serveur met trop de temps a repondre",
+		);
+		await attachScreenshot(page, "chatform-newchat-timeout");
+	});
+});
+
+// ─── 13. Rate limit 429 — GET /chats (sidebar) ───────────────────────────────
+
+test.describe("rate limit 429 — GET /chats sidebar", () => {
+	test.use({ storageState: RATE_LIMITED_CHATS_STATE });
+
+	// FastAPI retourne 429 → fetchJson HTTP error → userMessage "La requete a echoue"
+	// → chatsPromise rejette → ErrorBoundary sidebar affiche le fallback
+	// NOTE : fetchJson ne différencie pas 429 des autres erreurs HTTP (pas de cas spécifique).
+	test("rate limit sidebar : ErrorBoundary affiche le fallback avec log HTTP_429", async ({
+		page,
+		consoleLogs: _,
+		serverLogs: __,
+	}) => {
+		await page.goto("/home");
+		await expect(
+			page.getByText("Impossible de charger les discussions."),
+		).toBeVisible();
+		await attachScreenshot(page, "sidebar-rate-limited-429");
+	});
+});
+
+// ─── 14. Rate limit 429 — POST /chats/message (ChatForm) ─────────────────────
+
+test.describe("rate limit 429 — POST /chats/message ChatForm", () => {
+	test.use({ storageState: RATE_LIMITED_POST_STATE });
+
+	// FastAPI retourne 429 → fetchJson HTTP error → userMessage "La requete a echoue"
+	// → ChatForm affiche l'alerte accessible (sr-only)
+	test("rate limit POST chat : alerte avec message d'erreur générique", async ({
+		page,
+		consoleLogs: _,
+		serverLogs: __,
+	}) => {
+		await page.goto("/home");
+		await page.getByLabel("Message").fill("Question bloquée");
+		await page.getByRole("button", { name: /envoyer/i }).click();
+		const alert = page.locator('p[role="alert"]');
+		await expect(alert).toBeAttached();
+		await expect(alert).toContainText("La requete a echoue");
+		await attachScreenshot(page, "chatform-rate-limited-429");
 	});
 });
