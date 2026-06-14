@@ -44,14 +44,14 @@ jobs:
       - name: Build Next.js
         run: pnpm build
         env:
-          SESSION_SECRET: ${{ secrets.E2E_SESSION_SECRET }}
+          SESSION_SECRET: ${{ secrets.E2E_SESSION_SECRET || 'ci-e2e-test-secret-not-for-production' }}
           BACKEND_URL: http://localhost:3001
           SENTRY_UPLOAD_SOURCEMAPS: "false"
 
       - name: Run Playwright tests
         run: pnpm e2e
         env:
-          SESSION_SECRET: ${{ secrets.E2E_SESSION_SECRET }}
+          SESSION_SECRET: ${{ secrets.E2E_SESSION_SECRET || 'ci-e2e-test-secret-not-for-production' }}
           BACKEND_URL: http://localhost:3001
           CI: "true"
 
