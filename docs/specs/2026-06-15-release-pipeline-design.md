@@ -23,7 +23,27 @@ on:
     branches: [main]
 ```
 
-Le workflow ne s'exécute que si `Backend Tests` se termine avec `success` (condition vérifiée en début de job).
+`types: [completed]` se déclenche quelle que soit la conclusion (succès, échec, annulation). La condition de succès est vérifiée explicitement au niveau du job :
+
+```yaml
+jobs:
+  bump-and-release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+```
+
+### Concurrence
+
+Pour éviter les race conditions si deux PR sont mergées rapidement :
+
+```yaml
+concurrency:
+  group: release-pipeline
+  cancel-in-progress: false  # file d'attente, ne pas annuler une release en cours
+```
+
+### Comportement du GITHUB_TOKEN sur les push
+
+Les commits poussés par `GITHUB_TOKEN` ne déclenchent pas d'autres workflows GitHub Actions. C'est un comportement intentionnel ici : le commit `chore: bump version...` ne re-déclenche pas `Backend Tests`, ce qui empêche toute boucle infinie. Le commit de bump n'est pas testé par le CI — ce qui est acceptable pour un changement de métadonnées.
 
 ### Fichier
 
@@ -71,10 +91,19 @@ Le workflow ne s'exécute que si `Backend Tests` se termine avec `success` (cond
 1.40.0 →  2.0.0
 ```
 
-### Script bash
+### Script de bump
+
+Python est disponible nativement dans GitHub Actions et gère le TOML sans ambiguïté de format :
 
 ```bash
-CURRENT=$(grep '^version = ' backend/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+# Lecture de la version courante via Python (robuste aux variations de format TOML)
+CURRENT=$(python3 -c "
+import re, sys
+content = open('backend/pyproject.toml').read()
+m = re.search(r'^version\s*=\s*\"([^\"]+)\"', content, re.MULTILINE)
+print(m.group(1) if m else sys.exit(1))
+")
+
 MAJOR=$(echo $CURRENT | cut -d. -f1)
 MINOR=$(echo $CURRENT | cut -d. -f2)
 
@@ -90,12 +119,27 @@ fi
 **Source de vérité :** `backend/pyproject.toml` (lu en premier, version appliquée aux deux fichiers).
 
 ```bash
-# backend/pyproject.toml
-sed -i "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" backend/pyproject.toml
+# backend/pyproject.toml — Python pour écriture TOML fiable
+python3 -c "
+import re
+path = 'backend/pyproject.toml'
+content = open(path).read()
+content = re.sub(r'^(version\s*=\s*)\"[^\"]+\"', r'\1\"${NEW_VERSION}\"', content, flags=re.MULTILINE)
+open(path, 'w').write(content)
+"
 
-# frontend/package.json (jq pour JSON valide)
+# frontend/package.json — jq pour JSON valide
 jq --arg v "$NEW_VERSION" '.version = $v' frontend/package.json > tmp.json \
   && mv tmp.json frontend/package.json
+```
+
+### Configuration de l'identité Git du bot
+
+Requis avant tout commit automatisé :
+
+```bash
+git config user.name "github-actions[bot]"
+git config user.email "github-actions[bot]@users.noreply.github.com"
 ```
 
 ---
