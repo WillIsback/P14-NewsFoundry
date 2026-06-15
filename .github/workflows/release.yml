@@ -10,6 +10,7 @@ on:
     workflows: ["Backend Tests", "Frontend Tests"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:  # Déclenchement manuel via gh workflow run ou l'UI GitHub Actions
 
 # Un seul pipeline à la fois. cancel-in-progress: false met en file d'attente
 # plutôt qu'annuler une release déjà en cours.
@@ -25,7 +26,7 @@ jobs:
   # ── Job 1 : bump version + GitHub Release ──────────────────────────────────
   bump-and-release:
     name: Bump version & create GitHub Release
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -128,7 +129,7 @@ jobs:
   docker-publish:
     name: Build & push Docker image
     needs: bump-and-release
-    if: ${{ github.event.workflow_run.name == 'Backend Tests' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.name == 'Backend Tests' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
