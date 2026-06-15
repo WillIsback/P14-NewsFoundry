@@ -286,7 +286,14 @@ def build_chat_router() -> APIRouter:
                 )
                 active_review_agent = press_review_agent.clone(
                     instructions=base_instructions
-                    + f"\n\n## Articles pertinents identifiés pour cette revue\n\n{rag_block}"
+                    + (
+                        "\n\n## Sources disponibles pour enrichir la revue\n\n"
+                        "Ces articles ont été chargés durant la conversation. "
+                        "Utilise-les UNIQUEMENT pour ajouter des URLs ou des détails "
+                        "à des sujets déjà discutés dans la conversation. "
+                        "Ne crée PAS de nouvelles sections absentes du chat.\n\n"
+                        f"{rag_block}"
+                    )
                 )
 
         try:
