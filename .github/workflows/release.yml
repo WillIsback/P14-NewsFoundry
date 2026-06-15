@@ -198,8 +198,8 @@ jobs:
           git push origin "$BRANCH"
 
       - name: Create PR
-        # gh pr create utilise GITHUB_TOKEN (pull-requests: write dans permissions:)
-        # RELEASE_PAT n'a pas le scope GraphQL createPullRequest (fine-grained token).
+        # RELEASE_PAT requis : GITHUB_TOKEN est bloqué par le paramètre repo
+        # "GitHub Actions is not permitted to create pull requests".
         if: steps.guard.outputs.skip != 'true'
         run: |
           PR_URL=$(gh pr create \
@@ -211,7 +211,7 @@ jobs:
           echo "PR_NUMBER=${PR_NUMBER}" >> "$GITHUB_ENV"
           echo "✅ PR #${PR_NUMBER} créée"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
 
       - name: Enable auto-merge
         # RELEASE_PAT requis pour activer l'auto-merge sur une branche protégée.

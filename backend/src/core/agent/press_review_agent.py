@@ -23,11 +23,15 @@ class ArticleSummary(BaseModel):
     title: str = Field(description="Titre de l'article")
     content: str = Field(
         description=(
-            "Analyse journalistique approfondie de l'article (3 à 5 paragraphes substantiels). "
-            "Développer obligatoirement : (1) contexte et faits principaux, "
+            "Analyse journalistique approfondie de l'article en UN SEUL bloc de texte "
+            "contenant TOUS les paragraphes séparés par des lignes vides (\\n\\n). "
+            "RÈGLE ABSOLUE : un article réel = un seul ArticleSummary. "
+            "Ne jamais créer plusieurs ArticleSummary pour le même article. "
+            "Structure attendue (3 à 5 paragraphes dans ce champ unique) : "
+            "(1) contexte et faits principaux, "
             "(2) arguments, données chiffrées et citations notables, "
             "(3) implications, portée et nuances. "
-            "Ne jamais écrire moins de 3 paragraphes. En français."
+            "En français, avec Markdown (**gras**, > citations)."
         )
     )
     source: str | None = Field(
@@ -52,7 +56,12 @@ class PressReviewOutput(BaseModel):
         )
     )
     articles: list[ArticleSummary] = Field(
-        description="Liste des articles analysés en profondeur"
+        description=(
+            "Liste des articles analysés. "
+            "UN article source = UN ArticleSummary. "
+            "Ne jamais dupliquer un article ou le fragmenter en plusieurs entrées. "
+            "Si un seul article est fourni, la liste contient exactement un élément."
+        )
     )
 
 
@@ -63,8 +72,12 @@ def _build_instructions(ctx, agent) -> str:
         f"Today's date is: {today}.\n\n"
         "Your task is to produce a DEEP, RICHLY DETAILED press review — never a list of "
         "shallow bullet points or one-sentence summaries.\n\n"
-        "For EACH article provided in the context, write a thorough journalistic analysis "
-        "in the 'content' field (MINIMUM 3 substantial paragraphs per article):\n"
+        "CRITICAL SCHEMA RULE: one real-world source article = exactly ONE ArticleSummary object. "
+        "NEVER split one article into multiple ArticleSummary entries. "
+        "NEVER create duplicate ArticleSummary with the same title. "
+        "All paragraphs for one article go inside its single 'content' field, separated by blank lines.\n\n"
+        "For EACH article provided in the context, produce ONE ArticleSummary with "
+        "a 'content' field containing ALL paragraphs (minimum 3, separated by \\n\\n):\n"
         "  • Paragraph 1 — Context and key facts: what happened, who, when, where\n"
         "  • Paragraph 2 — Arguments, data points, and direct quotes or paraphrases\n"
         "  • Paragraph 3+ — Implications, stakes, nuances, contradictions, or significance\n\n"
@@ -72,12 +85,13 @@ def _build_instructions(ctx, agent) -> str:
         "identify the overarching angle, cross-cutting themes, and your analytical conclusion.\n\n"
         "RULES:\n"
         "  - Write entirely in French\n"
-        "  - Use Markdown in 'content' and 'editorial': ## headings, **bold** for key terms, "
+        "  - Use Markdown in 'content' and 'editorial': **bold** for key terms, "
         "> blockquotes for notable citations\n"
         "  - For each article's 'source' field, always use the full URL (https://...); "
         "never use a publication name alone; leave null only if no URL exists\n"
         "  - Never invent facts not present in the provided content\n"
-        "  - If only one article is provided, give it maximum analytical depth"
+        "  - If only one article is provided, the 'articles' list has exactly ONE entry "
+        "with maximum analytical depth (4+ paragraphs)"
     )
 
 
