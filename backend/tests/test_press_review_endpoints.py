@@ -208,6 +208,65 @@ class TestGenerateChatReview:
         assert r.status_code == 201
 
 
+class TestGetChatArticles:
+    def test_get_articles_requires_auth(self, client_with_chat):
+        r = client_with_chat.get("/api/v1/chats/1/articles")
+        assert r.status_code in (401, 403)
+
+    def test_get_articles_returns_empty_list_when_no_articles(self, client_with_chat):
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+        r = client_with_chat.get("/api/v1/chats/1/articles", headers=headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["data"] == []
+
+    def test_get_articles_returns_404_for_other_user(self, client_with_chat):
+        token = create_access_token({"sub": "other@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+        r = client_with_chat.get("/api/v1/chats/1/articles", headers=headers)
+        assert r.status_code == 404
+
+    def test_get_articles_deduplicates_by_url(self, client_with_chat):
+        import database.crud as _crud_mod
+        from sqlmodel import Session
+
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Injecte des articles en doublon dans loaded_articles
+        with Session(_crud_mod.engine) as session:
+            chat = session.get(_crud_mod.Chat, 1)
+            chat.loaded_articles = [
+                {"title": "Article A", "url": "https://ex.com/a", "summary": "..."},
+                {"title": "Article B", "url": "https://ex.com/b", "summary": "..."},
+                {"title": "Article A dup", "url": "https://ex.com/a", "summary": "..."},
+            ]
+            session.add(chat)
+            session.commit()
+
+        r = client_with_chat.get("/api/v1/chats/1/articles", headers=headers)
+        assert r.status_code == 200
+        data = r.json()["data"]
+        assert len(data) == 2
+        urls = [a["url"] for a in data]
+        assert urls.count("https://ex.com/a") == 1
+
+
+class TestGenerateReviewWithArticleUrl:
+    def test_generate_review_with_unknown_article_url_returns_400(
+        self, client_with_chat
+    ):
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+        r = client_with_chat.post(
+            "/api/v1/chats/1/review",
+            headers=headers,
+            json={"article_url": "https://unknown.com/article"},
+        )
+        assert r.status_code == 400
+
+
 class TestGetChatReviews:
     def test_get_chat_reviews_requires_auth(self, client_with_chat):
         r = client_with_chat.get("/api/v1/reviews/chats")

@@ -106,11 +106,23 @@ class CreateReviewRequest(BaseModel):
     articles: str = Field(min_length=1, max_length=32000)
 
 
+class ChatArticle(BaseModel):
+    """Article chargé lors d'un chat, retourné par GET /chats/{id}/articles."""
+
+    title: str
+    url: str
+
+
 class GenerateReviewRequest(BaseModel):
     subject: str | None = Field(
         default=None,
         max_length=200,
         description="Sujet optionnel pour focaliser la revue de presse",
+    )
+    article_url: str | None = Field(
+        default=None,
+        max_length=2048,
+        description="URL d'un article spécifique (issu de loaded_articles) sur lequel centrer la revue",
     )
 
 

@@ -14,6 +14,7 @@ class ClusterInput:
     cluster_index: int
     titles: list[str]
     summaries: list[str]
+    texts: list[str]
     article_count: int
     top_url: str
 
@@ -38,12 +39,14 @@ def reduce_clusters(
         articles = cluster.news or []
         titles = [a.title for a in articles if a.title]
         summaries = [a.summary for a in articles if a.summary]
+        texts = [a.text for a in articles if a.text]
         top_url = articles[0].url or "" if articles else ""
         result.append(
             ClusterInput(
                 cluster_index=idx,
                 titles=titles,
                 summaries=summaries,
+                texts=texts,
                 article_count=len(articles),
                 top_url=top_url,
             )
