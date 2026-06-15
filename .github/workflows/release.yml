@@ -190,7 +190,7 @@ jobs:
           gh pr merge "$PR_NUMBER" --auto --squash
           echo "✅ PR #${PR_NUMBER} créée — auto-merge activé (attente des checks)"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
 
   # ── Mode PUBLISH : créer le tag et la GitHub Release ──────────────────────
   publish:
