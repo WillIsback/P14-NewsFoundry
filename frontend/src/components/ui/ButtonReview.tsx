@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generateReview } from "@/src/actions/review.action";
 
 function ReviewIcon() {
@@ -37,7 +37,6 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 		if (!chatId) return;
 		setStep("form");
 		setError(null);
-		setTimeout(() => inputRef.current?.focus(), 0);
 	};
 
 	const handleCancel = () => {
@@ -69,10 +68,11 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 		}
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") handleGenerate();
-		if (e.key === "Escape") handleCancel();
-	};
+	useEffect(() => {
+		if (step === "form") {
+			inputRef.current?.focus();
+		}
+	}, [step]);
 
 	if (step === "idle") {
 		return (
@@ -92,7 +92,13 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 
 	return (
 		<div className="flex flex-col items-end gap-2">
-			<div className="flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 w-72">
+			<form
+				className="flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 w-72"
+				onSubmit={(e) => {
+					e.preventDefault();
+					handleGenerate();
+				}}
+			>
 				<p className="text-body-xs text-slate-700 font-medium">
 					Sujet de la revue (optionnel)
 				</p>
@@ -101,7 +107,9 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 					type="text"
 					value={subject}
 					onChange={(e) => setSubject(e.target.value)}
-					onKeyDown={handleKeyDown}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") handleCancel();
+					}}
 					placeholder="Ex : intelligence artificielle, politique…"
 					maxLength={200}
 					disabled={step === "loading"}
@@ -117,15 +125,14 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 						Annuler
 					</button>
 					<button
-						type="button"
-						onClick={handleGenerate}
+						type="submit"
 						disabled={step === "loading"}
 						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-body-xs bg-brand-velvet text-slate-100 hover:bg-slate-dark disabled:bg-slate-400 disabled:text-slate-600"
 					>
 						{step === "loading" ? "Génération…" : "Générer"}
 					</button>
 				</div>
-			</div>
+			</form>
 			{error && <p className="text-red-500 text-body-xs">{error}</p>}
 		</div>
 	);
