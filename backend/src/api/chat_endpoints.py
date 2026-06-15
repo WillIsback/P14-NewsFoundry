@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from agents import Runner
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 
 from api.models import (
     ApiResponse,
@@ -239,7 +239,7 @@ def build_chat_router() -> APIRouter:
     async def generate_chat_review(
         chat_id: int,
         current_user: Annotated[User, Depends(verify_user)],
-        body: GenerateReviewRequest = GenerateReviewRequest(),
+        body: GenerateReviewRequest = Body(default_factory=GenerateReviewRequest),
     ) -> ApiResponse[ChatReviewPublic]:
         """Generate a press review from the chat's message history."""
         from agents import Runner
