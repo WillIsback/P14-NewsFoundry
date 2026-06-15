@@ -152,6 +152,61 @@ class TestGenerateChatReview:
         assert data["data"]["title"] == "Revue de presse test"
         assert data["data"]["description"] == "Synthèse générale de test"
 
+    def test_generate_review_rejects_long_subject(self, client_with_chat):
+        """Un subject >200 chars doit retourner 422 (une fois l'endpoint mis à jour)."""
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+        r = client_with_chat.post(
+            "/api/v1/chats/1/review",
+            json={"subject": "x" * 201},
+            headers=headers,
+        )
+        assert r.status_code == 422
+
+    def test_generate_review_with_subject(self, client_with_chat):
+        """Le endpoint accepte un sujet valide et renvoie 201."""
+        from unittest.mock import MagicMock
+        from core.agent.press_review_agent import PressReviewOutput, ArticleSummary
+
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        mock_result = MagicMock()
+        mock_result.final_output = PressReviewOutput(
+            title="Revue IA",
+            summary="Synthèse sur l'IA",
+            articles=[ArticleSummary(title="IA Art", summary="Résumé IA")],
+        )
+
+        with patch("agents.Runner.run", return_value=mock_result):
+            r = client_with_chat.post(
+                "/api/v1/chats/1/review",
+                json={"subject": "intelligence artificielle"},
+                headers=headers,
+            )
+        assert r.status_code == 201
+        data = r.json()
+        assert data["success"] is True
+
+    def test_generate_review_without_subject_body(self, client_with_chat):
+        """Le endpoint fonctionne sans body (subject=None par défaut)."""
+        from unittest.mock import MagicMock
+        from core.agent.press_review_agent import PressReviewOutput
+
+        token = create_access_token({"sub": "test@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        mock_result = MagicMock()
+        mock_result.final_output = PressReviewOutput(
+            title="Revue générale",
+            summary="Toute la discussion",
+            articles=[],
+        )
+
+        with patch("agents.Runner.run", return_value=mock_result):
+            r = client_with_chat.post("/api/v1/chats/1/review", headers=headers)
+        assert r.status_code == 201
+
 
 class TestGetChatReviews:
     def test_get_chat_reviews_requires_auth(self, client_with_chat):

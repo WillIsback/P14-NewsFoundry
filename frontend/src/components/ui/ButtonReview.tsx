@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generateReview } from "@/src/actions/review.action";
 
 function ReviewIcon() {
@@ -28,19 +28,32 @@ interface ButtonReviewProps {
 
 function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 	const router = useRouter();
-	const [loading, setLoading] = useState(false);
+	const [step, setStep] = useState<"idle" | "form" | "loading">("idle");
+	const [subject, setSubject] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 
-	const handleClick = async () => {
-		if (!chatId || loading) return;
-
-		setLoading(true);
+	const handleOpenForm = () => {
+		if (!chatId) return;
+		setStep("form");
 		setError(null);
+	};
 
+	const handleCancel = () => {
+		setStep("idle");
+		setSubject("");
+		setError(null);
+	};
+
+	const handleGenerate = async () => {
+		if (!chatId || step === "loading") return;
+		setStep("loading");
+		setError(null);
 		try {
-			const result = await generateReview(chatId);
+			const result = await generateReview(chatId, subject.trim() || undefined);
 			if (result.error) {
 				setError(result.error);
+				setStep("form");
 			} else {
 				const reviewId = result.data?.data?.id;
 				router.push(
@@ -51,22 +64,75 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 			}
 		} catch {
 			setError("Erreur lors de la génération de la revue de presse");
-		} finally {
-			setLoading(false);
+			setStep("form");
 		}
 	};
 
+	useEffect(() => {
+		if (step === "form") {
+			inputRef.current?.focus();
+		}
+	}, [step]);
+
+	if (step === "idle") {
+		return (
+			<div className="flex flex-col items-end gap-1">
+				<button
+					type="button"
+					onClick={handleOpenForm}
+					disabled={!chatId}
+					className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100 px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
+				>
+					<ReviewIcon />
+					Générer une revue de presse
+				</button>
+			</div>
+		);
+	}
+
 	return (
-		<div className="flex flex-col items-end gap-1">
-			<button
-				type="button"
-				onClick={handleClick}
-				disabled={loading}
-				className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer disabled:bg-slate-400 disabled:text-slate-600 disabled:opacity-100 px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
+		<div className="flex flex-col items-end gap-2">
+			<form
+				className="flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 w-72"
+				onSubmit={(e) => {
+					e.preventDefault();
+					handleGenerate();
+				}}
 			>
-				<ReviewIcon />
-				{loading ? "Génération..." : "Générer une revue de presse"}
-			</button>
+				<p className="text-body-xs text-slate-700 font-medium">
+					Sujet de la revue (optionnel)
+				</p>
+				<input
+					ref={inputRef}
+					type="text"
+					value={subject}
+					onChange={(e) => setSubject(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") handleCancel();
+					}}
+					placeholder="Ex : intelligence artificielle, politique…"
+					maxLength={200}
+					disabled={step === "loading"}
+					className="w-full rounded-[6px] border border-slate-300 px-2.5 py-1.5 text-body-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-velvet disabled:opacity-50"
+				/>
+				<div className="flex gap-2 justify-end">
+					<button
+						type="button"
+						onClick={handleCancel}
+						disabled={step === "loading"}
+						className="px-3 py-1.5 rounded-[6px] text-body-xs text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+					>
+						Annuler
+					</button>
+					<button
+						type="submit"
+						disabled={step === "loading"}
+						className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-body-xs bg-brand-velvet text-slate-100 hover:bg-slate-dark disabled:bg-slate-400 disabled:text-slate-600"
+					>
+						{step === "loading" ? "Génération…" : "Générer"}
+					</button>
+				</div>
+			</form>
 			{error && <p className="text-red-500 text-body-xs">{error}</p>}
 		</div>
 	);

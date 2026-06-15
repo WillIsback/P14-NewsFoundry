@@ -53,10 +53,12 @@ export async function postCreateReview(
 
 export async function postGenerateReview(
 	chatId: number,
+	subject?: string,
 ): Promise<ServiceResult<ChatReviewGenerateResponse>> {
 	return fetchJson({
 		url: `${BACKEND_URL}/chats/${chatId}/review`,
 		method: "POST",
+		requestData: subject ? { subject } : undefined,
 		successSchema: chatGenerateChatReview201Schema,
 		headers: await authHeaders(),
 		timeoutMs: 60_000,
