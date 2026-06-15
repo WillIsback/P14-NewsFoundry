@@ -19,7 +19,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: release-pipeline
+  # Un seul run par SHA : si Backend Tests et Frontend Tests terminent tous les deux
+  # pour le même commit, le second déclenchement attend que le premier finisse ;
+  # l'idempotence est assurée par la vérification de branche dans create-bump-pr.
+  group: release-pipeline-${{ github.event.workflow_run.head_sha || github.sha }}
   cancel-in-progress: false
 
 permissions:
@@ -140,7 +143,21 @@ jobs:
             echo "TRIGGER_LABEL=frontend" >> "$GITHUB_ENV"
           fi
 
+      - name: Guard — skip if bump branch already exists
+        id: guard
+        run: |
+          # Idempotence : si le second déclenchement (Backend/Frontend Tests) arrive
+          # après que le premier a déjà créé la branche, les étapes suivantes sont sautées.
+          if git ls-remote origin | grep -q "refs/heads/chore/.*-release-v${NEW_VERSION}$"; then
+            echo "⚠️  Branche de bump v${NEW_VERSION} déjà présente — déclenchement ignoré."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ Aucune branche de bump existante — on continue."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create release issue
+        if: steps.guard.outputs.skip != 'true'
         run: |
           ISSUE_URL=$(gh issue create \
             --title "chore: release v${NEW_VERSION}" \
@@ -152,6 +169,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create branch and update version files
+        if: steps.guard.outputs.skip != 'true'
         run: |
           BRANCH="chore/${ISSUE_NUMBER}-release-v${NEW_VERSION}"
           git checkout -b "$BRANCH"
@@ -179,7 +197,10 @@ jobs:
           git commit -m "chore: bump version to v${NEW_VERSION} [${TRIGGER_LABEL}] (${BUMP_TYPE})"
           git push origin "$BRANCH"
 
-      - name: Create PR and enable auto-merge
+      - name: Create PR
+        # gh pr create utilise GITHUB_TOKEN (pull-requests: write dans permissions:)
+        # RELEASE_PAT n'a pas le scope GraphQL createPullRequest (fine-grained token).
+        if: steps.guard.outputs.skip != 'true'
         run: |
           PR_URL=$(gh pr create \
             --title "chore: bump version to v${NEW_VERSION} [${TRIGGER_LABEL}] (${BUMP_TYPE})" \
@@ -187,8 +208,17 @@ jobs:
 
           Closes #${ISSUE_NUMBER}")
           PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "PR_NUMBER=${PR_NUMBER}" >> "$GITHUB_ENV"
+          echo "✅ PR #${PR_NUMBER} créée"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        # RELEASE_PAT requis pour activer l'auto-merge sur une branche protégée.
+        if: steps.guard.outputs.skip != 'true'
+        run: |
           gh pr merge "$PR_NUMBER" --auto --squash
-          echo "✅ PR #${PR_NUMBER} créée — auto-merge activé (attente des checks)"
+          echo "✅ Auto-merge activé sur PR #${PR_NUMBER} (attente des checks)"
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT }}
 
