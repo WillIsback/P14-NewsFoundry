@@ -6,6 +6,7 @@ import type { ServiceResult } from "@/src/lib/type.lib";
 import {
 	chatContinueChatMessage200Schema,
 	chatContinueChatMessage422Schema,
+	chatGetChatArticles200Schema,
 	chatGetChats200Schema,
 	chatGetMessages200Schema,
 	chatGetMessages422Schema,
@@ -19,6 +20,7 @@ const BACKEND_URL = (
 
 type GetChatsResponse = z.infer<typeof chatGetChats200Schema>;
 type GetMessagesResponse = z.infer<typeof chatGetMessages200Schema>;
+type GetChatArticlesResponse = z.infer<typeof chatGetChatArticles200Schema>;
 type NewChatMessageResponse = z.infer<typeof chatNewChatMessage201Schema>;
 type ContinueChatMessageResponse = z.infer<
 	typeof chatContinueChatMessage200Schema
@@ -65,6 +67,18 @@ export async function postNewChatMessage(
 		// L'agent (WorldNews + 2 appels LLM) dépasse le défaut de 10s.
 		// FETCH_CHAT_TIMEOUT_MS permet aux tests d'abaisser cette valeur sans toucher le code.
 		timeoutMs: Number(process.env.FETCH_CHAT_TIMEOUT_MS ?? 120_000),
+		fetchOptions: { cache: "no-store" },
+	});
+}
+
+export async function getChatArticles(
+	chatId: number,
+): Promise<ServiceResult<GetChatArticlesResponse>> {
+	return fetchJson({
+		url: `${BACKEND_URL}/chats/${chatId}/articles`,
+		method: "GET",
+		successSchema: chatGetChatArticles200Schema,
+		headers: await authHeaders(),
 		fetchOptions: { cache: "no-store" },
 	});
 }

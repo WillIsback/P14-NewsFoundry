@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { fetchChats, fetchMessages } from "@/src/actions/chat.action";
+import {
+	fetchChatArticles,
+	fetchChats,
+	fetchMessages,
+} from "@/src/actions/chat.action";
 import AssistantCard from "@/src/components/AssistantCard";
 import ChatForm from "@/src/components/ChatForm";
 import { ChatHeader } from "@/src/components/ChatHeader";
@@ -26,6 +30,9 @@ export default async function ChatPage({
 	if (messagesResult.error) notFound();
 	const messages = messagesResult.data?.data ?? [];
 
+	const articlesResult = await fetchChatArticles(chatId);
+	const articles = articlesResult.data;
+
 	return (
 		<div className="flex w-full h-full">
 			<Suspense
@@ -38,7 +45,7 @@ export default async function ChatPage({
 			{/* Main content area */}
 			<div className=" w-full h-full flex flex-col">
 				{/* Partie Header */}
-				<ChatHeader chatId={chatId} />
+				<ChatHeader chatId={chatId} articles={articles} />
 				{/* Assistant response area */}
 				{/* Home Assistant Chat Section */}
 				<section className="w-full flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-8 md:px-[25%] md:py-[18%] bg-slate-400 overflow-y-auto">

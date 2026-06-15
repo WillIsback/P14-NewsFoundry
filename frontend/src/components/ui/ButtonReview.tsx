@@ -22,26 +22,40 @@ function ReviewIcon() {
 	);
 }
 
-interface ButtonReviewProps {
-	chatId?: number;
+interface Article {
+	title: string;
+	url: string;
 }
 
-function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
+interface ButtonReviewProps {
+	chatId?: number;
+	articles?: Article[];
+}
+
+function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 	const router = useRouter();
 	const [step, setStep] = useState<"idle" | "form" | "loading">("idle");
-	const [subject, setSubject] = useState("");
+	const [selectedUrl, setSelectedUrl] = useState<string>("");
 	const [error, setError] = useState<string | null>(null);
-	const inputRef = useRef<HTMLInputElement>(null);
+	const firstRadioRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (step === "form") {
+			firstRadioRef.current?.focus();
+		}
+	}, [step]);
 
 	const handleOpenForm = () => {
 		if (!chatId) return;
 		setStep("form");
 		setError(null);
+		if (articles.length > 0 && !selectedUrl) {
+			setSelectedUrl(articles[0].url);
+		}
 	};
 
 	const handleCancel = () => {
 		setStep("idle");
-		setSubject("");
 		setError(null);
 	};
 
@@ -49,8 +63,9 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 		if (!chatId || step === "loading") return;
 		setStep("loading");
 		setError(null);
+
 		try {
-			const result = await generateReview(chatId, subject.trim() || undefined);
+			const result = await generateReview(chatId, selectedUrl || undefined);
 			if (result.error) {
 				setError(result.error);
 				setStep("form");
@@ -67,12 +82,6 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 			setStep("form");
 		}
 	};
-
-	useEffect(() => {
-		if (step === "form") {
-			inputRef.current?.focus();
-		}
-	}, [step]);
 
 	if (step === "idle") {
 		return (
@@ -91,30 +100,56 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 	}
 
 	return (
-		<div className="flex flex-col items-end gap-2">
+		// position:relative sur le conteneur + absolute sur le formulaire
+		// pour que le dropdown flotte au-dessus de la section chat sous-jacente
+		<div className="relative flex flex-col items-end gap-1">
+			<button
+				type="button"
+				onClick={handleCancel}
+				className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
+			>
+				<ReviewIcon />
+				Générer une revue de presse
+			</button>
 			<form
-				className="flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 w-72"
+				className="absolute top-full right-0 mt-1 z-50 flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 shadow-md w-80"
 				onSubmit={(e) => {
 					e.preventDefault();
 					handleGenerate();
 				}}
 			>
-				<p className="text-body-xs text-slate-700 font-medium">
-					Sujet de la revue (optionnel)
-				</p>
-				<input
-					ref={inputRef}
-					type="text"
-					value={subject}
-					onChange={(e) => setSubject(e.target.value)}
-					onKeyDown={(e) => {
-						if (e.key === "Escape") handleCancel();
-					}}
-					placeholder="Ex : intelligence artificielle, politique…"
-					maxLength={200}
-					disabled={step === "loading"}
-					className="w-full rounded-[6px] border border-slate-300 px-2.5 py-1.5 text-body-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-velvet disabled:opacity-50"
-				/>
+				{articles.length > 0 ? (
+					<>
+						<p className="text-body-xs text-slate-700 font-medium">
+							Sélectionner un article
+						</p>
+						<ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+							{articles.map((article, i) => (
+								<li key={article.url || String(i)}>
+									<label className="flex items-start gap-2 cursor-pointer rounded-[4px] px-1.5 py-1 hover:bg-slate-100">
+										<input
+											ref={i === 0 ? firstRadioRef : undefined}
+											type="radio"
+											name="article"
+											value={article.url}
+											checked={selectedUrl === article.url}
+											onChange={() => setSelectedUrl(article.url)}
+											disabled={step === "loading"}
+											className="mt-0.5 accent-brand-velvet shrink-0"
+										/>
+										<span className="text-body-xs text-slate-800 leading-snug line-clamp-2">
+											{article.title}
+										</span>
+									</label>
+								</li>
+							))}
+						</ul>
+					</>
+				) : (
+					<p className="text-body-xs text-slate-500 italic">
+						Aucun article chargé dans ce chat.
+					</p>
+				)}
 				<div className="flex gap-2 justify-end">
 					<button
 						type="button"
@@ -132,8 +167,8 @@ function ButtonReview({ chatId }: Readonly<ButtonReviewProps>) {
 						{step === "loading" ? "Génération…" : "Générer"}
 					</button>
 				</div>
+				{error && <p className="text-red-500 text-body-xs">{error}</p>}
 			</form>
-			{error && <p className="text-red-500 text-body-xs">{error}</p>}
 		</div>
 	);
 }

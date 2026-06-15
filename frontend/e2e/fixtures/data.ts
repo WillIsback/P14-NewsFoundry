@@ -145,6 +145,22 @@ export const chatReviewsResponse = {
 	data: [],
 };
 
+export const chatArticlesResponse = {
+	success: true,
+	status: 200,
+	message: "Articles retrieved",
+	data: [
+		{
+			title: "Article de test sur l'intelligence artificielle",
+			url: "https://example.com/article-ia",
+		},
+		{
+			title: "Article sur la politique internationale",
+			url: "https://example.com/article-politique",
+		},
+	],
+};
+
 export const generateReviewResponse = {
 	success: true,
 	status: 201,

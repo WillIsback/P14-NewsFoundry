@@ -8,6 +8,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status
 
 from api.models import (
     ApiResponse,
+    ChatArticle,
     ChatPublic,
     ChatReviewPublic,
     GenerateReviewRequest,
@@ -196,6 +197,30 @@ def build_chat_router() -> APIRouter:
             ],
         )
 
+    @router.get("/chats/{chat_id}/articles")
+    def get_chat_articles(
+        chat_id: int,
+        current_user: Annotated[User, Depends(verify_user)],
+    ) -> ApiResponse[list[ChatArticle]]:
+        """Return the deduplicated list of articles loaded during a chat."""
+        chat = get_chat_by_id_sync(chat_id)
+        if not chat or chat.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
+            )
+        seen: set[str] = set()
+        articles: list[ChatArticle] = []
+        for a in chat.loaded_articles or []:
+            url = a.get("url", "")
+            if url and url not in seen:
+                seen.add(url)
+                articles.append(ChatArticle(title=a.get("title", ""), url=url))
+        return success_response(
+            status=status.HTTP_200_OK,
+            message="Articles retrieved",
+            data=articles,
+        )
+
     @router.post("/chats/message", status_code=status.HTTP_201_CREATED)
     async def new_chat_message(
         body: SendMessageRequest,
@@ -270,52 +295,72 @@ def build_chat_router() -> APIRouter:
         # RAG : enrichir le contexte avec les articles sémantiquement pertinents.
         # On injecte dans les instructions de l'agent (clone) plutôt qu'en message
         # system séparé pour éviter "System message must be at the beginning".
-        articles: list[dict] = chat.loaded_articles or []
+        all_articles: list[dict] = chat.loaded_articles or []
         active_review_agent = press_review_agent
         base_instructions = press_review_agent.instructions(None, press_review_agent)
 
-        # Filtre par sujet si fourni
-        subject_block = ""
-        if body.subject:
-            subject_block = (
-                f"\n\n## Sujet de la revue\n\n"
-                f"L'utilisateur souhaite une revue focalisée sur : **{body.subject}**. "
-                f"Ne synthétise que les éléments du chat qui concernent ce sujet. "
-                f"Ignore les parties du chat sans rapport avec ce sujet."
+        # Mode article unique : l'utilisateur a sélectionné un article précis
+        if body.article_url:
+            selected = [a for a in all_articles if a.get("url") == body.article_url]
+            if not selected:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Article URL not found in chat loaded articles",
+                )
+            article = selected[0]
+            rag_block = (
+                f"**{article['title']}** ({article['url']})\n{article['summary']}"
             )
-
-        if articles:
-            user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
-            query = " ".join(user_msgs[-3:])
-            if body.subject:
-                query = f"{body.subject} {query}"
-            relevant = await asyncio.to_thread(
-                build_index_and_retrieve, articles, query, top_k=5
-            )
-            if relevant:
-                rag_block = "\n\n".join(
-                    f"**{a['title']}** ({a['url']})\n{a['summary']}" for a in relevant
-                )
-                active_review_agent = press_review_agent.clone(
-                    instructions=base_instructions
-                    + subject_block
-                    + (
-                        "\n\n## Sources disponibles pour enrichir la revue\n\n"
-                        "Ces articles ont été chargés durant la conversation. "
-                        "Utilise-les UNIQUEMENT pour ajouter des URLs ou des détails "
-                        "à des sujets déjà discutés dans la conversation. "
-                        "Ne crée PAS de nouvelles sections absentes du chat.\n\n"
-                        f"{rag_block}"
-                    )
-                )
-            elif subject_block:
-                active_review_agent = press_review_agent.clone(
-                    instructions=base_instructions + subject_block
-                )
-        elif subject_block:
             active_review_agent = press_review_agent.clone(
-                instructions=base_instructions + subject_block
+                instructions=base_instructions
+                + f"\n\n## Sujet de la revue\n\nL'utilisateur souhaite une revue "
+                f"focalisée exclusivement sur l'article : **{article['title']}**. "
+                f"Génère une revue détaillée basée uniquement sur cet article et les "
+                f"éléments du chat qui s'y rapportent.\n\n"
+                + "\n\n## Article sélectionné\n\n"
+                + rag_block
             )
+        else:
+            # Mode classique : RAG sur tous les articles + sujet optionnel
+            articles = all_articles
+            subject_block = ""
+            if body.subject:
+                subject_block = (
+                    f"\n\n## Sujet de la revue\n\n"
+                    f"L'utilisateur souhaite une revue focalisée sur : **{body.subject}**. "
+                    f"Ne synthétise que les éléments du chat qui concernent ce sujet. "
+                    f"Ignore les parties du chat sans rapport avec ce sujet."
+                )
+
+            if articles:
+                user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
+                query = " ".join(user_msgs[-3:])
+                if body.subject:
+                    query = f"{body.subject} {query}"
+                relevant = await asyncio.to_thread(
+                    build_index_and_retrieve, articles, query, top_k=5
+                )
+                if relevant:
+                    rag_block = "\n\n".join(
+                        f"**{a['title']}** ({a['url']})\n{a['summary']}"
+                        for a in relevant
+                    )
+                    active_review_agent = press_review_agent.clone(
+                        instructions=base_instructions
+                        + subject_block
+                        + (
+                            "\n\n## Sources disponibles pour enrichir la revue\n\n"
+                            "Ces articles ont été chargés durant la conversation. "
+                            "Utilise-les UNIQUEMENT pour ajouter des URLs ou des détails "
+                            "à des sujets déjà discutés dans la conversation. "
+                            "Ne crée PAS de nouvelles sections absentes du chat.\n\n"
+                            f"{rag_block}"
+                        )
+                    )
+                elif subject_block:
+                    active_review_agent = press_review_agent.clone(
+                        instructions=base_instructions + subject_block
+                    )
 
         try:
             result = await asyncio.wait_for(

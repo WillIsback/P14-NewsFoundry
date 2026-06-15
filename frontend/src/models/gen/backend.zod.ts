@@ -176,6 +176,39 @@ export const apiResponseUserPublicSchema = z.object({
 	},
 });
 
+/**
+ * @description Article chargé lors d\'un chat, retourné par GET /chats/{id}/articles.
+ */
+export const chatArticleSchema = z
+	.object({
+		title: z.string(),
+		url: z.string(),
+	})
+	.describe(
+		"Article chargé lors d'un chat, retourné par GET /chats/{id}/articles.",
+	);
+
+export const apiResponseListChatArticleSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z
+			.union([
+				z.array(
+					chatArticleSchema.describe(
+						"Article chargé lors d'un chat, retourné par GET /chats/{id}/articles.",
+					),
+				),
+				z.null(),
+			])
+			.optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
 export const chatPublicSchema = z.object({
 	id: z.int(),
 	date: z.string(),
@@ -240,6 +273,21 @@ export const apiResponseListReviewPublicSchema = z.object({
 
 export const createReviewRequestSchema = z.object({
 	articles: z.string().min(1).max(32000),
+});
+
+export const generateReviewRequestSchema = z.object({
+	subject: z.optional(
+		z
+			.union([z.string(), z.null()])
+			.describe("Sujet optionnel pour focaliser la revue de presse"),
+	),
+	article_url: z.optional(
+		z
+			.union([z.string(), z.null()])
+			.describe(
+				"URL d'un article spécifique (issu de loaded_articles) sur lequel centrer la revue",
+			),
+	),
 });
 
 export const validationErrorSchema = z.object({
@@ -379,6 +427,28 @@ export const chatContinueChatMessageMutationResponseSchema = z.lazy(
 	() => chatContinueChatMessage200Schema,
 );
 
+export const chatGetChatArticlesPathParamsSchema = z.object({
+	chat_id: z.coerce.number().int(),
+});
+
+/**
+ * @description Successful Response
+ */
+export const chatGetChatArticles200Schema = z.lazy(
+	() => apiResponseListChatArticleSchema,
+);
+
+/**
+ * @description Validation Error
+ */
+export const chatGetChatArticles422Schema = z.lazy(
+	() => HTTPValidationErrorSchema,
+);
+
+export const chatGetChatArticlesQueryResponseSchema = z.lazy(
+	() => chatGetChatArticles200Schema,
+);
+
 /**
  * @description Successful Response
  */
@@ -417,6 +487,10 @@ export const chatGenerateChatReview201Schema = z.lazy(
  */
 export const chatGenerateChatReview422Schema = z.lazy(
 	() => HTTPValidationErrorSchema,
+);
+
+export const chatGenerateChatReviewMutationRequestSchema = z.lazy(
+	() => generateReviewRequestSchema,
 );
 
 export const chatGenerateChatReviewMutationResponseSchema = z.lazy(
