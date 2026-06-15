@@ -17,16 +17,16 @@ class TestPressReviewOutputSchema:
 
         output = PressReviewOutput(
             title="Revue de presse du 14 juin",
-            summary="Synthèse générale des discussions",
+            editorial="Synthèse générale des discussions.",
             articles=[
                 ArticleSummary(
                     title="Article 1",
-                    summary="Résumé de l'article 1 en quelques phrases.",
+                    content="Analyse approfondie de l'article 1 sur trois paragraphes.",
                     source="https://example.com/article1",
                 ),
                 ArticleSummary(
                     title="Article 2",
-                    summary="Résumé de l'article 2 en quelques phrases.",
+                    content="Analyse approfondie de l'article 2 sur trois paragraphes.",
                     source=None,
                 ),
             ],
@@ -41,7 +41,7 @@ class TestPressReviewOutputSchema:
 
         output = PressReviewOutput(
             title="Test",
-            summary="Test",
+            editorial="Synthèse vide.",
             articles=[],
         )
         assert output.articles == []
@@ -51,14 +51,14 @@ class TestPressReviewOutputSchema:
 
         output = PressReviewOutput(
             title="Test",
-            summary="Test summary",
+            editorial="Synthèse éditoriale.",
             articles=[
-                ArticleSummary(title="A1", summary="S1"),
+                ArticleSummary(title="A1", content="Contenu détaillé de l'article."),
             ],
         )
         json_str = output.model_dump_json()
         assert '"title"' in json_str
-        assert '"summary"' in json_str
+        assert '"editorial"' in json_str
         assert '"articles"' in json_str
         assert '"A1"' in json_str
 
@@ -66,4 +66,4 @@ class TestPressReviewOutputSchema:
         from core.agent.press_review_agent import PressReviewOutput
 
         with pytest.raises(ValidationError):
-            PressReviewOutput(summary="Test", articles=[])
+            PressReviewOutput(editorial="Test", articles=[])

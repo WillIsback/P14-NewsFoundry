@@ -47,6 +47,9 @@ def _make_cluster_input(
         texts=[f"Texte complet {i}" for i in range(article_count)],
         article_count=article_count,
         top_url=top_url,
+        publish_date="",
+        authors=[],
+        category="",
     )
 
 

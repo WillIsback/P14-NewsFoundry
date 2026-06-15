@@ -17,6 +17,9 @@ class ClusterInput:
     texts: list[str]
     article_count: int
     top_url: str
+    publish_date: str
+    authors: list[str]
+    category: str
 
 
 def reduce_clusters(
@@ -40,7 +43,11 @@ def reduce_clusters(
         titles = [a.title for a in articles if a.title]
         summaries = [a.summary for a in articles if a.summary]
         texts = [a.text for a in articles if a.text]
-        top_url = articles[0].url or "" if articles else ""
+        top_article = articles[0] if articles else None
+        top_url = top_article.url or "" if top_article else ""
+        publish_date = top_article.publish_date or "" if top_article else ""
+        authors = top_article.authors or [] if top_article else []
+        category = getattr(top_article, "category", None) or "" if top_article else ""
         result.append(
             ClusterInput(
                 cluster_index=idx,
@@ -49,6 +56,9 @@ def reduce_clusters(
                 texts=texts,
                 article_count=len(articles),
                 top_url=top_url,
+                publish_date=publish_date,
+                authors=authors,
+                category=category,
             )
         )
     return result

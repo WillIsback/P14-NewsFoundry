@@ -38,8 +38,14 @@ export default function PressReview({
 		{ locale: fr },
 	);
 
-	let articles: { title: string; summary: string; source?: string }[] | null =
-		null;
+	let articles:
+		| {
+				title: string;
+				content?: string;
+				summary?: string;
+				source?: string;
+		  }[]
+		| null = null;
 	try {
 		const parsed = JSON.parse(content);
 		if (Array.isArray(parsed)) {
@@ -93,7 +99,9 @@ export default function PressReview({
 
 	const handleCopy = async () => {
 		const textToCopy = articles
-			? articles.map((a) => `**${a.title}**\n${a.summary}`).join("\n\n")
+			? articles
+					.map((a) => `**${a.title}**\n${a.content ?? a.summary ?? ""}`)
+					.join("\n\n")
 			: content;
 		try {
 			await navigator.clipboard.writeText(textToCopy);
@@ -125,27 +133,33 @@ export default function PressReview({
 				<Button onClick={handleCopy}>{copied ? "Copié !" : "Copier"}</Button>
 			</header>
 			{description && (
-				<p className="text-body-s text-slate-800 font-medium">{description}</p>
+				<div className="text-body-s text-slate-800 font-medium prose prose-sm max-w-none">
+					<Markdown components={markdownComponents}>{description}</Markdown>
+				</div>
 			)}
 			<div className="text-slate-dark wrap-normal text-body-s w-full">
 				{articles ? (
-					<div className="flex flex-col gap-6">
+					<div className="flex flex-col gap-8">
 						{articles.map((article, index) => (
 							<div
 								// biome-ignore lint/suspicious/noArrayIndexKey: articles lack stable IDs; composite key prevents duplicate-title collisions
 								key={`${article.title}-${index}`}
-								className="border-l-2 border-slate-300 pl-4"
+								className="border-l-2 border-brand-velvet pl-4"
 							>
-								<h5 className="font-semibold">{article.title}</h5>
-								<p className="mt-1">{article.summary}</p>
+								<h5 className="font-semibold mb-2">{article.title}</h5>
+								<div className="prose prose-sm max-w-none text-slate-700">
+									<Markdown components={markdownComponents}>
+										{article.content ?? article.summary ?? ""}
+									</Markdown>
+								</div>
 								{article.source && (
 									<a
 										href={article.source}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="text-brand-velvet text-body-xs mt-1 inline-block"
+										className="text-brand-velvet text-body-xs mt-2 inline-block"
 									>
-										Source
+										↗ Source
 									</a>
 								)}
 							</div>

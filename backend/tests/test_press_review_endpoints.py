@@ -138,9 +138,9 @@ class TestGenerateChatReview:
         mock_result = MagicMock()
         mock_result.final_output = PressReviewOutput(
             title="Revue de presse test",
-            summary="Synthèse générale de test",
+            editorial="Synthèse générale de test",
             articles=[
-                ArticleSummary(title="Article 1", summary="Résumé article 1"),
+                ArticleSummary(title="Article 1", content="Résumé article 1"),
             ],
         )
 
@@ -174,8 +174,8 @@ class TestGenerateChatReview:
         mock_result = MagicMock()
         mock_result.final_output = PressReviewOutput(
             title="Revue IA",
-            summary="Synthèse sur l'IA",
-            articles=[ArticleSummary(title="IA Art", summary="Résumé IA")],
+            editorial="Synthèse sur l'IA",
+            articles=[ArticleSummary(title="IA Art", content="Résumé IA")],
         )
 
         with patch("agents.Runner.run", return_value=mock_result):
@@ -199,7 +199,7 @@ class TestGenerateChatReview:
         mock_result = MagicMock()
         mock_result.final_output = PressReviewOutput(
             title="Revue générale",
-            summary="Toute la discussion",
+            editorial="Toute la discussion",
             articles=[],
         )
 

@@ -29,6 +29,8 @@ class SearchArticle(BaseModel):
     )
     publish_date: str = Field(default="")
     source_country: str = Field(default="")
+    authors: list[str] = Field(default_factory=list)
+    category: str = Field(default="")
 
 
 async def search_news(
@@ -69,6 +71,8 @@ async def search_news(
             text=a.text or "",
             publish_date=a.publish_date or "",
             source_country=a.source_country or "",
+            authors=a.authors or [],
+            category=a.category or "",
         )
         for a in articles
         if a.title and a.url
