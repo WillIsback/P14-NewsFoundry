@@ -106,6 +106,14 @@ class CreateReviewRequest(BaseModel):
     articles: str = Field(min_length=1, max_length=32000)
 
 
+class GenerateReviewRequest(BaseModel):
+    subject: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Sujet optionnel pour focaliser la revue de presse",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
