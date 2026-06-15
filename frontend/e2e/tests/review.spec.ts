@@ -18,5 +18,7 @@ test("générer une revue depuis un chat : redirige vers /home?mode=review et af
 	// ButtonReview pushes /home?mode=review#review-{id} after generation
 	await page.waitForURL(/\/home\?mode=review/);
 	// "Revue mockée" is id=2 in generateReviewResponse and reviewsResponse fixture
-	await expect(page.getByRole("heading", { name: "Revue mockée" })).toBeVisible();
+	await expect(
+		page.getByRole("heading", { name: "Revue mockée" }),
+	).toBeVisible();
 });

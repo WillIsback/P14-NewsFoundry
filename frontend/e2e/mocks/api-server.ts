@@ -1,5 +1,6 @@
 import express from "express";
 import {
+	chatArticlesResponse,
 	chatReviewsResponse,
 	chatsUserA,
 	chatsUserB,
@@ -152,6 +153,23 @@ app.post("/chats/:chatId/messages", (req, res) => {
 		return;
 	}
 	res.json(continueChatResponse);
+});
+
+// GET /chats/:chatId/articles
+app.get("/chats/:chatId/articles", (req, res) => {
+	const token = requireAuth(req, res);
+	if (!token) return;
+	const chatId = Number(req.params.chatId);
+	if (chatId === 1) {
+		res.json(chatArticlesResponse);
+	} else {
+		res.json({
+			success: true,
+			status: 200,
+			message: "Articles retrieved",
+			data: [],
+		});
+	}
 });
 
 // POST /chats/:chatId/review — génération revue

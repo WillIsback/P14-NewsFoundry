@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+	getChatArticles,
 	getChats,
 	getMessages,
 	postContinueChatMessage,
@@ -18,6 +19,17 @@ export async function fetchChats() {
 		return { error: result.error.userMessage, data: null };
 	}
 	return { error: null, data: result.data };
+}
+
+export async function fetchChatArticles(chatId: number) {
+	const result = await getChatArticles(chatId);
+	if (!result.ok) {
+		return {
+			error: result.error.userMessage,
+			data: [] as { title: string; url: string }[],
+		};
+	}
+	return { error: null, data: result.data?.data ?? [] };
 }
 
 export async function fetchMessages(chatId: number) {
