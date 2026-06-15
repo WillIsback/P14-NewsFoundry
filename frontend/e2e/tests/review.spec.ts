@@ -13,8 +13,9 @@ test("générer une revue depuis un chat : redirige vers /home?mode=review et af
 	await page
 		.getByRole("button", { name: "Générer une revue de presse" })
 		.click();
-	// ButtonReview opens an inline form — confirm generation without subject
-	await page.getByRole("button", { name: "Générer" }).click();
+	// ButtonReview opens an inline form — cliquer le bouton submit "Générer" (exact: true
+	// pour éviter l'ambiguïté avec le bouton trigger "Générer une revue de presse")
+	await page.getByRole("button", { name: "Générer", exact: true }).click();
 	// ButtonReview pushes /home?mode=review#review-{id} after generation
 	await page.waitForURL(/\/home\?mode=review/);
 	// "Revue mockée" is id=2 in generateReviewResponse and reviewsResponse fixture

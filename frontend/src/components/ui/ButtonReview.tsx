@@ -125,7 +125,7 @@ function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 						</p>
 						<ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
 							{articles.map((article, i) => (
-								<li key={article.url}>
+								<li key={article.url || String(i)}>
 									<label className="flex items-start gap-2 cursor-pointer rounded-[4px] px-1.5 py-1 hover:bg-slate-100">
 										<input
 											ref={i === 0 ? firstRadioRef : undefined}

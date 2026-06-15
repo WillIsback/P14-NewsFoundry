@@ -25,7 +25,8 @@ export async function fetchChatArticles(chatId: number) {
 	const result = await getChatArticles(chatId);
 	if (!result.ok) {
 		return {
-			error: result.error.userMessage,
+			error:
+				result.error?.userMessage ?? "Erreur lors du chargement des articles",
 			data: [] as { title: string; url: string }[],
 		};
 	}
