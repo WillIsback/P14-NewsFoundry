@@ -38,6 +38,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0  # Historique complet requis pour generate_release_notes
+          token: ${{ secrets.RELEASE_PAT }}  # PAT admin pour bypasser la protection de main
 
       - name: Configure Git identity
         run: |
