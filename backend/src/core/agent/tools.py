@@ -70,10 +70,13 @@ async def get_top_news(
         summary = cluster.summaries[0] if cluster.summaries else ""
         summary_str = f"\n> {summary}" if summary else ""
 
+        # Préférer le texte complet (text) au résumé court (summary) pour enrichir
+        # le contexte disponible lors de la génération de la revue de presse.
+        rich_content = cluster.texts[0] if cluster.texts else summary
         ctx.context.loaded_articles.append(
             {
                 "title": title,
-                "summary": summary,
+                "summary": rich_content,
                 "url": cluster.top_url,
             }
         )
@@ -121,10 +124,13 @@ async def search_news(
         date_str = f" — {article.publish_date}" if article.publish_date else ""
         summary_str = f"\n> {article.summary}" if article.summary else ""
 
+        # Préférer le texte complet (text) au résumé court (summary) pour enrichir
+        # le contexte disponible lors de la génération de la revue de presse.
+        rich_content = article.text or article.summary or ""
         ctx.context.loaded_articles.append(
             {
                 "title": article.title,
-                "summary": article.summary or "",
+                "summary": rich_content,
                 "url": article.url,
             }
         )

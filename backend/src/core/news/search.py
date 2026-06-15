@@ -24,6 +24,9 @@ class SearchArticle(BaseModel):
     title: str
     url: str
     summary: str = Field(default="")
+    text: str = Field(
+        default="", description="Contenu complet de l'article (si disponible)"
+    )
     publish_date: str = Field(default="")
     source_country: str = Field(default="")
 
@@ -63,6 +66,7 @@ async def search_news(
             title=a.title or "",
             url=a.url or "",
             summary=a.summary or "",
+            text=a.text or "",
             publish_date=a.publish_date or "",
             source_country=a.source_country or "",
         )

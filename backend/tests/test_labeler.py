@@ -44,6 +44,7 @@ def _make_cluster_input(
         cluster_index=index,
         titles=[f"Titre {i}" for i in range(article_count)],
         summaries=[f"Résumé {i}" for i in range(article_count)],
+        texts=[f"Texte complet {i}" for i in range(article_count)],
         article_count=article_count,
         top_url=top_url,
     )
