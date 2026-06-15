@@ -261,6 +261,8 @@ test.describe("ButtonReview — POST generate review 500", () => {
 		await page
 			.getByRole("button", { name: "Générer une revue de presse" })
 			.click();
+		// ButtonReview opens an inline form — confirm generation without subject
+		await page.getByRole("button", { name: "Générer" }).click();
 		// generateReview() retourne { error: result.error.userMessage } → setError("La requete a echoue")
 		// ButtonReview rend <p className="text-red-500">{error}</p> — visible pour l'utilisateur
 		await expect(page.getByText("La requete a echoue")).toBeVisible();

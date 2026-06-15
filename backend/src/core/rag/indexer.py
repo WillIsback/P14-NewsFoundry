@@ -13,7 +13,14 @@ from llama_index.embeddings.fastembed import FastEmbedEmbedding
 _EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 _MAX_ARTICLES = 30
 
-_embed = FastEmbedEmbedding(model_name=_EMBED_MODEL)
+_embed: FastEmbedEmbedding | None = None
+
+
+def _get_embed() -> FastEmbedEmbedding:
+    global _embed
+    if _embed is None:
+        _embed = FastEmbedEmbedding(model_name=_EMBED_MODEL)
+    return _embed
 
 
 def build_index_and_retrieve(
@@ -43,7 +50,7 @@ def build_index_and_retrieve(
         )
         for a in capped
     ]
-    index = VectorStoreIndex.from_documents(docs, embed_model=_embed)
+    index = VectorStoreIndex.from_documents(docs, embed_model=_get_embed())
     nodes = index.as_retriever(similarity_top_k=min(top_k, len(capped))).retrieve(query)
     return [
         {"title": n.metadata["title"], "summary": n.text, "url": n.metadata["url"]}
