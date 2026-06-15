@@ -1,0 +1,157 @@
+---
+name: Release
+
+# Déclenché uniquement quand "Backend Tests" se termine sur la branche main.
+# types: [completed] couvre succès ET échec — la condition `if` du job filtre
+# explicitement sur conclusion == 'success'.
+on:
+  workflow_run:
+    workflows: ["Backend Tests"]
+    types: [completed]
+    branches: [main]
+
+# Un seul pipeline à la fois. cancel-in-progress: false met en file d'attente
+# plutôt qu'annuler une release déjà en cours.
+concurrency:
+  group: release-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # push vers main + création tag + release
+  packages: write  # push vers ghcr.io
+
+jobs:
+  # ── Job 1 : bump version + GitHub Release ──────────────────────────────────
+  bump-and-release:
+    name: Bump version & create GitHub Release
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          ref: main
+          fetch-depth: 0  # Historique complet requis pour generate_release_notes
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Compute new version
+        id: bump
+        run: |
+          # Lecture robuste via Python — insensible aux variations d'espacement TOML
+          CURRENT=$(python3 -c "
+          import re, sys
+          content = open('backend/pyproject.toml').read()
+          m = re.search(r'^version\s*=\s*\"([^\"]+)\"', content, re.MULTILINE)
+          print(m.group(1) if m else sys.exit(1))
+          ")
+
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+
+          # Logique custom : minor++ jusqu'à minor=40, puis major++/minor reset
+          if [ "$MINOR" -ge 40 ]; then
+            NEW_VERSION="$((MAJOR + 1)).0.0"
+          else
+            NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
+          fi
+
+          echo "Version bump : $CURRENT → $NEW_VERSION"
+          # PATCH est toujours remis à 0 — les hotfixes manuels doivent ajuster le MINOR
+
+          # NEW_VERSION (sans v) est utilisé pour les fichiers ; new_version (avec v) pour git/Docker
+          # Exposition aux étapes suivantes via GITHUB_ENV et GITHUB_OUTPUT
+          echo "NEW_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+          echo "new_version=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Update backend/pyproject.toml
+        run: |
+          python3 -c "
+          import re, os
+          path = 'backend/pyproject.toml'
+          content = open(path).read()
+          new_ver = os.environ['NEW_VERSION']
+          content = re.sub(
+              r'^(version\s*=\s*)\"[^\"]+\"',
+              lambda m: m.group(1) + '\"' + new_ver + '\"',
+              content,
+              flags=re.MULTILINE
+          )
+          open(path, 'w').write(content)
+          "
+
+      - name: Update frontend/package.json
+        run: |
+          jq --arg v "$NEW_VERSION" '.version = $v' frontend/package.json > tmp.json \
+            && mv tmp.json frontend/package.json
+
+      - name: Commit & push version bump
+        # Note : les commits via GITHUB_TOKEN ne déclenchent pas d'autres
+        # workflows — pas de boucle infinie possible ici.
+        # Note : git pull --rebase requis si la branche main est protégée
+        # et qu'un autre commit a été poussé entre le checkout et ce push.
+        run: |
+          git add backend/pyproject.toml frontend/package.json
+          git commit -m "chore: bump version to v${NEW_VERSION}"
+          git pull --rebase origin main
+          git push origin main
+
+      - name: Create and push tag
+        run: |
+          git tag "v${NEW_VERSION}"
+          git push origin "v${NEW_VERSION}"
+
+      - name: Create GitHub Release
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7
+        env:
+          TAG_NAME: ${{ steps.bump.outputs.new_version }}
+        with:
+          script: |
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.TAG_NAME,
+              name: `Release ${process.env.TAG_NAME}`,
+              generate_release_notes: true,
+            });
+
+  # ── Job 2 : build + push image Docker ──────────────────────────────────────
+  docker-publish:
+    name: Build & push Docker image
+    needs: bump-and-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout at release tag
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          ref: ${{ needs.bump-and-release.outputs.new_version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/newsfoundry-backend:${{ needs.bump-and-release.outputs.new_version }}
+            ghcr.io/${{ github.repository_owner }}/newsfoundry-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
