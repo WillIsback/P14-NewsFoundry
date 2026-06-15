@@ -45,8 +45,9 @@ export async function createReview(
 
 export async function generateReview(
 	chatId: number,
+	subject?: string,
 ): Promise<{ error: string | null; data: ChatGenerateReviewResponse | null }> {
-	const result = await postGenerateReview(chatId);
+	const result = await postGenerateReview(chatId, subject);
 	if (!result.ok) {
 		return { error: result.error.userMessage, data: null };
 	}
