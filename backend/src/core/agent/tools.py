@@ -78,6 +78,9 @@ async def get_top_news(
                 "title": title,
                 "summary": rich_content,
                 "url": cluster.top_url,
+                "publish_date": cluster.publish_date,
+                "authors": cluster.authors,
+                "category": cluster.category,
             }
         )
 
@@ -132,6 +135,9 @@ async def search_news(
                 "title": article.title,
                 "summary": rich_content,
                 "url": article.url,
+                "publish_date": article.publish_date,
+                "authors": article.authors,
+                "category": article.category,
             }
         )
 

@@ -155,6 +155,20 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     )
 
 
+def _article_rag_block(a: dict) -> str:
+    """Format a loaded_article dict as a Markdown context block for the press review LLM."""
+    authors = a.get("authors") or []
+    authors_str = ", ".join(authors) if authors else ""
+    header = (
+        f"**Titre** : {a['title']}\n"
+        f"**URL** : {a['url']}\n"
+        + (f"**Date** : {a['publish_date']}\n" if a.get("publish_date") else "")
+        + (f"**Auteur(s)** : {authors_str}\n" if authors_str else "")
+        + (f"**Catégorie** : {a['category']}\n" if a.get("category") else "")
+    )
+    return header + f"\n{a.get('summary', '')}"
+
+
 def build_chat_router() -> APIRouter:
     router = APIRouter(tags=["chat"])
 
@@ -310,12 +324,8 @@ def build_chat_router() -> APIRouter:
             article = selected[0]
             # Injecte le contenu complet de l'article (stocké dans le champ "summary"
             # par tools.py qui préfère article.text à article.summary)
-            article_content = article.get("summary", "")
-            rag_block = (
-                f"## CONTENU COMPLET DE L'ARTICLE\n\n"
-                f"**Titre** : {article['title']}\n"
-                f"**URL** : {article['url']}\n\n"
-                f"{article_content}"
+            rag_block = "## CONTENU COMPLET DE L'ARTICLE\n\n" + _article_rag_block(
+                article
             )
             active_review_agent = press_review_agent.clone(
                 instructions=base_instructions
@@ -342,10 +352,7 @@ def build_chat_router() -> APIRouter:
                 )
                 if relevant:
                     rag_block = "\n\n---\n\n".join(
-                        f"**Titre** : {a['title']}\n"
-                        f"**URL** : {a['url']}\n\n"
-                        f"{a.get('summary', '')}"
-                        for a in relevant
+                        _article_rag_block(a) for a in relevant
                     )
                     active_review_agent = press_review_agent.clone(
                         instructions=base_instructions
