@@ -1,44 +1,85 @@
 ---
 name: Release
 
-# Déclenché quand "Backend Tests" ou "Frontend Tests" se terminent sur main.
-# types: [completed] couvre succès ET échec — la condition `if` du job filtre
-# explicitement sur conclusion == 'success'.
-# Le job docker-publish ne tourne que si c'est Backend Tests qui a déclenché.
+# Deux modes détectés automatiquement via le message du commit déclencheur :
+#
+# Mode BUMP (commit applicatif) :
+#   → crée une issue + branche + PR de montée de version avec auto-merge activé
+#   → le label [backend] ou [frontend] dans le commit préserve le type de trigger
+#
+# Mode PUBLISH (commit "chore: bump version…" détecté) :
+#   → crée le tag git, la GitHub Release, et l'image Docker (si [backend])
+#
+# workflow_dispatch → PUBLISH sur la version courante (premier déploiement manuel)
 on:
   workflow_run:
     workflows: ["Backend Tests", "Frontend Tests"]
     types: [completed]
     branches: [main]
-  workflow_dispatch:  # Déclenchement manuel via gh workflow run ou l'UI GitHub Actions
+  workflow_dispatch:
 
-# Un seul pipeline à la fois. cancel-in-progress: false met en file d'attente
-# plutôt qu'annuler une release déjà en cours.
 concurrency:
   group: release-pipeline
   cancel-in-progress: false
 
 permissions:
-  contents: write  # push vers main + création tag + release
-  packages: write  # push vers ghcr.io
+  contents: write    # push branche + tag + release
+  packages: write    # push ghcr.io
+  pull-requests: write  # créer PR + activer auto-merge
+  issues: write      # créer issue de release
 
 jobs:
-  # ── Job 1 : bump version + GitHub Release ──────────────────────────────────
-  bump-and-release:
-    name: Bump version & create GitHub Release
+  # ── Détection du mode ──────────────────────────────────────────────────────
+  detect:
+    name: Detect release mode
+    runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      mode: ${{ steps.detect.outputs.mode }}            # 'bump' | 'publish'
+      with_docker: ${{ steps.detect.outputs.with_docker }}  # 'true' | 'false'
+    steps:
+      - name: Detect trigger type
+        id: detect
+        run: |
+          TRIGGER="${{ github.event_name }}"
+          MSG="${{ github.event.workflow_run.head_commit.message }}"
+          WF="${{ github.event.workflow_run.name }}"
+
+          if [ "$TRIGGER" = "workflow_dispatch" ]; then
+            # Manuel : publier l'état courant sans bump de version
+            echo "mode=publish" >> "$GITHUB_OUTPUT"
+            echo "with_docker=true" >> "$GITHUB_OUTPUT"
+          elif echo "$MSG" | grep -qE '^chore: bump version to v'; then
+            # Commit de bump détecté → tag + release (+ Docker si [backend])
+            echo "mode=publish" >> "$GITHUB_OUTPUT"
+            if echo "$MSG" | grep -q "\[backend\]"; then
+              echo "with_docker=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "with_docker=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            # Commit applicatif → créer la PR de bump
+            echo "mode=bump" >> "$GITHUB_OUTPUT"
+            if [ "$WF" = "Backend Tests" ]; then
+              echo "with_docker=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "with_docker=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+  # ── Mode BUMP : créer la PR de montée de version ──────────────────────────
+  create-bump-pr:
+    name: Create version bump PR
+    needs: detect
+    if: ${{ needs.detect.outputs.mode == 'bump' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      new_version: ${{ steps.bump.outputs.new_version }}
-
     steps:
       - name: Checkout main
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           ref: main
-          fetch-depth: 0  # Historique complet requis pour generate_release_notes
-          token: ${{ secrets.RELEASE_PAT }}  # PAT admin pour bypasser la protection de main
+          fetch-depth: 0
 
       - name: Configure Git identity
         run: |
@@ -46,36 +87,48 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Compute new version
-        id: bump
         run: |
-          # Lecture robuste via Python — insensible aux variations d'espacement TOML
           CURRENT=$(python3 -c "
           import re, sys
           content = open('backend/pyproject.toml').read()
           m = re.search(r'^version\s*=\s*\"([^\"]+)\"', content, re.MULTILINE)
           print(m.group(1) if m else sys.exit(1))
           ")
-
           MAJOR=$(echo "$CURRENT" | cut -d. -f1)
           MINOR=$(echo "$CURRENT" | cut -d. -f2)
-
-          # Logique custom : minor++ jusqu'à minor=40, puis major++/minor reset
+          # PATCH est toujours remis à 0 — les hotfixes manuels doivent ajuster le MINOR
           if [ "$MINOR" -ge 40 ]; then
             NEW_VERSION="$((MAJOR + 1)).0.0"
           else
             NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
           fi
-
           echo "Version bump : $CURRENT → $NEW_VERSION"
-          # PATCH est toujours remis à 0 — les hotfixes manuels doivent ajuster le MINOR
-
-          # NEW_VERSION (sans v) est utilisé pour les fichiers ; new_version (avec v) pour git/Docker
-          # Exposition aux étapes suivantes via GITHUB_ENV et GITHUB_OUTPUT
+          # NEW_VERSION (sans v) pour les fichiers ; le job publish préfixe avec v
           echo "NEW_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
-          echo "new_version=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          # Encode le type de trigger dans le label — lu par le job publish pour Docker
+          if [ "${{ needs.detect.outputs.with_docker }}" = "true" ]; then
+            echo "TRIGGER_LABEL=backend" >> "$GITHUB_ENV"
+          else
+            echo "TRIGGER_LABEL=frontend" >> "$GITHUB_ENV"
+          fi
 
-      - name: Update backend/pyproject.toml
+      - name: Create release issue
         run: |
+          ISSUE_URL=$(gh issue create \
+            --title "chore: release v${NEW_VERSION}" \
+            --body "Montée de version automatique vers \`v${NEW_VERSION}\` déclenchée par un merge sur \`main\`.")
+          ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
+          echo "ISSUE_NUMBER=${ISSUE_NUMBER}" >> "$GITHUB_ENV"
+          echo "✅ Issue #${ISSUE_NUMBER} créée"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create branch and update version files
+        run: |
+          BRANCH="chore/${ISSUE_NUMBER}-release-v${NEW_VERSION}"
+          git checkout -b "$BRANCH"
+
+          # Mise à jour backend/pyproject.toml via Python (robuste au format TOML)
           python3 -c "
           import re, os
           path = 'backend/pyproject.toml'
@@ -84,61 +137,111 @@ jobs:
           content = re.sub(
               r'^(version\s*=\s*)\"[^\"]+\"',
               lambda m: m.group(1) + '\"' + new_ver + '\"',
-              content,
-              flags=re.MULTILINE
+              content, flags=re.MULTILINE
           )
           open(path, 'w').write(content)
           "
 
-      - name: Update frontend/package.json
-        run: |
+          # Mise à jour frontend/package.json via jq
           jq --arg v "$NEW_VERSION" '.version = $v' frontend/package.json > tmp.json \
             && mv tmp.json frontend/package.json
 
-      - name: Commit & push version bump
-        # Note : les commits via GITHUB_TOKEN ne déclenchent pas d'autres
-        # workflows — pas de boucle infinie possible ici.
-        # Note : git pull --rebase requis si la branche main est protégée
-        # et qu'un autre commit a été poussé entre le checkout et ce push.
-        run: |
+          # [backend] ou [frontend] dans le message → préserve le type pour le job publish
           git add backend/pyproject.toml frontend/package.json
-          git commit -m "chore: bump version to v${NEW_VERSION}"
-          git pull --rebase origin main
-          git push origin main
+          git commit -m "chore: bump version to v${NEW_VERSION} [${TRIGGER_LABEL}]"
+          git push origin "$BRANCH"
+
+      - name: Create PR and enable auto-merge
+        run: |
+          PR_URL=$(gh pr create \
+            --title "chore: bump version to v${NEW_VERSION} [${TRIGGER_LABEL}]" \
+            --body "Montée de version automatique vers \`v${NEW_VERSION}\`.
+
+          Closes #${ISSUE_NUMBER}")
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          gh pr merge "$PR_NUMBER" --auto --squash
+          echo "✅ PR #${PR_NUMBER} créée — auto-merge activé (attente des checks)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Mode PUBLISH : créer le tag et la GitHub Release ──────────────────────
+  publish:
+    name: Create tag & GitHub Release
+    needs: detect
+    if: ${{ needs.detect.outputs.mode == 'publish' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Read current version
+        id: version
+        run: |
+          VERSION=$(python3 -c "
+          import re, sys
+          content = open('backend/pyproject.toml').read()
+          m = re.search(r'^version\s*=\s*\"([^\"]+)\"', content, re.MULTILINE)
+          print(m.group(1) if m else sys.exit(1))
+          ")
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "new_version=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create and push tag
         run: |
-          git tag "v${NEW_VERSION}"
-          git push origin "v${NEW_VERSION}"
+          if git ls-remote --tags origin "refs/tags/v${VERSION}" | grep -q "v${VERSION}"; then
+            echo "⚠️ Tag v${VERSION} existe déjà — étape ignorée"
+          else
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+            echo "✅ Tag v${VERSION} créé et poussé"
+          fi
 
       - name: Create GitHub Release
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7
         env:
-          TAG_NAME: ${{ steps.bump.outputs.new_version }}
+          TAG_NAME: ${{ steps.version.outputs.new_version }}
         with:
           script: |
-            await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: process.env.TAG_NAME,
-              name: `Release ${process.env.TAG_NAME}`,
-              generate_release_notes: true,
-            });
+            try {
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: process.env.TAG_NAME,
+                name: `Release ${process.env.TAG_NAME}`,
+                generate_release_notes: true,
+              });
+              console.log(`✅ Release ${process.env.TAG_NAME} créée`);
+            } catch (e) {
+              if (e.status === 422) {
+                console.log(`⚠️ Release ${process.env.TAG_NAME} existe déjà — ignorée`);
+              } else {
+                throw e;
+              }
+            }
 
-  # ── Job 2 : build + push image Docker ──────────────────────────────────────
-  # Uniquement si c'est Backend Tests qui a déclenché la release (pas Frontend Tests).
+  # ── Docker build + push (uniquement si déclencheur backend) ───────────────
   docker-publish:
     name: Build & push Docker image
-    needs: bump-and-release
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.name == 'Backend Tests' }}
+    needs: [detect, publish]
+    if: ${{ needs.detect.outputs.with_docker == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - name: Checkout at release tag
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
-          ref: ${{ needs.bump-and-release.outputs.new_version }}
+          ref: ${{ needs.publish.outputs.new_version }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
@@ -156,7 +259,7 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/newsfoundry-backend:${{ needs.bump-and-release.outputs.new_version }}
+            ghcr.io/${{ github.repository_owner }}/newsfoundry-backend:${{ needs.publish.outputs.new_version }}
             ghcr.io/${{ github.repository_owner }}/newsfoundry-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
