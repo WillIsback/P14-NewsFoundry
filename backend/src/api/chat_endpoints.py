@@ -10,6 +10,7 @@ from api.models import (
     ApiResponse,
     ChatPublic,
     ChatReviewPublic,
+    GenerateReviewRequest,
     MessagePublic,
     SendMessageRequest,
     SendMessageResponse,
@@ -238,6 +239,7 @@ def build_chat_router() -> APIRouter:
     async def generate_chat_review(
         chat_id: int,
         current_user: Annotated[User, Depends(verify_user)],
+        body: GenerateReviewRequest = GenerateReviewRequest(),
     ) -> ApiResponse[ChatReviewPublic]:
         """Generate a press review from the chat's message history."""
         from agents import Runner
@@ -270,10 +272,23 @@ def build_chat_router() -> APIRouter:
         # system séparé pour éviter "System message must be at the beginning".
         articles: list[dict] = chat.loaded_articles or []
         active_review_agent = press_review_agent
+        base_instructions = press_review_agent.instructions(None, press_review_agent)
+
+        # Filtre par sujet si fourni
+        subject_block = ""
+        if body.subject:
+            subject_block = (
+                f"\n\n## Sujet de la revue\n\n"
+                f"L'utilisateur souhaite une revue focalisée sur : **{body.subject}**. "
+                f"Ne synthétise que les éléments du chat qui concernent ce sujet. "
+                f"Ignore les parties du chat sans rapport avec ce sujet."
+            )
+
         if articles:
-            # Filtrer sur les messages utilisateur pour éviter le bruit conversationnel
             user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
             query = " ".join(user_msgs[-3:])
+            if body.subject:
+                query = f"{body.subject} {query}"
             relevant = await asyncio.to_thread(
                 build_index_and_retrieve, articles, query, top_k=5
             )
@@ -281,11 +296,9 @@ def build_chat_router() -> APIRouter:
                 rag_block = "\n\n".join(
                     f"**{a['title']}** ({a['url']})\n{a['summary']}" for a in relevant
                 )
-                base_instructions = press_review_agent.instructions(
-                    None, press_review_agent
-                )
                 active_review_agent = press_review_agent.clone(
                     instructions=base_instructions
+                    + subject_block
                     + (
                         "\n\n## Sources disponibles pour enrichir la revue\n\n"
                         "Ces articles ont été chargés durant la conversation. "
@@ -295,6 +308,14 @@ def build_chat_router() -> APIRouter:
                         f"{rag_block}"
                     )
                 )
+            elif subject_block:
+                active_review_agent = press_review_agent.clone(
+                    instructions=base_instructions + subject_block
+                )
+        elif subject_block:
+            active_review_agent = press_review_agent.clone(
+                instructions=base_instructions + subject_block
+            )
 
         try:
             result = await asyncio.wait_for(
