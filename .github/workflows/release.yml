@@ -1,12 +1,13 @@
 ---
 name: Release
 
-# Déclenché uniquement quand "Backend Tests" se termine sur la branche main.
+# Déclenché quand "Backend Tests" ou "Frontend Tests" se terminent sur main.
 # types: [completed] couvre succès ET échec — la condition `if` du job filtre
 # explicitement sur conclusion == 'success'.
+# Le job docker-publish ne tourne que si c'est Backend Tests qui a déclenché.
 on:
   workflow_run:
-    workflows: ["Backend Tests"]
+    workflows: ["Backend Tests", "Frontend Tests"]
     types: [completed]
     branches: [main]
 
@@ -123,9 +124,11 @@ jobs:
             });
 
   # ── Job 2 : build + push image Docker ──────────────────────────────────────
+  # Uniquement si c'est Backend Tests qui a déclenché la release (pas Frontend Tests).
   docker-publish:
     name: Build & push Docker image
     needs: bump-and-release
+    if: ${{ github.event.workflow_run.name == 'Backend Tests' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
