@@ -58,7 +58,7 @@ export async function postGenerateReview(
 	return fetchJson({
 		url: `${BACKEND_URL}/chats/${chatId}/review`,
 		method: "POST",
-		requestData: subject ? { subject } : {},
+		requestData: subject ? { subject } : undefined,
 		successSchema: chatGenerateChatReview201Schema,
 		headers: await authHeaders(),
 		timeoutMs: 60_000,
