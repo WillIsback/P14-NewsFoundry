@@ -331,12 +331,14 @@ def build_chat_router() -> APIRouter:
                 instructions=base_instructions
                 + (
                     f"\n\n## Mode : analyse mono-article\n\n"
-                    f"L'utilisateur a sélectionné un unique article pour cette revue : "
-                    f"**{article['title']}**.\n"
-                    f"Tu dois produire une analyse journalistique EXHAUSTIVE de cet article "
-                    f"(minimum 4 paragraphes dans le champ 'content'). "
-                    f"Exploite intégralement le contenu fourni ci-dessous — "
-                    f"ne te contente pas d'un résumé superficiel.\n\n"
+                    f"L'utilisateur a sélectionné UN SEUL article : **{article['title']}**.\n\n"
+                    f"IMPÉRATIF SCHÉMA : le champ `articles` doit contenir EXACTEMENT UN ArticleSummary "
+                    f"pour cet article. NE PAS créer plusieurs ArticleSummary. "
+                    f"Tous les paragraphes d'analyse vont dans le champ `content` de ce SEUL objet, "
+                    f"séparés par des lignes vides (\\n\\n).\n\n"
+                    f"Le champ `content` doit contenir AU MINIMUM 4 paragraphes substantiels "
+                    f"qui exploitent intégralement le contenu ci-dessous. "
+                    f"Ne pas résumer — analyser en profondeur.\n\n"
                 )
                 + rag_block
             )
