@@ -18,10 +18,18 @@ from core.llm_client import build_llm_client
 
 
 class ArticleSummary(BaseModel):
-    """Un article mentionné dans la revue de presse."""
+    """Un article analysé en profondeur dans la revue de presse."""
 
-    title: str = Field(description="Titre de l'article mentionné dans la conversation")
-    summary: str = Field(description="Résumé concis de l'article (2-3 phrases)")
+    title: str = Field(description="Titre de l'article")
+    content: str = Field(
+        description=(
+            "Analyse journalistique approfondie de l'article (3 à 5 paragraphes substantiels). "
+            "Développer obligatoirement : (1) contexte et faits principaux, "
+            "(2) arguments, données chiffrées et citations notables, "
+            "(3) implications, portée et nuances. "
+            "Ne jamais écrire moins de 3 paragraphes. En français."
+        )
+    )
     source: str | None = Field(
         default=None,
         description=(
@@ -35,31 +43,41 @@ class ArticleSummary(BaseModel):
 class PressReviewOutput(BaseModel):
     """Sortie structurée de la revue de presse."""
 
-    title: str = Field(description="Titre informatif et concis pour la revue de presse")
-    summary: str = Field(
-        description="Synthèse générale de la revue de presse (3-5 phrases)"
+    title: str = Field(description="Titre éditorial de la revue de presse")
+    editorial: str = Field(
+        description=(
+            "Synthèse éditoriale globale (2 à 3 paragraphes) : "
+            "angle rédactionnel principal, thèmes transversaux entre les sources, "
+            "conclusion analytique. En français."
+        )
     )
     articles: list[ArticleSummary] = Field(
-        description="Liste des articles identifiés dans la conversation avec leur résumé"
+        description="Liste des articles analysés en profondeur"
     )
 
 
 def _build_instructions(ctx, agent) -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return (
-        "You are NewsFoundry, an AI assistant specialized in press review analysis.\n\n"
+        "You are NewsFoundry, an expert press review analyst writing for an informed readership.\n\n"
         f"Today's date is: {today}.\n\n"
-        "Your task is to synthesize the provided chat conversation into a structured "
-        "press review. Identify the key articles and topics discussed, extract factual "
-        "information, and organize them into a coherent review with a title, general "
-        "summary, and individual article summaries.\n\n"
-        "IMPORTANT: For each article's 'source' field, you MUST use the full URL "
-        "(e.g. https://...) found in the conversation or context. Never use a "
-        "publication name as the source — always use the URL. If no URL is available "
-        "for a specific article, leave 'source' as null.\n\n"
-        "If the conversation does not contain any article or news discussion, generate "
-        "a review based on the main topics discussed, with a single article entry "
-        "summarizing the key exchange."
+        "Your task is to produce a DEEP, RICHLY DETAILED press review — never a list of "
+        "shallow bullet points or one-sentence summaries.\n\n"
+        "For EACH article provided in the context, write a thorough journalistic analysis "
+        "in the 'content' field (MINIMUM 3 substantial paragraphs per article):\n"
+        "  • Paragraph 1 — Context and key facts: what happened, who, when, where\n"
+        "  • Paragraph 2 — Arguments, data points, and direct quotes or paraphrases\n"
+        "  • Paragraph 3+ — Implications, stakes, nuances, contradictions, or significance\n\n"
+        "The 'editorial' field is your global synthesis across all articles (2-3 paragraphs): "
+        "identify the overarching angle, cross-cutting themes, and your analytical conclusion.\n\n"
+        "RULES:\n"
+        "  - Write entirely in French\n"
+        "  - Use Markdown in 'content' and 'editorial': ## headings, **bold** for key terms, "
+        "> blockquotes for notable citations\n"
+        "  - For each article's 'source' field, always use the full URL (https://...); "
+        "never use a publication name alone; leave null only if no URL exists\n"
+        "  - Never invent facts not present in the provided content\n"
+        "  - If only one article is provided, give it maximum analytical depth"
     )
 
 

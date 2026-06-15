@@ -308,58 +308,53 @@ def build_chat_router() -> APIRouter:
                     detail="Article URL not found in chat loaded articles",
                 )
             article = selected[0]
+            # Injecte le contenu complet de l'article (stocké dans le champ "summary"
+            # par tools.py qui préfère article.text à article.summary)
+            article_content = article.get("summary", "")
             rag_block = (
-                f"**{article['title']}** ({article['url']})\n{article['summary']}"
+                f"## CONTENU COMPLET DE L'ARTICLE\n\n"
+                f"**Titre** : {article['title']}\n"
+                f"**URL** : {article['url']}\n\n"
+                f"{article_content}"
             )
             active_review_agent = press_review_agent.clone(
                 instructions=base_instructions
-                + f"\n\n## Sujet de la revue\n\nL'utilisateur souhaite une revue "
-                f"focalisée exclusivement sur l'article : **{article['title']}**. "
-                f"Génère une revue détaillée basée uniquement sur cet article et les "
-                f"éléments du chat qui s'y rapportent.\n\n"
-                + "\n\n## Article sélectionné\n\n"
+                + (
+                    f"\n\n## Mode : analyse mono-article\n\n"
+                    f"L'utilisateur a sélectionné un unique article pour cette revue : "
+                    f"**{article['title']}**.\n"
+                    f"Tu dois produire une analyse journalistique EXHAUSTIVE de cet article "
+                    f"(minimum 4 paragraphes dans le champ 'content'). "
+                    f"Exploite intégralement le contenu fourni ci-dessous — "
+                    f"ne te contente pas d'un résumé superficiel.\n\n"
+                )
                 + rag_block
             )
         else:
-            # Mode classique : RAG sur tous les articles + sujet optionnel
+            # Mode classique : RAG sur tous les articles
             articles = all_articles
-            subject_block = ""
-            if body.subject:
-                subject_block = (
-                    f"\n\n## Sujet de la revue\n\n"
-                    f"L'utilisateur souhaite une revue focalisée sur : **{body.subject}**. "
-                    f"Ne synthétise que les éléments du chat qui concernent ce sujet. "
-                    f"Ignore les parties du chat sans rapport avec ce sujet."
-                )
 
             if articles:
                 user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
                 query = " ".join(user_msgs[-3:])
-                if body.subject:
-                    query = f"{body.subject} {query}"
                 relevant = await asyncio.to_thread(
                     build_index_and_retrieve, articles, query, top_k=5
                 )
                 if relevant:
-                    rag_block = "\n\n".join(
-                        f"**{a['title']}** ({a['url']})\n{a['summary']}"
+                    rag_block = "\n\n---\n\n".join(
+                        f"**Titre** : {a['title']}\n"
+                        f"**URL** : {a['url']}\n\n"
+                        f"{a.get('summary', '')}"
                         for a in relevant
                     )
                     active_review_agent = press_review_agent.clone(
                         instructions=base_instructions
-                        + subject_block
                         + (
-                            "\n\n## Sources disponibles pour enrichir la revue\n\n"
-                            "Ces articles ont été chargés durant la conversation. "
-                            "Utilise-les UNIQUEMENT pour ajouter des URLs ou des détails "
-                            "à des sujets déjà discutés dans la conversation. "
-                            "Ne crée PAS de nouvelles sections absentes du chat.\n\n"
+                            "\n\n## Contenu des articles à analyser\n\n"
+                            "Voici le contenu complet des articles pertinents issus de la conversation. "
+                            "Produis une analyse approfondie de chacun.\n\n"
                             f"{rag_block}"
                         )
-                    )
-                elif subject_block:
-                    active_review_agent = press_review_agent.clone(
-                        instructions=base_instructions + subject_block
                     )
 
         try:
@@ -389,7 +384,7 @@ def build_chat_router() -> APIRouter:
             update_chat_press_review_sync,
             chat_id,
             output.title,
-            output.summary,
+            output.editorial,
             articles_json,
             now,
         )
@@ -400,7 +395,7 @@ def build_chat_router() -> APIRouter:
             data=ChatReviewPublic(
                 id=chat_id,
                 title=output.title,
-                description=output.summary,
+                description=output.editorial,
                 content=articles_json,
                 chat_id=chat_id,
                 date=now,
