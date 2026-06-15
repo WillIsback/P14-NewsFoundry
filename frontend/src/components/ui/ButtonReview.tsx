@@ -100,9 +100,19 @@ function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 	}
 
 	return (
-		<div className="flex flex-col items-end gap-2">
+		// position:relative sur le conteneur + absolute sur le formulaire
+		// pour que le dropdown flotte au-dessus de la section chat sous-jacente
+		<div className="relative flex flex-col items-end gap-1">
+			<button
+				type="button"
+				onClick={handleCancel}
+				className="inline-flex items-center justify-center gap-2.5 rounded-[8px] w-fit h-fit transition-all bg-brand-velvet text-slate-100 hover:bg-slate-dark hover:cursor-pointer px-3 py-3 text-body-xs tablet:px-6 tablet:py-5.25 tablet:text-body-s"
+			>
+				<ReviewIcon />
+				Générer une revue de presse
+			</button>
 			<form
-				className="flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 w-80"
+				className="absolute top-full right-0 mt-1 z-50 flex flex-col gap-2 p-3 rounded-[8px] border border-slate-200 bg-slate-50 shadow-md w-80"
 				onSubmit={(e) => {
 					e.preventDefault();
 					handleGenerate();
@@ -157,8 +167,8 @@ function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 						{step === "loading" ? "Génération…" : "Générer"}
 					</button>
 				</div>
+				{error && <p className="text-red-500 text-body-xs">{error}</p>}
 			</form>
-			{error && <p className="text-red-500 text-body-xs">{error}</p>}
 		</div>
 	);
 }
