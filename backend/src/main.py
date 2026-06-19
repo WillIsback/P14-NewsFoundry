@@ -113,6 +113,58 @@ def create_app() -> FastAPI:
     )
 
     register_middlewares(app)
+
+    # Exception handlers enregistrés AVANT setup_routers pour garantir que
+    # FastAPI les intègre dans la pile middleware avant toute route.
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(
+        request: Request, exc: HTTPException
+    ) -> JSONResponse:
+        detail = exc.detail if isinstance(exc.detail, str) else "HTTP error"
+        payload = error_response(
+            status=exc.status_code,
+            code="HTTP_EXCEPTION",
+            message=detail,
+            details=exc.detail,
+        )
+        return JSONResponse(status_code=exc.status_code, content=payload.model_dump())
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request,
+        exc: RequestValidationError,
+    ) -> JSONResponse:
+        payload = error_response(
+            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code="VALIDATION_ERROR",
+            message="Request validation failed",
+            details=exc.errors(),
+        )
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=payload.model_dump(),
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
+        details = (
+            {"type": type(exc).__name__, "trace": traceback.format_exc()}
+            if DEBUG_MODE
+            else {"type": type(exc).__name__}
+        )
+        payload = error_response(
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            code="INTERNAL_SERVER_ERROR",
+            message="An unexpected error occurred",
+            details=details,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=payload.model_dump(),
+        )
+
     setup_routers(app, db)
     return app
 
@@ -134,54 +186,6 @@ async def hello() -> ApiResponse[MessageData]:
         status=status.HTTP_200_OK,
         message="API reachable",
         data=MessageData(message="👋"),
-    )
-
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    detail = exc.detail if isinstance(exc.detail, str) else "HTTP error"
-    payload = error_response(
-        status=exc.status_code,
-        code="HTTP_EXCEPTION",
-        message=detail,
-        details=exc.detail,
-    )
-    return JSONResponse(status_code=exc.status_code, content=payload.model_dump())
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(
-    request: Request,
-    exc: RequestValidationError,
-) -> JSONResponse:
-    payload = error_response(
-        status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        code="VALIDATION_ERROR",
-        message="Request validation failed",
-        details=exc.errors(),
-    )
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=payload.model_dump(),
-    )
-
-
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    details = (
-        {"type": type(exc).__name__, "trace": traceback.format_exc()}
-        if DEBUG_MODE
-        else {"type": type(exc).__name__}
-    )
-    payload = error_response(
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        code="INTERNAL_SERVER_ERROR",
-        message="An unexpected error occurred",
-        details=details,
-    )
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=payload.model_dump(),
     )
 
 
