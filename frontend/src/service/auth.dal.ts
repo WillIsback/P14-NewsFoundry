@@ -75,8 +75,6 @@ export async function postLogin(
 	password: string,
 ): Promise<ServiceResult<LoginResponse>> {
 	const route = "/auth/login";
-	const url = `${BACKEND_URL}${route}`;
-	console.log("[auth.dal] postLogin url:", url);
 	const result = await fetchJson({
 		url: `${BACKEND_URL}${route}`,
 		method: "POST",
@@ -88,7 +86,6 @@ export async function postLogin(
 		timeoutMs: 10000,
 		fetchOptions: { cache: "no-store" },
 	});
-	console.log("[auth.dal] postLogin result:", result);
 
 	return mapLoginError(result);
 }

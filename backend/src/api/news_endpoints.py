@@ -1,5 +1,7 @@
 """Endpoints REST pour le pipeline d'ingestion de news."""
 
+import asyncio
+import logging
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -34,6 +36,9 @@ class NewsContextPublic(BaseModel):
     model_config = {"from_attributes": True}
 
 
+logger = logging.getLogger(__name__)
+
+
 def build_news_router() -> APIRouter:
     router = APIRouter(tags=["news"])
 
@@ -43,13 +48,32 @@ def build_news_router() -> APIRouter:
         current_user: Annotated[User, Depends(verify_user)],
         session: Annotated[Session, Depends(auth_db.get_db)],
     ) -> ApiResponse[NewsContextPublic]:
-        ctx = await fetch_and_build_context(
-            chat_id=body.chat_id,
-            source_country=body.source_country,
-            language=body.language,
-            date=body.date,
-            session=session,
-        )
+        try:
+            ctx = await fetch_and_build_context(
+                chat_id=body.chat_id,
+                source_country=body.source_country,
+                language=body.language,
+                date=body.date,
+                session=session,
+            )
+        except asyncio.TimeoutError:
+            logger.error(
+                "[news] timeout fetching news context for chat_id=%s", body.chat_id
+            )
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="News fetch timed out",
+            )
+        except Exception as exc:
+            logger.error(
+                "[news] error building news context for chat_id=%s: %r",
+                body.chat_id,
+                exc,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to fetch or build news context",
+            )
         return success_response(
             status=status.HTTP_201_CREATED,
             message="News context created",

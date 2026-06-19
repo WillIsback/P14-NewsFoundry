@@ -39,7 +39,7 @@ export default function ChatForm(props: Readonly<ChatFormProps>) {
 			className="flex w-full min-h-23.25 gap-4 px-[6.44%] py-4.25 bg-white"
 		>
 			{state.error && (
-				<p role="alert" className="sr-only">
+				<p role="alert" className="text-sm text-red-600 self-center">
 					{state.error}
 				</p>
 			)}

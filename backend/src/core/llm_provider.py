@@ -13,6 +13,7 @@ Helpers partagés déplacés dans ``utils.utils`` :
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
@@ -33,6 +34,7 @@ from utils.utils import LLMMessage, estimate_tokens  # noqa: F401 — re-exporte
 # ---------------------------------------------------------------------------
 
 _client = build_llm_client()
+_logger = logging.getLogger(__name__)
 
 # Le sémaphore évite de saturer le serveur LLM avec des requêtes concurrentes.
 _semaphore = asyncio.Semaphore(LLM_MAX_CONCURRENT)
@@ -230,14 +232,21 @@ async def compact_history_if_needed(
 
     history_text = "\n".join(f"{m.role.upper()}: {m.content}" for m in to_summarize)
 
-    summary_response = await call_llm(
-        LLMRequest(
-            system_prompt=COMPACTION_PROMPT,
-            messages=[LLMMessage(role="user", content=history_text)],
-            temperature=0.3,
-            max_tokens=512,
+    try:
+        summary_response = await call_llm(
+            LLMRequest(
+                system_prompt=COMPACTION_PROMPT,
+                messages=[LLMMessage(role="user", content=history_text)],
+                temperature=0.3,
+                max_tokens=512,
+            )
         )
-    )
+    except Exception:
+        # En cas d'échec LLM, on retourne l'historique non compacté plutôt que de bloquer la requête.
+        _logger.warning(
+            "[llm] compact_history_if_needed: LLM error, returning uncompacted history"
+        )
+        return messages, _build_context_info(messages, was_compacted=False)
 
     summary_message = LLMMessage(
         role="assistant",
