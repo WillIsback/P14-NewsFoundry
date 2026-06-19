@@ -28,3 +28,10 @@ frontend/coverage/
 frontend/e2e/fixtures/.auth/
 frontend/playwright-report/
 frontend/test-results/
+
+# Outils locaux
+.codegraph/
+.playwright-mcp/
+
+# Documents locaux non versionnés
+docs/specs/
