@@ -64,8 +64,8 @@ export default function ChatWindow({
 				content: text,
 				timestamp: new Date().toISOString(),
 			});
+			serverFormAction(formData);
 		});
-		serverFormAction(formData);
 	}
 
 	return (
