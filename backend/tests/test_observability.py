@@ -8,6 +8,15 @@ import pytest
 os.environ.pop("MLFLOW_TRACKING_URI", None)
 
 from core.observability import InferenceTrace, get_active_trace
+import core.observability as _obs_module
+
+
+@pytest.fixture(autouse=True)
+def reset_active_trace():
+    """Réinitialise le ContextVar entre les tests pour éviter la pollution."""
+    token = _obs_module._active_trace.set(None)
+    yield
+    _obs_module._active_trace.reset(token)
 
 
 def test_get_active_trace_returns_none_by_default():
