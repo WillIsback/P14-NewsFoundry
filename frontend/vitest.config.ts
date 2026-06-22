@@ -18,6 +18,9 @@ export default defineConfig({
 				"src/test/**",
 				"src/instrumentation*.ts",
 				"src/proxy.ts",
+				// Composants SVG/visuels purs — aucune logique metier a tester
+				"src/components/ui/Robot.tsx",
+				"src/components/ui/AssistantWelcome.tsx",
 			],
 			thresholds: {
 				statements: 80,
