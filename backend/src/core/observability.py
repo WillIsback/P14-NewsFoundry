@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import logging
 import time
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Generator, Literal
 
 _logger = logging.getLogger(__name__)
 
@@ -98,7 +99,6 @@ class InferenceTrace:
             else 0.0
         )
         tool_latency = sum(r.duration_s for r in self._tool_records)
-        model = self._llm_records[0].model if self._llm_records else "unknown"
 
         if self.operation == "chat_turn":
             _logger.info(
@@ -128,51 +128,22 @@ class InferenceTrace:
                 articles_count,
             )
 
-        # MLflow — no-op si MLFLOW_TRACKING_URI absent
-        from core.config import (
-            MLFLOW_TRACKING_URI,
-        )  # import tardif pour éviter le cycle
-
-        if not MLFLOW_TRACKING_URI:
-            return
-
-        try:
-            import mlflow
-
-            mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-            mlflow.set_experiment(f"newsfoundry/{self.operation}")
-
-            with mlflow.start_run():
-                mlflow.set_tags({"chat_id": str(chat_id), "model": model})
-
-                if self.operation == "chat_turn":
-                    mlflow.log_metrics(
-                        {
-                            "e2e_latency_s": round(e2e, 3),
-                            "llm_calls_count": float(len(self._llm_records)),
-                            "input_tokens_total": float(input_tokens_total),
-                            "output_tokens_total": float(output_tokens_total),
-                            "tok_per_sec": tok_per_sec,
-                            "tool_calls_count": float(len(self._tool_records)),
-                            "tool_latency_s": round(tool_latency, 3),
-                            "was_compacted": float(int(self._was_compacted)),
-                            "history_length": float(self._history_length),
-                        }
-                    )
-                else:
-                    mlflow.log_metrics(
-                        {
-                            "e2e_latency_s": round(e2e, 3),
-                            "input_tokens": float(input_tokens_total),
-                            "output_tokens": float(output_tokens_total),
-                            "tok_per_sec": tok_per_sec,
-                            "articles_count": float(articles_count),
-                        }
-                    )
-        except Exception as exc:
-            _logger.warning("[observability] MLflow flush failed: %s", exc)
-
 
 def get_active_trace() -> InferenceTrace | None:
     """Retourne la trace active dans le contexte asyncio courant, ou None."""
     return _active_trace.get()
+
+
+@contextmanager
+def tracing_context(session_id: str) -> Generator[None, None, None]:
+    """Context manager MLflow Tracing — no-op si MLFLOW_TRACKING_URI absent."""
+    from core.config import MLFLOW_TRACKING_URI
+
+    if not MLFLOW_TRACKING_URI:
+        yield
+        return
+
+    import mlflow
+
+    with mlflow.tracing.context(session_id=session_id):
+        yield

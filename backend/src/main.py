@@ -77,9 +77,18 @@ def create_app() -> FastAPI:
     from database.database import Database
     from agents import set_tracing_disabled
 
-    # Disable tracing — it would attempt to reach api.openai.com with our local
-    # vLLM API key, causing noise in the logs.
+    # Disable OpenAI Agents SDK built-in tracing (targets api.openai.com, incompatible
+    # with vLLM). MLflow autolog prend le relais pour le tracing GenAI.
     set_tracing_disabled(True)
+
+    from core.config import MLFLOW_TRACKING_URI
+
+    if MLFLOW_TRACKING_URI:
+        import mlflow
+
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        mlflow.set_experiment("newsfoundry")
+        mlflow.openai.autolog(disable_openai_agent_tracer=False)
 
     db = Database()
 
