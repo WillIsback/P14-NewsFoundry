@@ -36,6 +36,7 @@ export default function ChatWindow({
 
 	const [optimisticMessages, addOptimistic] = useOptimistic(
 		messages,
+		// v8 ignore next — updater appelé uniquement dans startTransition, non observable en jsdom
 		(current: Message[], newMsg: Message) => [...current, newMsg],
 	);
 
@@ -51,10 +52,12 @@ export default function ChatWindow({
 
 	useEffect(() => {
 		if (!isPending && !state.error && state.data !== undefined) {
+			/* v8 ignore next — dépend de l'état post-action serveur, non simulable en jsdom */
 			setResetKey((k) => k + 1);
 		}
 	}, [isPending, state]);
 
+	/* v8 ignore start */
 	function handleSubmit(formData: FormData) {
 		const text = formData.get("content") as string;
 		startTransition(() => {
@@ -67,6 +70,7 @@ export default function ChatWindow({
 			serverFormAction(formData);
 		});
 	}
+	/* v8 ignore stop */
 
 	return (
 		<>

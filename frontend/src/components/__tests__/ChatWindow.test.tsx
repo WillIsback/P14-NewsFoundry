@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import ChatWindow from "../ChatWindow";
 
 vi.mock("@/src/actions/chat.action", () => ({
-	continueChat: vi.fn(),
+	continueChat: vi.fn().mockResolvedValue({ error: null, data: {} }),
 }));
 
 const messages = [
@@ -20,6 +20,10 @@ const messages = [
 		timestamp: "2024-01-01T10:00:01Z",
 	},
 ];
+
+beforeEach(() => {
+	window.HTMLElement.prototype.scrollIntoView = vi.fn();
+});
 
 describe("ChatWindow", () => {
 	it("affiche les messages existants", () => {
