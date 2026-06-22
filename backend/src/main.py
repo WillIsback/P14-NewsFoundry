@@ -84,11 +84,17 @@ def create_app() -> FastAPI:
     from core.config import MLFLOW_TRACKING_URI
 
     if MLFLOW_TRACKING_URI:
+        import logging
         import mlflow
 
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        mlflow.set_experiment("newsfoundry")
-        mlflow.openai.autolog()
+        try:
+            mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+            mlflow.set_experiment("newsfoundry")
+            mlflow.openai.autolog()
+        except Exception as e:
+            logging.warning(
+                "[MLflow] Initialisation échouée, tracing désactivé : %s", e
+            )
 
     db = Database()
 
