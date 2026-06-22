@@ -13,6 +13,7 @@ Les outputs sont en Markdown pour être directement lisibles par le LLM.
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import datetime, timezone
 
 from agents import RunContextWrapper, function_tool
@@ -20,6 +21,7 @@ from agents import RunContextWrapper, function_tool
 from core.agent.context import ChatRunContext
 from core.config import TOP_NEWS_CLUSTERS
 from core.news.search import search_news as _search_news
+from core.observability import get_active_trace
 from core.worldnewsapi.worldnews import get_news_api
 
 
@@ -51,6 +53,7 @@ async def get_top_news(
     api = get_news_api()
     effective_date = date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    t0 = time.perf_counter()
     response = await asyncio.to_thread(
         api.top_news,
         source_country=source_country,
@@ -58,6 +61,11 @@ async def get_top_news(
         var_date=effective_date,
         _request_timeout=(5, 25),  # (connect, read) — évite un hang qui bloque le run
     )
+    tool_duration = time.perf_counter() - t0
+
+    trace = get_active_trace()
+    if trace is not None:
+        trace.record_tool(tool_name="get_top_news", duration_s=tool_duration)
 
     clusters = reduce_clusters(response, top_n=TOP_NEWS_CLUSTERS)
 
@@ -115,9 +123,15 @@ async def search_news(
         A Markdown-formatted list of articles with title, summary, date, and URL.
         Returns a message indicating no results if nothing was found.
     """
+    t0 = time.perf_counter()
     articles = await _search_news(
         query=query, language=language, max_results=max_results
     )
+    tool_duration = time.perf_counter() - t0
+
+    trace = get_active_trace()
+    if trace is not None:
+        trace.record_tool(tool_name="search_news", duration_s=tool_duration)
 
     if not articles:
         return f"Aucun article trouvé pour la recherche : « {query} »."
