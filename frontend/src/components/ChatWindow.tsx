@@ -1,12 +1,12 @@
 "use client";
 
 import {
+	startTransition,
 	useActionState,
 	useEffect,
 	useOptimistic,
 	useRef,
 	useState,
-	useTransition,
 } from "react";
 import { type ChatActionState, continueChat } from "@/src/actions/chat.action";
 import AssistantCard from "./AssistantCard";
@@ -29,12 +29,10 @@ export default function ChatWindow({
 	chatId,
 	messages,
 }: Readonly<ChatWindowProps>) {
-	const [state, serverFormAction] = useActionState<
+	const [state, serverFormAction, isPending] = useActionState<
 		ChatActionState & { data?: unknown },
 		FormData
 	>(continueChat.bind(null, chatId), { error: null });
-
-	const [isPending, startTransition] = useTransition();
 
 	const [optimisticMessages, addOptimistic] = useOptimistic(
 		messages,
@@ -59,15 +57,15 @@ export default function ChatWindow({
 
 	function handleSubmit(formData: FormData) {
 		const text = formData.get("content") as string;
-		startTransition(async () => {
+		startTransition(() => {
 			addOptimistic({
 				id: Date.now(),
 				type: "user",
 				content: text,
 				timestamp: new Date().toISOString(),
 			});
-			await serverFormAction(formData);
 		});
+		serverFormAction(formData);
 	}
 
 	return (
