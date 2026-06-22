@@ -88,7 +88,7 @@ def create_app() -> FastAPI:
 
         mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
         mlflow.set_experiment("newsfoundry")
-        mlflow.openai.autolog(disable_openai_agent_tracer=False)
+        mlflow.openai.autolog()
 
     db = Database()
 
