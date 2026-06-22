@@ -35,6 +35,9 @@ _HOP_BY_HOP = frozenset(
     {"connection", "transfer-encoding", "te", "trailer", "upgrade", "keep-alive"}
 )
 
+# Headers à supprimer pour éviter que MLflow bloque la requête comme cross-origin
+_STRIP_HEADERS = _HOP_BY_HOP | {"host", "authorization", "origin", "referer"}
+
 
 def _verify_proxy_auth(
     credentials: Annotated[HTTPBasicCredentials, Depends(_security)],
@@ -60,9 +63,7 @@ async def _forward(request: Request, target_path: str) -> Response:
         url = f"{url}?{request.url.query}"
 
     headers = {
-        k: v
-        for k, v in request.headers.items()
-        if k.lower() not in _HOP_BY_HOP | {"host", "authorization"}
+        k: v for k, v in request.headers.items() if k.lower() not in _STRIP_HEADERS
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
