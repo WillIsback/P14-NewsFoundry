@@ -148,9 +148,17 @@ def test_flush_press_review_creates_mlflow_run(mlflow_file_tracking):
 
 
 def test_flush_swallows_mlflow_error(monkeypatch):
-    """flush() ne propage pas les exceptions MLflow (serveur inaccessible)."""
+    """flush() ne propage pas les exceptions MLflow."""
     monkeypatch.setattr("core.config.MLFLOW_TRACKING_URI", "http://localhost:9999")
+
+    import mlflow
+
+    monkeypatch.setattr(
+        mlflow,
+        "set_tracking_uri",
+        lambda _uri: (_ for _ in ()).throw(ConnectionError("connection refused")),
+    )
 
     trace = InferenceTrace.start("chat_turn")
     trace.record_llm(input_tokens=100, output_tokens=50, duration_s=1.0, model="qwen3")
-    trace.flush(chat_id=1)  # MLflow inaccessible — ne doit pas lever
+    trace.flush(chat_id=1)  # doit swallower l'exception, ne pas lever
