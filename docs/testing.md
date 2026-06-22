@@ -46,6 +46,7 @@ Tests unitaires (pytest + Vitest)
 | `test_rag_indexer.py` | Index et recherche RAG |
 | `test_topnewscontext_model.py` | Modèle TopNewsContext |
 | `test_agent_tools.py` | Outils des agents |
+| `test_exception_handler_responses.py` | Réponses des handlers d'erreurs HTTP |
 | `test_worldnews.py` | Client WorldNewsAPI (mock inclus) |
 
 ### Test d'autorisation critique
@@ -75,7 +76,12 @@ Tests unitaires (pytest + Vitest)
 | Fichier | Couverture |
 |---------|------------|
 | `components/__tests__/ChatForm.test.tsx` | Rendu du formulaire, états des boutons |
+| `components/__tests__/ChatWindow.test.tsx` | Rendu du chat, scroll, messages |
+| `components/__tests__/AssistantCard.test.tsx` | Affichage de l'assistant, état par défaut |
+| `components/__tests__/HomeChatWrapper.test.tsx` | Wrapper de chat sur la page d'accueil |
 | `components/ui/__tests__/Message.test.tsx` | Rendu des messages utilisateur/AI, Markdown, timestamps, snapshot |
+| `components/ui/__tests__/AssistantPendingContent.test.tsx` | Indicateur de chargement assistant |
+| `components/ui/__tests__/PendingSpinner.test.tsx` | Spinner de chargement |
 
 ## End-to-End (Playwright)
 
