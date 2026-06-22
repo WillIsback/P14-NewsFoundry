@@ -88,10 +88,6 @@ LLM_COMPACT_RECENT_KEEP: int = int(os.getenv("LLM_COMPACT_RECENT_KEEP", "6"))
 # Observability / MLflow
 # Si absent ou vide, le tracking MLflow est désactivé (mode no-op silencieux).
 MLFLOW_TRACKING_URI: str | None = os.getenv("MLFLOW_TRACKING_URI") or None
-# Credentials du proxy MLflow (HTTP Basic Auth, navigateur).
-# Si absents, le proxy est désactivé.
-MLFLOW_PROXY_USERNAME: str = os.getenv("MLFLOW_PROXY_USERNAME", "")
-MLFLOW_PROXY_PASSWORD: str = os.getenv("MLFLOW_PROXY_PASSWORD", "")
 
 # Bootstrap Configuration (one-shot admin creation)
 BOOTSTRAP_ENABLED = os.getenv("BOOTSTRAP_ENABLED", "false").lower() == "true"

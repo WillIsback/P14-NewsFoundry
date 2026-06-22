@@ -21,8 +21,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from core.config import (
-    MLFLOW_PROXY_PASSWORD,
-    MLFLOW_PROXY_USERNAME,
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
     MLFLOW_TRACKING_URI,
 )
 
@@ -40,10 +40,10 @@ def _verify_proxy_auth(
     credentials: Annotated[HTTPBasicCredentials, Depends(_security)],
 ) -> str:
     ok_user = secrets.compare_digest(
-        credentials.username.encode(), MLFLOW_PROXY_USERNAME.encode()
+        credentials.username.encode(), (ADMIN_EMAIL or "").encode()
     )
     ok_pass = secrets.compare_digest(
-        credentials.password.encode(), MLFLOW_PROXY_PASSWORD.encode()
+        credentials.password.encode(), (ADMIN_PASSWORD or "").encode()
     )
     if not (ok_user and ok_pass):
         raise HTTPException(
@@ -85,12 +85,8 @@ async def _forward(request: Request, target_path: str) -> Response:
 
 
 def build_mlflow_proxy_router() -> APIRouter | None:
-    """Retourne None si MLflow ou les credentials proxy ne sont pas configurés."""
-    if (
-        not MLFLOW_TRACKING_URI
-        or not MLFLOW_PROXY_USERNAME
-        or not MLFLOW_PROXY_PASSWORD
-    ):
+    """Retourne None si MLflow ou les credentials admin ne sont pas configurés."""
+    if not MLFLOW_TRACKING_URI or not ADMIN_EMAIL or not ADMIN_PASSWORD:
         return None
 
     router = APIRouter(dependencies=[Depends(_verify_proxy_auth)])
