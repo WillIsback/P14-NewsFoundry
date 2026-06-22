@@ -88,7 +88,8 @@ def create_app() -> FastAPI:
 
         mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
         mlflow.set_experiment("newsfoundry")
-        mlflow.openai.autolog()
+        # log_traces=False : ne capture pas le contenu des messages (RGPD/minimisation)
+        mlflow.openai.autolog(log_traces=False)
 
     db = Database()
 
