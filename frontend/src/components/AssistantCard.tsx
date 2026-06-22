@@ -1,11 +1,12 @@
 "use client";
 
+import AssistantPendingContent from "./ui/AssistantPendingContent";
 import AssistantWelcome from "./ui/AssistantWelcome";
 import Icon from "./ui/Icon";
 import Message from "./ui/Message";
 
 interface AssistantCardProps {
-	variant?: "default" | "welcome";
+	variant?: "default" | "welcome" | "pending";
 	messages?: {
 		id: number;
 		type: string;
@@ -18,15 +19,19 @@ export default function AssistantCard({
 	variant,
 	messages,
 }: Readonly<AssistantCardProps>) {
-	if (!messages && variant !== "welcome") return <p></p>;
+	if (!messages && variant !== "welcome" && variant !== "pending")
+		return <p></p>;
 	return (
 		<>
 			{variant === "welcome" ? (
 				<div className="flex flex-col w-full h-fit items-center gap-10 px-10 py-14 rounded-[14px] bg-slate-white border border-slate-300">
 					<AssistantWelcome />
 				</div>
+			) : variant === "pending" ? (
+				<div className="flex flex-col w-full h-fit items-center gap-10 px-10 py-14 rounded-[14px] bg-slate-white border border-slate-300">
+					<AssistantPendingContent />
+				</div>
 			) : (
-				// Render messages or other content for the "default" variant
 				<div className="flex flex-col w-full h-fit gap-8">
 					{messages && messages.length > 0 ? (
 						messages?.map((message) => (
