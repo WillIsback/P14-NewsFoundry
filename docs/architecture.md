@@ -87,7 +87,7 @@ NewsFoundry/
 │   └── playwright.config.ts
 ├── docs/                             # Documentation du projet
 ├── .github/
-│   └── workflows/                    # 8 workflows CI/CD
+│   └── workflows/                    # 9 workflows CI/CD
 └── README.md
 ```
 
