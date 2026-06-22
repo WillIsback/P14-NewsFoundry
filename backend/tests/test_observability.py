@@ -1,0 +1,75 @@
+"""Tests de InferenceTrace — mode no-op (MLFLOW_TRACKING_URI absent)."""
+
+import asyncio
+import os
+import pytest
+
+# Garantir que MLflow est désactivé pour ces tests
+os.environ.pop("MLFLOW_TRACKING_URI", None)
+
+from core.observability import InferenceTrace, get_active_trace
+
+
+def test_get_active_trace_returns_none_by_default():
+    assert get_active_trace() is None
+
+
+def test_start_sets_active_trace():
+    trace = InferenceTrace.start("chat_turn")
+    assert get_active_trace() is trace
+
+
+def test_record_llm_accumulates():
+    trace = InferenceTrace.start("chat_turn")
+    trace.record_llm(input_tokens=100, output_tokens=50, duration_s=1.0, model="qwen3")
+    trace.record_llm(input_tokens=200, output_tokens=80, duration_s=2.0, model="qwen3")
+    assert len(trace._llm_records) == 2
+    assert trace._llm_records[0].input_tokens == 100
+    assert trace._llm_records[1].output_tokens == 80
+
+
+def test_record_tool_accumulates():
+    trace = InferenceTrace.start("chat_turn")
+    trace.record_tool(tool_name="get_top_news", duration_s=3.1)
+    assert len(trace._tool_records) == 1
+    assert trace._tool_records[0].tool_name == "get_top_news"
+
+
+def test_record_compaction_stores_state():
+    trace = InferenceTrace.start("chat_turn")
+    trace.record_compaction(was_compacted=True, history_length=42)
+    assert trace._was_compacted is True
+    assert trace._history_length == 42
+
+
+def test_flush_no_op_without_mlflow_uri(caplog):
+    """flush() ne lève pas d'exception quand MLFLOW_TRACKING_URI est absent."""
+    trace = InferenceTrace.start("chat_turn")
+    trace.record_llm(input_tokens=100, output_tokens=50, duration_s=1.0, model="qwen3")
+    trace.flush(chat_id=1)  # ne doit pas lever
+
+
+def test_flush_press_review_no_op(caplog):
+    """flush() pour press_review ne lève pas d'exception sans MLflow."""
+    trace = InferenceTrace.start("press_review")
+    trace.record_llm(input_tokens=800, output_tokens=400, duration_s=5.0, model="qwen3")
+    trace.flush(chat_id=2, articles_count=3)
+
+
+@pytest.mark.asyncio
+async def test_context_isolation_between_coroutines():
+    """Deux coroutines concurrentes ont des traces isolées."""
+    results = {}
+
+    async def run_task(name: str, operation: str) -> None:
+        _trace = InferenceTrace.start(operation)  # type: ignore[arg-type]
+        await asyncio.sleep(0)  # yield pour laisser l'autre coroutine démarrer
+        results[name] = get_active_trace()
+
+    await asyncio.gather(
+        run_task("a", "chat_turn"),
+        run_task("b", "press_review"),
+    )
+    assert results["a"] is not results["b"]
+    assert results["a"].operation == "chat_turn"
+    assert results["b"].operation == "press_review"
