@@ -1,11 +1,7 @@
-"""Tests de InferenceTrace — mode no-op (MLFLOW_TRACKING_URI absent)."""
+"""Tests de InferenceTrace — logs structurés et isolation de contexte."""
 
 import asyncio
-import os
 import pytest
-
-# Garantir que MLflow est désactivé pour ces tests
-os.environ.pop("MLFLOW_TRACKING_URI", None)
 
 from core.observability import InferenceTrace, get_active_trace
 import core.observability as _obs_module
@@ -51,18 +47,27 @@ def test_record_compaction_stores_state():
     assert trace._history_length == 42
 
 
-def test_flush_no_op_without_mlflow_uri(caplog):
-    """flush() ne lève pas d'exception quand MLFLOW_TRACKING_URI est absent."""
+def test_flush_chat_turn_emits_log(caplog):
+    """flush() émet un log structuré chat_turn_complete."""
+    import logging
+
     trace = InferenceTrace.start("chat_turn")
     trace.record_llm(input_tokens=100, output_tokens=50, duration_s=1.0, model="qwen3")
-    trace.flush(chat_id=1)  # ne doit pas lever
+    trace.record_tool(tool_name="get_top_news", duration_s=0.5)
+    with caplog.at_level(logging.INFO, logger="core.observability"):
+        trace.flush(chat_id=1)
+    assert any("chat_turn_complete" in r.message for r in caplog.records)
 
 
-def test_flush_press_review_no_op(caplog):
-    """flush() pour press_review ne lève pas d'exception sans MLflow."""
+def test_flush_press_review_emits_log(caplog):
+    """flush() émet un log structuré press_review_complete."""
+    import logging
+
     trace = InferenceTrace.start("press_review")
     trace.record_llm(input_tokens=800, output_tokens=400, duration_s=5.0, model="qwen3")
-    trace.flush(chat_id=2, articles_count=3)
+    with caplog.at_level(logging.INFO, logger="core.observability"):
+        trace.flush(chat_id=2, articles_count=3)
+    assert any("press_review_complete" in r.message for r in caplog.records)
 
 
 @pytest.mark.asyncio
@@ -82,83 +87,3 @@ async def test_context_isolation_between_coroutines():
     assert results["a"] is not results["b"]
     assert results["a"].operation == "chat_turn"
     assert results["b"].operation == "press_review"
-
-
-# ---------------------------------------------------------------------------
-# Tests d'intégration MLflow (tracking URI fichier — pas de serveur requis)
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def mlflow_file_tracking(tmp_path, monkeypatch):
-    """Configure MLflow avec un tracking URI SQLite temporaire.
-
-    mlflow>=3.0 a déprécié le backend file:// — on utilise sqlite:// à la place
-    (toujours local, pas de serveur requis).
-    """
-    tracking_uri = f"sqlite:///{tmp_path}/mlruns.db"
-    # Patcher directement l'attribut du module config — flush() y accède via
-    # `from core.config import MLFLOW_TRACKING_URI` au moment de l'appel.
-    monkeypatch.setattr("core.config.MLFLOW_TRACKING_URI", tracking_uri)
-    return tracking_uri
-
-
-def test_flush_chat_turn_creates_mlflow_run(mlflow_file_tracking):
-    import mlflow
-
-    mlflow.set_tracking_uri(mlflow_file_tracking)
-    mlflow.set_experiment("newsfoundry/chat_turn")
-
-    trace = InferenceTrace.start("chat_turn")
-    trace.record_llm(
-        input_tokens=500, output_tokens=120, duration_s=3.0, model="qwen3-8b"
-    )
-    trace.record_tool(tool_name="get_top_news", duration_s=2.5)
-    trace.record_compaction(was_compacted=False, history_length=6)
-    trace.flush(chat_id=99)
-
-    runs = mlflow.search_runs(experiment_names=["newsfoundry/chat_turn"])
-    assert len(runs) == 1
-    assert runs.iloc[0]["metrics.e2e_latency_s"] >= 0
-    assert runs.iloc[0]["metrics.input_tokens_total"] == 500
-    assert runs.iloc[0]["metrics.output_tokens_total"] == 120
-    assert runs.iloc[0]["metrics.tool_calls_count"] == 1
-    assert runs.iloc[0]["metrics.was_compacted"] == 0
-    assert runs.iloc[0]["metrics.history_length"] == 6
-    assert runs.iloc[0]["tags.chat_id"] == "99"
-
-
-def test_flush_press_review_creates_mlflow_run(mlflow_file_tracking):
-    import mlflow
-
-    mlflow.set_tracking_uri(mlflow_file_tracking)
-    mlflow.set_experiment("newsfoundry/press_review")
-
-    trace = InferenceTrace.start("press_review")
-    trace.record_llm(
-        input_tokens=2000, output_tokens=800, duration_s=12.0, model="qwen3-8b"
-    )
-    trace.flush(chat_id=42, articles_count=5)
-
-    runs = mlflow.search_runs(experiment_names=["newsfoundry/press_review"])
-    assert len(runs) == 1
-    assert runs.iloc[0]["metrics.input_tokens"] == 2000
-    assert runs.iloc[0]["metrics.output_tokens"] == 800
-    assert runs.iloc[0]["metrics.articles_count"] == 5
-
-
-def test_flush_swallows_mlflow_error(monkeypatch):
-    """flush() ne propage pas les exceptions MLflow."""
-    monkeypatch.setattr("core.config.MLFLOW_TRACKING_URI", "http://localhost:9999")
-
-    import mlflow
-
-    monkeypatch.setattr(
-        mlflow,
-        "set_tracking_uri",
-        lambda _uri: (_ for _ in ()).throw(ConnectionError("connection refused")),
-    )
-
-    trace = InferenceTrace.start("chat_turn")
-    trace.record_llm(input_tokens=100, output_tokens=50, duration_s=1.0, model="qwen3")
-    trace.flush(chat_id=1)  # doit swallower l'exception, ne pas lever

@@ -21,7 +21,7 @@ from core.agent.context import ChatRunContext
 from core.agent.search_agent import chat_agent, generate_instructions
 from core.auth import verify_user
 from core.config import LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
-from core.observability import InferenceTrace
+from core.observability import InferenceTrace, tracing_context
 from core.llm_provider import (
     compact_history_if_needed,
 )
@@ -96,36 +96,38 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
 
     run_context = ChatRunContext(chat_id=chat_id)
 
-    try:
-        result = await asyncio.wait_for(
-            Runner.run(active_agent, input=openai_messages, context=run_context),
-            timeout=LLM_TIMEOUT_SECONDS,
-        )
-        response_content = result.final_output
-    except asyncio.TimeoutError:
-        logger.error(
-            "[chat] LLM timeout after %.1fs — chat_id=%s base_url=%s model=%s",
-            LLM_TIMEOUT_SECONDS,
-            chat_id,
-            LLM_BASE_URL,
-            LLM_MODEL,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail="LLM request timed out"
-        )
-    except Exception as exc:
-        logger.error(
-            "[chat] LLM provider error — chat_id=%s exc=%r base_url=%s model=%s",
-            chat_id,
-            exc,
-            LLM_BASE_URL,
-            LLM_MODEL,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail="LLM provider error"
-        )
-    finally:
-        trace.flush(chat_id=chat_id)
+    with tracing_context(session_id=str(chat_id)):
+        try:
+            result = await asyncio.wait_for(
+                Runner.run(active_agent, input=openai_messages, context=run_context),
+                timeout=LLM_TIMEOUT_SECONDS,
+            )
+            response_content = result.final_output
+        except asyncio.TimeoutError:
+            logger.error(
+                "[chat] LLM timeout after %.1fs — chat_id=%s base_url=%s model=%s",
+                LLM_TIMEOUT_SECONDS,
+                chat_id,
+                LLM_BASE_URL,
+                LLM_MODEL,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="LLM request timed out",
+            )
+        except Exception as exc:
+            logger.error(
+                "[chat] LLM provider error — chat_id=%s exc=%r base_url=%s model=%s",
+                chat_id,
+                exc,
+                LLM_BASE_URL,
+                LLM_MODEL,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY, detail="LLM provider error"
+            )
+        finally:
+            trace.flush(chat_id=chat_id)
 
     # Fusionner les articles collectés avec les existants (dédupliqués par URL)
     if run_context.loaded_articles:
@@ -372,21 +374,22 @@ def build_chat_router() -> APIRouter:
                         )
                     )
 
-        try:
-            result = await asyncio.wait_for(
-                Runner.run(active_review_agent, input=llm_messages),
-                timeout=LLM_TIMEOUT_SECONDS,
-            )
-        except asyncio.TimeoutError:
-            logger.error("[review] LLM timeout — chat_id=%s", chat_id)
-            raise HTTPException(status_code=504, detail="LLM request timed out")
-        except Exception as exc:
-            logger.error(
-                "[review] LLM provider error — chat_id=%s exc=%r", chat_id, exc
-            )
-            raise HTTPException(status_code=502, detail="LLM provider error")
-        finally:
-            trace.flush(chat_id=chat_id, articles_count=len(all_articles))
+        with tracing_context(session_id=str(chat_id)):
+            try:
+                result = await asyncio.wait_for(
+                    Runner.run(active_review_agent, input=llm_messages),
+                    timeout=LLM_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                logger.error("[review] LLM timeout — chat_id=%s", chat_id)
+                raise HTTPException(status_code=504, detail="LLM request timed out")
+            except Exception as exc:
+                logger.error(
+                    "[review] LLM provider error — chat_id=%s exc=%r", chat_id, exc
+                )
+                raise HTTPException(status_code=502, detail="LLM provider error")
+            finally:
+                trace.flush(chat_id=chat_id, articles_count=len(all_articles))
 
         output = result.final_output
         if output is None:
