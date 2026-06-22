@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
@@ -27,6 +28,7 @@ from core.config import (
     LLM_TIMEOUT_SECONDS,
 )
 from core.llm_client import build_llm_client
+from core.observability import get_active_trace
 from utils.utils import LLMMessage, estimate_tokens  # noqa: F401 — re-exported
 
 # ---------------------------------------------------------------------------
@@ -115,6 +117,7 @@ async def call_llm(request: LLMRequest) -> LLMResponse:
     if not request.thinking:
         extra_body["chat_template_kwargs"] = {"enable_thinking": False}
 
+    t0 = time.perf_counter()
     async with _semaphore:
         completion = await asyncio.wait_for(
             _client.chat.completions.create(
@@ -126,9 +129,19 @@ async def call_llm(request: LLMRequest) -> LLMResponse:
             ),
             timeout=LLM_TIMEOUT_SECONDS,
         )
+    duration = time.perf_counter() - t0
 
     choice = completion.choices[0]
     usage = completion.usage
+
+    trace = get_active_trace()
+    if trace is not None:
+        trace.record_llm(
+            input_tokens=usage.prompt_tokens if usage else 0,
+            output_tokens=usage.completion_tokens if usage else 0,
+            duration_s=duration,
+            model=completion.model,
+        )
 
     return LLMResponse(
         content=choice.message.content or "",
@@ -155,6 +168,7 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
     effective_timeout = (
         request.timeout if request.timeout is not None else LLM_TIMEOUT_SECONDS
     )
+    t0 = time.perf_counter()
     async with _semaphore:
         completion = await asyncio.wait_for(
             _client.beta.chat.completions.parse(
@@ -167,10 +181,21 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
             ),
             timeout=effective_timeout,
         )
+    duration = time.perf_counter() - t0
 
     parsed = completion.choices[0].message.parsed
     if parsed is None:
         raise ValueError("LLM returned an empty structured response")
+
+    usage = completion.usage
+    trace = get_active_trace()
+    if trace is not None:
+        trace.record_llm(
+            input_tokens=usage.prompt_tokens if usage else 0,
+            output_tokens=usage.completion_tokens if usage else 0,
+            duration_s=duration,
+            model=completion.model,
+        )
 
     return parsed
 
@@ -225,6 +250,9 @@ async def compact_history_if_needed(
     current_tokens = _estimate_history_tokens(messages)
 
     if current_tokens <= compact_threshold or len(messages) <= LLM_COMPACT_RECENT_KEEP:
+        trace = get_active_trace()
+        if trace is not None:
+            trace.record_compaction(was_compacted=False, history_length=len(messages))
         return messages, _build_context_info(messages, was_compacted=False)
 
     to_summarize = messages[:-LLM_COMPACT_RECENT_KEEP]
@@ -254,4 +282,7 @@ async def compact_history_if_needed(
     )
 
     compacted = [summary_message, *recent]
+    trace = get_active_trace()
+    if trace is not None:
+        trace.record_compaction(was_compacted=True, history_length=len(messages))
     return compacted, _build_context_info(compacted, was_compacted=True)

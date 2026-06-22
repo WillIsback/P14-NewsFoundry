@@ -21,6 +21,7 @@ from core.agent.context import ChatRunContext
 from core.agent.search_agent import chat_agent, generate_instructions
 from core.auth import verify_user
 from core.config import LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
+from core.observability import InferenceTrace
 from core.llm_provider import (
     compact_history_if_needed,
 )
@@ -44,6 +45,7 @@ logger = logging.getLogger(__name__)
 async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
     """Load history, compact if needed, call LLM, persist both messages."""
     now = datetime.now(timezone.utc).isoformat()
+    trace = InferenceTrace.start("chat_turn")
 
     # Ensure the chat has a frozen system prompt (generated on first message).
     # Using the stored prompt guarantees conversation continuity across days.
@@ -122,6 +124,8 @@ async def _process_message(chat_id: int, content: str) -> SendMessageResponse:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="LLM provider error"
         )
+    finally:
+        trace.flush(chat_id=chat_id)
 
     # Fusionner les articles collectés avec les existants (dédupliqués par URL)
     if run_context.loaded_articles:
@@ -297,6 +301,8 @@ def build_chat_router() -> APIRouter:
                 detail="No messages to generate a review from",
             )
 
+        trace = InferenceTrace.start("press_review")
+
         llm_messages = [
             {
                 "role": "user" if m.type == MessageType.USER else "assistant",
@@ -379,6 +385,8 @@ def build_chat_router() -> APIRouter:
                 "[review] LLM provider error — chat_id=%s exc=%r", chat_id, exc
             )
             raise HTTPException(status_code=502, detail="LLM provider error")
+        finally:
+            trace.flush(chat_id=chat_id, articles_count=len(all_articles))
 
         output = result.final_output
         if output is None:

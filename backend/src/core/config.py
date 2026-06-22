@@ -85,6 +85,10 @@ LLM_COMPACT_THRESHOLD_RATIO: float = float(
 # Number of recent messages to preserve verbatim during compaction
 LLM_COMPACT_RECENT_KEEP: int = int(os.getenv("LLM_COMPACT_RECENT_KEEP", "6"))
 
+# Observability / MLflow
+# Si absent ou vide, le tracking MLflow est désactivé (mode no-op silencieux).
+MLFLOW_TRACKING_URI: str | None = os.getenv("MLFLOW_TRACKING_URI") or None
+
 # Bootstrap Configuration (one-shot admin creation)
 BOOTSTRAP_ENABLED = os.getenv("BOOTSTRAP_ENABLED", "false").lower() == "true"
 ADMIN_EMAIL: str | None = os.getenv("ADMIN_EMAIL")
