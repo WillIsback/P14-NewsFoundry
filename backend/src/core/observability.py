@@ -128,6 +128,26 @@ class InferenceTrace:
                 articles_count,
             )
 
+        # Attache les métadonnées (sans contenu utilisateur) au span MLflow actif.
+        from core.config import MLFLOW_TRACKING_URI
+
+        if MLFLOW_TRACKING_URI:
+            import mlflow
+
+            span = mlflow.get_current_active_span()
+            if span is not None:
+                span.set_attribute("operation", self.operation)
+                span.set_attribute("chat_id", chat_id)
+                span.set_attribute("e2e_s", round(e2e, 3))
+                span.set_attribute("tokens_in", input_tokens_total)
+                span.set_attribute("tokens_out", output_tokens_total)
+                span.set_attribute("tok_per_sec", tok_per_sec)
+                span.set_attribute("llm_calls", len(self._llm_records))
+                span.set_attribute("tool_calls", len(self._tool_records))
+                span.set_attribute("tool_latency_s", round(tool_latency, 3))
+                if self.operation == "press_review":
+                    span.set_attribute("articles_count", articles_count)
+
 
 def get_active_trace() -> InferenceTrace | None:
     """Retourne la trace active dans le contexte asyncio courant, ou None."""
@@ -136,7 +156,7 @@ def get_active_trace() -> InferenceTrace | None:
 
 @contextmanager
 def tracing_context(session_id: str) -> Generator[None, None, None]:
-    """Context manager MLflow Tracing — no-op si MLFLOW_TRACKING_URI absent."""
+    """Crée un span MLflow racine avec seulement le session_id (sans contenu utilisateur)."""
     from core.config import MLFLOW_TRACKING_URI
 
     if not MLFLOW_TRACKING_URI:
@@ -145,5 +165,6 @@ def tracing_context(session_id: str) -> Generator[None, None, None]:
 
     import mlflow
 
-    with mlflow.tracing.context(session_id=session_id):
+    with mlflow.start_span(name="inference", span_type="CHAIN") as span:
+        span.set_attribute("session_id", session_id)
         yield

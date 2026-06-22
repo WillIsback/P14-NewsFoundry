@@ -79,6 +79,10 @@ export default function ChatWindow({
 				{isPending && <PendingSpinner />}
 				<div ref={messagesEndRef} />
 			</section>
+			<p className="text-center text-xs text-slate-500 py-1 bg-slate-100">
+				Résultats générés par IA — vérifiez les informations importantes auprès
+				de sources officielles.
+			</p>
 			<ChatForm
 				key={resetKey}
 				formAction={handleSubmit}
