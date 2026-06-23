@@ -94,6 +94,22 @@ Toutes les réponses suivent le format uniforme `ApiResponse` :
 | 500 | `HTTP_EXCEPTION` | `Chat creation failed` | Échec de création de la discussion en base de données |
 | 502 | `HTTP_EXCEPTION` | `LLM returned an empty response` | Le LLM a retourné une réponse vide pour une revue de presse |
 
+### Proxy MLflow — `/mlflow`, `/static-files`, `/ajax-api`, `/api/2.0`
+
+Le backend expose un reverse proxy vers le service MLflow interne Railway. Il n'est activé que si `MLFLOW_TRACKING_URI`, `ADMIN_EMAIL` et `ADMIN_PASSWORD` sont définis.
+
+**Authentification :** HTTP Basic (email/mot de passe admin). Le navigateur mémorise les credentials automatiquement après la première authentification.
+
+| Route | Méthodes | Description |
+|-------|----------|-------------|
+| `/mlflow` | GET POST PUT DELETE PATCH HEAD OPTIONS | UI MLflow (racine) |
+| `/mlflow/{path}` | GET POST PUT DELETE PATCH HEAD OPTIONS | Sous-chemins de l'UI |
+| `/static-files/{path}` | GET HEAD | Assets statiques SPA MLflow |
+| `/ajax-api/{path}` | GET POST PUT DELETE PATCH | API REST MLflow |
+| `/api/2.0/{path}` | GET POST PUT DELETE PATCH | API REST MLflow v2 |
+
+**Comportement du proxy :** les headers hop-by-hop (`connection`, `transfer-encoding`, etc.) ainsi que `host`, `authorization`, `origin` et `referer` sont supprimés avant le forwarding. La suppression de `Origin` et `Referer` empêche MLflow de bloquer la requête comme cross-origin.
+
 ## Documentation interactive
 
 En environnement non-production, la documentation OpenAPI est accessible à :
