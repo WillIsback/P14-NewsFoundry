@@ -31,6 +31,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.63b1",
     "opentelemetry-instrumentation-httpx>=0.63b1",
     "openinference-instrumentation-openai>=0.1.52",
+    "openinference-instrumentation-openai-agents>=1.6.1",
 ]
 
 [tool.pytest.ini_options]

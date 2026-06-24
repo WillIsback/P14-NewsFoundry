@@ -76,11 +76,12 @@ def create_app() -> FastAPI:
     # Import only after config validation, to avoid early crashes from transitive imports.
     from api.router import setup_routers
     from database.database import Database
-    from agents import set_tracing_disabled
+    from agents.tracing import set_trace_processors
 
-    # Disable OpenAI Agents SDK built-in tracing (targets api.openai.com, incompatible
-    # with vLLM). MLflow autolog prend le relais pour le tracing GenAI.
-    set_tracing_disabled(True)
+    # Remove the default api.openai.com exporter (incompatible with vLLM).
+    # Tracing stays enabled so openinference-instrumentation-openai-agents
+    # can capture agent/tool/LLM spans and forward them to Phoenix via OTEL.
+    set_trace_processors([])
 
     from core.config import MLFLOW_TRACKING_URI
 
