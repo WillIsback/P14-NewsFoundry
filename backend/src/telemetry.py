@@ -1,8 +1,12 @@
 """
 OpenTelemetry setup for NewsFoundry backend.
 
-- FastAPI HTTP spans  → OTel Collector → Jaeger
-- OpenAI/LLM spans   → OTel Collector → Phoenix  (via openinference tag)
+- FastAPI HTTP spans       → OTel Collector → Jaeger
+- Agent/tool/LLM spans    → OTel Collector → Phoenix  (via openinference tag)
+
+openinference-instrumentation-openai-agents hooks into the openai-agents SDK
+tracing system and emits spans with openinference.span.kind = AGENT | TOOL | LLM.
+The OTel Collector routes these to Phoenix; HTTP spans go to Jaeger.
 """
 
 import logging
@@ -61,14 +65,20 @@ def setup_telemetry(app=None) -> bool:
         if app is not None:
             FastAPIInstrumentor.instrument_app(app)
 
-        # Instrument OpenAI → spans avec openinference.span.kind → routés vers Phoenix
+        # Instrument openai-agents SDK → agent/tool/LLM spans → Phoenix
+        # Hooks into the agents SDK tracing system (not the raw openai SDK),
+        # captures AgentSpan, FunctionSpan (tool calls), GenerationSpan (LLM).
         try:
-            from openinference.instrumentation.openai import OpenAIInstrumentor
+            from openinference.instrumentation.openai_agents import (
+                OpenAIAgentsInstrumentor,
+            )
 
-            OpenAIInstrumentor().instrument()
-            logger.info("[otel] OpenAI instrumentation enabled → Phoenix")
+            OpenAIAgentsInstrumentor().instrument()
+            logger.info("[otel] OpenAI Agents instrumentation enabled → Phoenix")
         except ImportError:
-            logger.warning("[otel] openinference-instrumentation-openai not installed")
+            logger.warning(
+                "[otel] openinference-instrumentation-openai-agents not installed"
+            )
 
         logger.info("[otel] Telemetry enabled → %s", endpoint)
         return True
