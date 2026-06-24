@@ -23,6 +23,7 @@ from core.config import (
     validate_runtime_config,
 )
 from core.middleware import register_middlewares
+from telemetry import setup_telemetry
 
 import uvicorn
 
@@ -185,6 +186,7 @@ def create_app() -> FastAPI:
         )
 
     setup_routers(app, db)
+    setup_telemetry(app)
     return app
 
 
