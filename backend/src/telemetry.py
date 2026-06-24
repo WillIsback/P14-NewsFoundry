@@ -39,6 +39,7 @@ def setup_telemetry(app=None) -> bool:
                 "service.name": "newsfoundry-backend",
                 "service.version": os.getenv("APP_VERSION", "0.0.0"),
                 "deployment.environment": os.getenv("ENVIRONMENT", "production"),
+                "openinference.project.name": "newsfoundry",
             }
         )
 
