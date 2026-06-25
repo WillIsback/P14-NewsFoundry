@@ -49,9 +49,7 @@ function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 		if (!chatId) return;
 		setStep("form");
 		setError(null);
-		if (articles.length > 0 && !selectedUrl) {
-			setSelectedUrl(articles[0].url);
-		}
+		// Ne pas pré-sélectionner : selectedUrl="" → mode RAG (tous les articles) par défaut
 	};
 
 	const handleCancel = () => {
@@ -121,14 +119,30 @@ function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 				{articles.length > 0 ? (
 					<>
 						<p className="text-body-xs text-slate-700 font-medium">
-							Sélectionner un article
+							Sélectionner un article (optionnel)
 						</p>
 						<ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+							<li>
+								<label className="flex items-start gap-2 cursor-pointer rounded-[4px] px-1.5 py-1 hover:bg-slate-100">
+									<input
+										ref={firstRadioRef}
+										type="radio"
+										name="article"
+										value=""
+										checked={selectedUrl === ""}
+										onChange={() => setSelectedUrl("")}
+										disabled={step === "loading"}
+										className="mt-0.5 accent-brand-velvet shrink-0"
+									/>
+									<span className="text-body-xs text-slate-800 leading-snug font-medium">
+										Tous les articles (recommandé)
+									</span>
+								</label>
+							</li>
 							{articles.map((article, i) => (
 								<li key={article.url || String(i)}>
 									<label className="flex items-start gap-2 cursor-pointer rounded-[4px] px-1.5 py-1 hover:bg-slate-100">
 										<input
-											ref={i === 0 ? firstRadioRef : undefined}
 											type="radio"
 											name="article"
 											value={article.url}
