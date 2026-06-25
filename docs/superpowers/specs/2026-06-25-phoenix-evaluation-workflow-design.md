@@ -103,12 +103,35 @@ Utilise les templates natifs `arize-phoenix-evals` :
 
 Le juge appelle `EVAL_LLM_BASE_URL` (OpenAI-compatible). Le VPS OVH n'est **pas sur le tailnet Tailscale** (Tailscale est embarqué dans le conteneur Railway uniquement) — le vLLM privé (`100.70.22.24:30000`) n'est donc pas joignable depuis le VPS.
 
-**Options pour le LLM judge :**
-1. **Ajouter le VPS au tailnet** (recommandé) : installer Tailscale sur le VPS OVH → accès direct au vLLM via IP Tailscale
-2. **API externe** : utiliser Claude API ou OpenAI API comme juge (coût par évaluation)
-3. **LLM local sur le VPS** : déployer un petit modèle (Ollama) sur le VPS pour le jugement
+**Option retenue : Tailscale sur le VPS OVH avec ACL restreinte.**
 
-**Décision à prendre avant implémentation** : option 1, 2 ou 3 pour `EVAL_LLM_BASE_URL`.
+Le VPS rejoint le tailnet avec le tag `tag:vps`. Les ACL Tailscale (mode `grants`) limitent sa visibilité au GB10 uniquement — les PC perso ne sont pas accessibles depuis le VPS.
+
+**Config ACL Tailscale à appliquer :**
+```json
+{
+  "tagOwners": {
+    "tag:railway": ["autogroup:admin"],
+    "tag:vps":     ["autogroup:admin"]
+  },
+  "grants": [
+    {
+      "src": ["tag:railway"],
+      "dst": ["tag:gpu"],
+      "ip":  ["*"]
+    },
+    {
+      "src": ["tag:vps"],
+      "dst": ["tag:gpu"],
+      "ip":  ["30000"]
+    }
+  ]
+}
+```
+
+- Le GB10/spark-787d-1 doit porter le tag `tag:gpu`
+- `tag:vps` ne peut atteindre que le port `30000` du GB10 — aucun accès aux machines perso
+- `EVAL_LLM_BASE_URL=http://100.70.22.24:30000/v1` (même IP Tailscale que le backend Railway)
 
 ---
 
