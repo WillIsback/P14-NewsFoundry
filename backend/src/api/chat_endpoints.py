@@ -21,7 +21,12 @@ from core.agent.context import ChatRunContext
 from core.agent.search_agent import chat_agent, generate_instructions
 from core.auth import verify_user
 from core.config import LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_SECONDS
-from core.observability import InferenceTrace, tracing_context
+from core.observability import (
+    InferenceTrace,
+    tracing_context,
+    rag_span,
+    press_review_span,
+)
 from core.llm_provider import (
     compact_history_if_needed,
 )
@@ -357,9 +362,24 @@ def build_chat_router() -> APIRouter:
             if articles:
                 user_msgs = [m["content"] for m in llm_messages if m["role"] == "user"]
                 query = " ".join(user_msgs[-3:])
-                relevant = await asyncio.to_thread(
-                    build_index_and_retrieve, articles, query, top_k=5
-                )
+                with rag_span(query=query, top_k=5) as rspan:
+                    relevant = await asyncio.to_thread(
+                        build_index_and_retrieve, articles, query, top_k=5
+                    )
+                    for i, a in enumerate(relevant):
+                        rspan.set_attribute(
+                            f"retrieval.documents.{i}.document.content",
+                            a.get("summary", ""),
+                        )
+                        rspan.set_attribute(
+                            f"retrieval.documents.{i}.document.metadata.url",
+                            a.get("url", ""),
+                        )
+                        rspan.set_attribute(
+                            f"retrieval.documents.{i}.document.metadata.title",
+                            a.get("title", ""),
+                        )
+                    rspan.set_attribute("rag.retrieved_count", len(relevant))
                 if relevant:
                     rag_block = "\n\n---\n\n".join(
                         _article_rag_block(a) for a in relevant
@@ -375,21 +395,30 @@ def build_chat_router() -> APIRouter:
                     )
 
         with tracing_context(session_id=str(chat_id)):
-            try:
-                result = await asyncio.wait_for(
-                    Runner.run(active_review_agent, input=llm_messages),
-                    timeout=LLM_TIMEOUT_SECONDS,
-                )
-            except asyncio.TimeoutError:
-                logger.error("[review] LLM timeout — chat_id=%s", chat_id)
-                raise HTTPException(status_code=504, detail="LLM request timed out")
-            except Exception as exc:
-                logger.error(
-                    "[review] LLM provider error — chat_id=%s exc=%r", chat_id, exc
-                )
-                raise HTTPException(status_code=502, detail="LLM provider error")
-            finally:
-                trace.flush(chat_id=chat_id, articles_count=len(all_articles))
+            with press_review_span(articles=all_articles) as prspan:
+                try:
+                    result = await asyncio.wait_for(
+                        Runner.run(active_review_agent, input=llm_messages),
+                        timeout=LLM_TIMEOUT_SECONDS,
+                    )
+                    if result.final_output:
+                        prspan.set_attribute(
+                            "output.value",
+                            result.final_output.title
+                            + " — "
+                            + result.final_output.editorial[:200],
+                        )
+                        prspan.set_attribute("chat.articles_count", len(all_articles))
+                except asyncio.TimeoutError:
+                    logger.error("[review] LLM timeout — chat_id=%s", chat_id)
+                    raise HTTPException(status_code=504, detail="LLM request timed out")
+                except Exception as exc:
+                    logger.error(
+                        "[review] LLM provider error — chat_id=%s exc=%r", chat_id, exc
+                    )
+                    raise HTTPException(status_code=502, detail="LLM provider error")
+                finally:
+                    trace.flush(chat_id=chat_id, articles_count=len(all_articles))
 
         output = result.final_output
         if output is None:
