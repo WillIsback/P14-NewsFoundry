@@ -7,6 +7,7 @@ aucune trace n'est active dans le contexte courant.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from contextlib import contextmanager
@@ -14,7 +15,11 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Generator, Literal
 
+from opentelemetry import trace as otel_trace
+
 _logger = logging.getLogger(__name__)
+
+_tracer = otel_trace.get_tracer("newsfoundry")
 
 _active_trace: ContextVar[InferenceTrace | None] = ContextVar(
     "_active_trace", default=None
@@ -127,6 +132,49 @@ class InferenceTrace:
                 tok_per_sec,
                 articles_count,
             )
+
+
+@contextmanager
+def rag_span(query: str, top_k: int) -> Generator[otel_trace.Span, None, None]:
+    """Context manager — span OpenInference RETRIEVER autour du RAG.
+
+    Yielde le span pour permettre l'ajout d'attributs dynamiques
+    (documents récupérés, retrieved_count) depuis le code appelant.
+
+    Usage:
+        with rag_span(query=query, top_k=5) as span:
+            results = build_index_and_retrieve(articles, query, top_k=5)
+            for i, a in enumerate(results):
+                span.set_attribute(f"retrieval.documents.{i}.document.content", a["summary"])
+            span.set_attribute("rag.retrieved_count", len(results))
+    """
+    with _tracer.start_as_current_span("rag_retrieve") as span:
+        span.set_attribute("openinference.span.kind", "RETRIEVER")
+        span.set_attribute("input.value", query)
+        span.set_attribute("rag.top_k", top_k)
+        yield span
+
+
+@contextmanager
+def press_review_span(articles: list[dict]) -> Generator[otel_trace.Span, None, None]:
+    """Context manager — span OpenInference CHAIN autour de la génération de revue de presse.
+
+    Yielde le span pour permettre l'ajout de l'output après la génération.
+
+    Usage:
+        with press_review_span(articles=all_articles) as span:
+            result = await Runner.run(agent, input=messages)
+            if result.final_output:
+                span.set_attribute("output.value", result.final_output.title + " — " + result.final_output.editorial[:200])
+                span.set_attribute("chat.articles_count", len(all_articles))
+    """
+    with _tracer.start_as_current_span("press_review_generation") as span:
+        span.set_attribute("openinference.span.kind", "CHAIN")
+        sources = [
+            {"title": a.get("title", ""), "url": a.get("url", "")} for a in articles
+        ]
+        span.set_attribute("input.value", json.dumps(sources, ensure_ascii=False))
+        yield span
 
 
 def get_active_trace() -> InferenceTrace | None:
