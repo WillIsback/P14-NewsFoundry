@@ -134,7 +134,7 @@ class InferenceTrace:
 
 
 @contextmanager
-def rag_span(query: str, top_k: int):
+def rag_span(query: str, top_k: int) -> Generator[otel_trace.Span, None, None]:
     """Context manager — span OpenInference RETRIEVER autour du RAG.
 
     Yielde le span pour permettre l'ajout d'attributs dynamiques
