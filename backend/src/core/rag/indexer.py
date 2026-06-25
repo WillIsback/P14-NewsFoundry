@@ -53,6 +53,11 @@ def build_index_and_retrieve(
     index = VectorStoreIndex.from_documents(docs, embed_model=_get_embed())
     nodes = index.as_retriever(similarity_top_k=min(top_k, len(capped))).retrieve(query)
     return [
-        {"title": n.metadata["title"], "summary": n.text, "url": n.metadata["url"]}
+        {
+            "title": n.metadata["title"],
+            "summary": n.text,
+            "url": n.metadata["url"],
+            "score": float(n.score) if n.score is not None else 0.0,
+        }
         for n in nodes
     ]
