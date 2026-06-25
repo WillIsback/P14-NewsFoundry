@@ -1,5 +1,6 @@
 """Tests TDD pour les context managers de spans OTel — rag_span et press_review_span."""
 
+import json
 from pathlib import Path
 import sys
 
@@ -90,3 +91,75 @@ def test_rag_span_set_retrieved_documents(span_exporter):
     assert attrs["retrieval.documents.0.document.metadata.title"] == "Article A"
     assert attrs["retrieval.documents.1.document.metadata.url"] == "https://ex.com/b"
     assert attrs["rag.retrieved_count"] == 2
+
+
+# ---------------------------------------------------------------------------
+# press_review_span
+# ---------------------------------------------------------------------------
+
+
+def test_press_review_span_name(span_exporter):
+    from core.observability import press_review_span
+
+    articles = [{"title": "T1", "url": "https://ex.com/1"}]
+    with press_review_span(articles=articles):
+        pass
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    assert spans[0].name == "press_review_generation"
+
+
+def test_press_review_span_openinference_kind(span_exporter):
+    from core.observability import press_review_span
+
+    with press_review_span(articles=[{"title": "T", "url": "https://ex.com"}]):
+        pass
+
+    attrs = dict(span_exporter.get_finished_spans()[0].attributes)
+    assert attrs["openinference.span.kind"] == "CHAIN"
+
+
+def test_press_review_span_input_contains_articles(span_exporter):
+    from core.observability import press_review_span
+
+    articles = [
+        {"title": "Article France", "url": "https://lemonde.fr/1"},
+        {"title": "Article Tech", "url": "https://techcrunch.com/2"},
+    ]
+    with press_review_span(articles=articles):
+        pass
+
+    attrs = dict(span_exporter.get_finished_spans()[0].attributes)
+    input_val = json.loads(attrs["input.value"])
+    assert len(input_val) == 2
+    assert input_val[0]["title"] == "Article France"
+    assert input_val[1]["url"] == "https://techcrunch.com/2"
+
+
+def test_press_review_span_set_output(span_exporter):
+    from core.observability import press_review_span
+
+    with press_review_span(articles=[{"title": "T", "url": "https://ex.com"}]) as span:
+        span.set_attribute(
+            "output.value", "Titre éditorial — Introduction de la revue..."
+        )
+        span.set_attribute("chat.articles_count", 5)
+
+    attrs = dict(span_exporter.get_finished_spans()[0].attributes)
+    assert "Titre éditorial" in attrs["output.value"]
+    assert attrs["chat.articles_count"] == 5
+
+
+def test_press_review_span_handles_missing_keys(span_exporter):
+    """Les articles sans 'title' ou 'url' ne font pas crasher le context manager."""
+    from core.observability import press_review_span
+
+    articles = [{"title": "Seulement un titre"}, {"url": "https://ex.com/only-url"}]
+    with press_review_span(articles=articles):
+        pass
+
+    attrs = dict(span_exporter.get_finished_spans()[0].attributes)
+    sources = json.loads(attrs["input.value"])
+    assert sources[0]["url"] == ""
+    assert sources[1]["title"] == ""
