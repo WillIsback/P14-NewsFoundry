@@ -379,7 +379,15 @@ def build_chat_router() -> APIRouter:
                             f"retrieval.documents.{i}.document.metadata.title",
                             a.get("title", ""),
                         )
+                        rspan.set_attribute(
+                            f"retrieval.documents.{i}.document.score",
+                            a.get("score", 0.0),
+                        )
                     rspan.set_attribute("rag.retrieved_count", len(relevant))
+                    rspan.set_attribute(
+                        "rag.embedding_model",
+                        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                    )
                 if relevant:
                     rag_block = "\n\n---\n\n".join(
                         _article_rag_block(a) for a in relevant
