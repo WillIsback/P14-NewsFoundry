@@ -8,9 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
+from api.authentication_endpoints import get_verified_user
+from api.dependencies.demo_limits import (
+    check_worldnews_quota,
+    increment_worldnews_calls,
+)
 from api.models import ApiResponse, success_response
-from core.auth import db as auth_db
-from core.auth import verify_user
+from core.auth import db as auth_db  # noqa: F401 — auth_db.get_db used as dependency
 from core.news.service import fetch_and_build_context
 from database.crud import get_top_news_context_by_chat
 from database.models import User
@@ -45,9 +49,10 @@ def build_news_router() -> APIRouter:
     @router.post("/news/context", status_code=status.HTTP_201_CREATED)
     async def create_news_context(
         body: NewsContextRequest,
-        current_user: Annotated[User, Depends(verify_user)],
+        current_user: Annotated[User, Depends(get_verified_user)],
         session: Annotated[Session, Depends(auth_db.get_db)],
     ) -> ApiResponse[NewsContextPublic]:
+        check_worldnews_quota(current_user)
         try:
             ctx = await fetch_and_build_context(
                 chat_id=body.chat_id,
@@ -74,6 +79,7 @@ def build_news_router() -> APIRouter:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Failed to fetch or build news context",
             )
+        increment_worldnews_calls(current_user, session)
         return success_response(
             status=status.HTTP_201_CREATED,
             message="News context created",
@@ -83,7 +89,7 @@ def build_news_router() -> APIRouter:
     @router.get("/news/context/{chat_id}")
     async def get_news_context(
         chat_id: int,
-        current_user: Annotated[User, Depends(verify_user)],
+        current_user: Annotated[User, Depends(get_verified_user)],
         session: Annotated[Session, Depends(auth_db.get_db)],
     ) -> ApiResponse[NewsContextPublic]:
         ctx = get_top_news_context_by_chat(session, chat_id)

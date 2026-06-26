@@ -5,6 +5,10 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
+from sqlmodel import Session
+
+from api.authentication_endpoints import get_verified_user
+from api.dependencies.demo_limits import check_llm_quota, track_llm_tokens
 from api.models import (
     ApiResponse,
     ChatReviewPublic,
@@ -12,8 +16,8 @@ from api.models import (
     ReviewPublic,
     success_response,
 )
-from core.auth import verify_user
-from core.llm_provider import LLMStructuredRequest, call_llm_structured
+from core.auth import db as auth_db
+from core.llm_provider import LLMStructuredRequest, call_llm_structured_with_usage
 from utils.utils import LLMMessage
 from core.prompts import PRESS_REVIEW_PROMPT
 from database.crud import (
@@ -38,7 +42,7 @@ def build_review_router() -> APIRouter:
 
     @router.get("/reviews")
     def get_reviews(
-        current_user: Annotated[User, Depends(verify_user)],
+        current_user: Annotated[User, Depends(get_verified_user)],
     ) -> ApiResponse[list[ReviewPublic]]:
         reviews = get_press_reviews_by_user_sync(current_user.id)  # type: ignore[arg-type]
         return success_response(
@@ -65,11 +69,17 @@ def build_review_router() -> APIRouter:
     )
     async def create_review(
         body: CreateReviewRequest,
-        current_user: Annotated[User, Depends(verify_user)],
+        current_user: Annotated[User, Depends(get_verified_user)],
+        session: Annotated[Session, Depends(auth_db.get_db)],
     ) -> ApiResponse[ReviewPublic]:
         """Generate a press review via structured LLM output and persist it."""
+        check_llm_quota(current_user)
         try:
-            llm_output = await call_llm_structured(
+            (
+                llm_output,
+                input_tokens,
+                output_tokens,
+            ) = await call_llm_structured_with_usage(
                 LLMStructuredRequest(
                     system_prompt=PRESS_REVIEW_PROMPT,
                     messages=[LLMMessage(role="user", content=body.articles)],
@@ -80,6 +90,7 @@ def build_review_router() -> APIRouter:
             raise HTTPException(status_code=504, detail="LLM request timed out")
         except Exception:
             raise HTTPException(status_code=502, detail="LLM provider error")
+        track_llm_tokens(current_user, input_tokens, output_tokens, session)
 
         # description = ISO 8601 datetime without timezone suffix (matches frontend format)
         description = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
@@ -105,7 +116,7 @@ def build_review_router() -> APIRouter:
 
     @router.get("/reviews/chats")
     def get_chat_reviews(
-        current_user: Annotated[User, Depends(verify_user)],
+        current_user: Annotated[User, Depends(get_verified_user)],
     ) -> ApiResponse[list[ChatReviewPublic]]:
         """Return press reviews generated from chats."""
         chats = get_chats_by_user_sync(current_user.id)
