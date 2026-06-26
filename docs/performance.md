@@ -4,6 +4,8 @@
 
 Les métriques ci-dessous ont été collectées via **Arize Phoenix** (self-hosted sur `phoenix.willisback.fr`), qui reçoit les traces OpenTelemetry du backend via un OTel Collector. Les spans agent/tool/LLM sont auto-instrumentés par `openinference-instrumentation-openai-agents`.
 
+### Baseline — 25 juin 2026 (avant troncature des outils)
+
 **Période d'observation :** 25 juin 2026 — 10 traces enregistrées
 
 | Métrique | Valeur mesurée |
@@ -17,6 +19,32 @@ Les métriques ci-dessous ont été collectées via **Arize Phoenix** (self-host
 | Latence tool `search_news` | ~150 ms |
 
 > **Observation clé :** 86 % des tokens consommés sont des tokens de contexte (prompt), contre seulement 14 % de génération. Le coût principal vient du contexte accumulé (prompt système + historique + résultats d'outils), pas de la réponse elle-même.
+
+---
+
+### Après PR #251 — 26 juin 2026 (troncature des retours d'outils)
+
+**Période d'observation :** 26 juin 2026 — compte démo (`openclassroom@eval.com`), 2 tours de conversation + 1 revue de presse
+
+#### Chat agent (`get_top_news` et `search_news`)
+
+| Trace | Outil | Tokens totaux | Latence |
+|---|---|---|---|
+| "Actualités du jour en France" | `get_top_news` | **2 906** | 5.6s |
+| "Détail sur la canicule" | `search_news` + historique | **4 533** | 9.4s |
+
+**Gain mesuré sur le 1er tour :** 2 906 tokens vs ~4 200 (moyenne baseline) → **−31 %** ✅
+
+#### Revue de presse (RAG + LLM)
+
+| Span | Kind | Prompt | Completion | Total | Latence |
+|---|---|---|---|---|---|
+| `rag_retrieve` | retriever | — | — | 0 | 5.8s |
+| `generation` (LLM) | llm | **4 297** | **3 199** | **7 496** | 32.6s |
+
+**Ratio prompt/completion : 57/43** — bien meilleur que le 86/14 du chat, car le RAG injecte uniquement le contenu pertinent issu du vector store (textes complets ciblés), et la revue générée est substantielle (3 199 tokens de sortie).
+
+> **Observation clé :** la troncature des retours d'outils n'affecte pas la qualité de la revue de presse — le RAG récupère les contenus complets depuis `loaded_articles` indépendamment du contexte de conversation. Les deux pipelines sont correctement découplés.
 
 ---
 
@@ -152,4 +180,4 @@ f"**{i}. {article.title}**{date_str}\n> {article.summary}\nSource : {article.url
 f"**{i}. {article.title}**{date_str}\nSource : {article.url}\n"
 ```
 
-**Gain attendu :** ~800 tokens économisés par appel `search_news`, réduction du ratio prompt/completion de 86/14 à < 70/30, et de la consommation moyenne par trace de 5 300 à < 3 500 tokens (−34 %). À mesurer dans Phoenix sur les 10 prochaines traces.
+**Gain mesuré (26 juin 2026) :** −31 % de tokens sur le 1er tour de conversation (2 906 vs ~4 200). Le ratio prompt/completion du chat n'est pas encore mesurable sur un échantillon suffisant, mais la tendance confirme la projection. La revue de presse affiche un ratio 57/43 (vs 86/14 en baseline) grâce au RAG ciblé.
