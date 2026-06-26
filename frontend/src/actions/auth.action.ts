@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { loginInputSchema, validateLoginPayload } from "@/src/lib/auth-helpers";
 import { createSession, deleteSession } from "@/src/lib/session";
-import { postLogin } from "@/src/service/auth.dal";
+import { getUserUsage, postLogin } from "@/src/service/auth.dal";
 
 /**
  * Represents the state of a login action, including any errors encountered.
@@ -72,6 +72,17 @@ export async function loginUser(
 	redirect("/home");
 
 	return { error: null, errors: null };
+}
+
+/**
+ * Fetches the usage stats for the currently authenticated demo user.
+ *
+ * @returns A promise resolving to the usage data, or null on error.
+ */
+export async function fetchUserUsage() {
+	const result = await getUserUsage();
+	if (!result.ok) return null;
+	return result.data.data ?? null;
 }
 
 /**

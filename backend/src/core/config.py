@@ -56,6 +56,16 @@ SEED_DEFAULT_USER = os.getenv("SEED_DEFAULT_USER", "false").lower() == "true"
 DEFAULT_USER_EMAIL: str | None = os.getenv("DEFAULT_USER_EMAIL")
 DEFAULT_USER_CREDENTIALS: str | None = os.getenv("DEFAULT_USER_PASSWORD")
 
+# Demo Account (distinct from SEED_DEFAULT_USER which is reserved for CI/CD)
+DEMO_USER_EMAIL: str | None = os.getenv("DEMO_USER_EMAIL")
+DEMO_USER_PASSWORD: str | None = os.getenv("DEMO_USER_PASSWORD")
+DEMO_ACCOUNT_EXPIRES_DAYS: int = int(os.getenv("DEMO_ACCOUNT_EXPIRES_DAYS", "30"))
+_demo_worldnews_raw = os.getenv("DEMO_WORLDNEWS_LIMIT")
+DEMO_WORLDNEWS_LIMIT: int | None = (
+    int(_demo_worldnews_raw) if _demo_worldnews_raw else None
+)
+DEMO_LLM_TOKENS_LIMIT: int = int(os.getenv("DEMO_LLM_TOKENS_LIMIT", "10000000"))
+
 # WorldNewsAPI
 WORLDNEWSAPI_KEY: str = os.getenv("WORLDNEWSAPI_KEY", "")
 # En mode mock (ENVIRONMENT != "production"), retourne des données fixes

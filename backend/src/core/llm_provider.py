@@ -162,6 +162,20 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
         APIStatusError: sur des réponses 4xx/5xx du provider.
         ValidationError: si la réponse ne correspond pas à ``schema``.
     """
+    parsed, _, _ = await call_llm_structured_with_usage(request, schema)
+    return parsed
+
+
+async def call_llm_structured_with_usage(
+    request: LLMStructuredRequest, schema: type[T]
+) -> tuple[T, int, int]:
+    """Comme ``call_llm_structured`` mais retourne aussi (input_tokens, output_tokens).
+
+    Raises:
+        TimeoutError: si le LLM dépasse ``LLM_TIMEOUT_SECONDS``.
+        APIStatusError: sur des réponses 4xx/5xx du provider.
+        ValidationError: si la réponse ne correspond pas à ``schema``.
+    """
     messages = _build_openai_messages(request.system_prompt, request.messages)
     extra_body: dict[str, Any] = {"chat_template_kwargs": {"enable_thinking": False}}
 
@@ -188,16 +202,19 @@ async def call_llm_structured(request: LLMStructuredRequest, schema: type[T]) ->
         raise ValueError("LLM returned an empty structured response")
 
     usage = completion.usage
+    input_tokens = usage.prompt_tokens if usage else 0
+    output_tokens = usage.completion_tokens if usage else 0
+
     trace = get_active_trace()
     if trace is not None:
         trace.record_llm(
-            input_tokens=usage.prompt_tokens if usage else 0,
-            output_tokens=usage.completion_tokens if usage else 0,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
             duration_s=duration,
             model=completion.model,
         )
 
-    return parsed
+    return parsed, input_tokens, output_tokens
 
 
 # ---------------------------------------------------------------------------

@@ -78,6 +78,19 @@ async function handleResponse<TOk>(
 	const details = errorSchema
 		? (errorSchema.safeParse(json).data ?? json)
 		: json;
+
+	// On 403, extract the FastAPI `detail` field to surface demo quota messages.
+	let userMessage = "La requete a echoue";
+	if (
+		response.status === 403 &&
+		json !== null &&
+		typeof json === "object" &&
+		"detail" in (json as object) &&
+		typeof (json as Record<string, unknown>)["detail"] === "string"
+	) {
+		userMessage = (json as Record<string, unknown>)["detail"] as string;
+	}
+
 	return {
 		ok: false,
 		status: response.status,
@@ -85,7 +98,7 @@ async function handleResponse<TOk>(
 			kind: "http",
 			code: `HTTP_${String(response.status)}`,
 			message: `HTTP error ${String(response.status)}`,
-			userMessage: "La requete a echoue",
+			userMessage,
 			details,
 		},
 	};

@@ -1,4 +1,5 @@
-from typing import Any, Generic, TypeVar
+from datetime import datetime
+from typing import Any, Generic, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -34,6 +35,22 @@ class MessageData(BaseModel):
 class UserPublic(BaseModel):
     id: int
     email: str
+    # Champs demo (None pour les comptes normaux)
+    expires_at: Optional[datetime] = None
+    worldnews_calls_used: int = 0
+    worldnews_calls_limit: Optional[int] = None
+    llm_tokens_in_used: int = 0
+    llm_tokens_out_used: int = 0
+    llm_tokens_limit: Optional[int] = None
+
+
+class UserUsage(BaseModel):
+    expires_at: Optional[datetime]
+    worldnews_calls_used: int
+    worldnews_calls_limit: Optional[int]
+    llm_tokens_in_used: int
+    llm_tokens_out_used: int
+    llm_tokens_limit: Optional[int]
 
 
 class UserCreate(BaseModel):

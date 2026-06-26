@@ -29,6 +29,7 @@ Exit Codes:
 import argparse
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 from sqlmodel import Session, create_engine, select
@@ -36,7 +37,16 @@ from sqlmodel import Session, create_engine, select
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.config import ADMIN_EMAIL, ADMIN_PASSWORD, DATABASE_URL
+from core.config import (
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
+    DATABASE_URL,
+    DEMO_USER_EMAIL,
+    DEMO_USER_PASSWORD,
+    DEMO_ACCOUNT_EXPIRES_DAYS,
+    DEMO_WORLDNEWS_LIMIT,
+    DEMO_LLM_TOKENS_LIMIT,
+)
 from core.fixtures import CHATS as _CHATS, PRESS_REVIEWS as _PRESS_REVIEWS
 from core.security import hash_password
 from database.database import run_migrations
@@ -169,6 +179,40 @@ def bootstrap_admin(email: str, password: str) -> bool:
         return False
 
 
+def bootstrap_demo_user(
+    email: str,
+    password: str,
+    expires_days: int,
+    worldnews_limit: int | None,
+    llm_tokens_limit: int,
+    db: Session,
+) -> bool:
+    """Crée le compte demo évaluateur avec limites. Retourne False si déjà existant."""
+
+    existing = db.exec(select(User).where(User.email == email)).first()
+    if existing:
+        print(f"ℹ Compte demo {email} déjà existant, ignoré.")
+        return False
+
+    expires_at = datetime.now(tz=timezone.utc) + timedelta(days=expires_days)
+    demo_user = User(
+        email=email,
+        hashed_password=hash_password(password),
+        role=UserRole.USER,
+        expires_at=expires_at,
+        worldnews_calls_used=0,
+        worldnews_calls_limit=worldnews_limit,
+        llm_tokens_in_used=0,
+        llm_tokens_out_used=0,
+        llm_tokens_limit=llm_tokens_limit,
+    )
+    db.add(demo_user)
+    db.commit()
+    db.refresh(demo_user)
+    print(f"✓ Compte demo {email} créé, expire le {expires_at.date()}")
+    return True
+
+
 def main():
     """
     Main entry point for the bootstrap script.
@@ -237,6 +281,19 @@ Examples:
 
     if not success:
         sys.exit(1)
+
+    if DEMO_USER_EMAIL and DEMO_USER_PASSWORD:
+        print("🚀 Starting demo user bootstrap...")
+        engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
+        with Session(engine) as db:
+            bootstrap_demo_user(
+                email=DEMO_USER_EMAIL,
+                password=DEMO_USER_PASSWORD,
+                expires_days=DEMO_ACCOUNT_EXPIRES_DAYS,
+                worldnews_limit=DEMO_WORLDNEWS_LIMIT,
+                llm_tokens_limit=DEMO_LLM_TOKENS_LIMIT,
+                db=db,
+            )
 
     print("🌱 Seeding demo data for user id=1...")
     if not seed_demo_data(user_id=1):

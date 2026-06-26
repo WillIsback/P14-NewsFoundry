@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans, Inter } from "next/font/google";
 import "./globals.css";
+import { DemoAccountBanner } from "@/src/components/DemoAccountBanner";
 import { Toaster } from "@/src/components/ui/sonner";
 import { cn } from "@/src/lib/utils";
 
@@ -49,6 +50,7 @@ export default function RootLayout({
 			<body className="h-full">
 				{children}
 				<Toaster />
+				<DemoAccountBanner />
 			</body>
 		</html>
 	);

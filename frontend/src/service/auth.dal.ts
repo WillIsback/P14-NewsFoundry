@@ -1,8 +1,10 @@
 import "server-only";
 import type { z } from "zod/v4";
 import { fetchJson } from "@/src/lib/fetch.lib";
+import { getBearerToken } from "@/src/lib/session";
 import type { ServiceResult } from "@/src/lib/type.lib";
 import {
+	apiResponseUserUsageSchema,
 	authenticationLogin200Schema,
 	authenticationLogin422Schema,
 } from "../models/gen";
@@ -12,6 +14,29 @@ const BACKEND_URL = (
 ).replace(/\/+$/, "");
 
 type LoginResponse = z.infer<typeof authenticationLogin200Schema>;
+type UserUsageResponse = z.infer<typeof apiResponseUserUsageSchema>;
+
+async function authHeaders(): Promise<HeadersInit> {
+	const token = await getBearerToken();
+	return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Fetches the usage stats for the currently authenticated user.
+ *
+ * @returns A promise resolving to the ServiceResult containing the user usage data or error details.
+ */
+export async function getUserUsage(): Promise<
+	ServiceResult<UserUsageResponse>
+> {
+	return fetchJson({
+		url: `${BACKEND_URL}/auth/users/me/usage`,
+		method: "GET",
+		successSchema: apiResponseUserUsageSchema,
+		headers: await authHeaders(),
+		fetchOptions: { cache: "no-store" },
+	});
+}
 
 /**
  * Maps a ServiceResult from the login API to provide user-friendly error messages.
