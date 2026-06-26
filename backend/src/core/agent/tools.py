@@ -78,8 +78,8 @@ async def get_top_news(
 
         # Préférer le texte complet (text) au résumé court (summary) pour enrichir
         # le contexte disponible lors de la génération de la revue de presse.
-        summary = cluster.summaries[0] if cluster.summaries else ""
-        rich_content = cluster.texts[0] if cluster.texts else summary
+        fallback_summary = cluster.summaries[0] if cluster.summaries else ""
+        rich_content = cluster.texts[0] if cluster.texts else fallback_summary
         ctx.context.loaded_articles.append(
             {
                 "title": title,
