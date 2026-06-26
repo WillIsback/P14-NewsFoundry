@@ -60,10 +60,9 @@ DEFAULT_USER_CREDENTIALS: str | None = os.getenv("DEFAULT_USER_PASSWORD")
 DEMO_USER_EMAIL: str | None = os.getenv("DEMO_USER_EMAIL")
 DEMO_USER_PASSWORD: str | None = os.getenv("DEMO_USER_PASSWORD")
 DEMO_ACCOUNT_EXPIRES_DAYS: int = int(os.getenv("DEMO_ACCOUNT_EXPIRES_DAYS", "30"))
+_demo_worldnews_raw = os.getenv("DEMO_WORLDNEWS_LIMIT")
 DEMO_WORLDNEWS_LIMIT: int | None = (
-    int(os.getenv("DEMO_WORLDNEWS_LIMIT"))
-    if os.getenv("DEMO_WORLDNEWS_LIMIT")
-    else None
+    int(_demo_worldnews_raw) if _demo_worldnews_raw else None
 )
 DEMO_LLM_TOKENS_LIMIT: int = int(os.getenv("DEMO_LLM_TOKENS_LIMIT", "10000000"))
 
