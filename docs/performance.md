@@ -29,6 +29,7 @@ Les métriques ci-dessous ont été collectées via **Arize Phoenix** (self-host
 3. **Compaction d'historique** : au-delà de 80% de la fenêtre de contexte (36 000 tokens), l'historique est résumé pour économiser des tokens et éviter les timeouts
 4. **Semaphore de concurrence LLM** : `LLM_MAX_CONCURRENT = 5` limite les appels LLM simultanés pour ne pas saturer le serveur vLLM
 5. **Messages persistés avant l'appel LLM** : garantit la résilience, pas un gain de perf direct mais évite les appels redondants
+6. **Troncature des retours d'outils** *(PR #251, 26 juin 2026)* : `search_news` et `get_top_news` retournent titre + date + URL uniquement — les résumés ne sont plus injectés dans le contexte LLM (~800 tokens économisés par appel `search_news`)
 
 ### Côté frontend
 
@@ -125,9 +126,9 @@ class Message(SQLModel, table=True):
 
 ---
 
-### 5. Réduction de la verbosité des résultats d'outils *(identifiée par monitoring Phoenix)*
+### 5. Réduction de la verbosité des résultats d'outils ✅ *implémentée — PR #251 (26 juin 2026)*
 
-**Constat :** Cette piste a été identifiée directement grâce aux données de monitoring Phoenix, ce qui illustre la valeur du tracing LLM. Le ratio **86 % prompt / 14 % completion** révèle que le contexte domine largement la génération. L'analyse des spans montre que les résultats de `search_news` et `get_top_news` incluent le contenu complet des articles (titres, résumés, sources, métadonnées), ce qui gonfle le prompt à chaque appel sans que le LLM n'utilise nécessairement tous les articles retournés.
+**Constat :** Cette piste a été identifiée directement grâce aux données de monitoring Phoenix, ce qui illustre la valeur du tracing LLM. Le ratio **86 % prompt / 14 % completion** révèle que le contexte domine largement la génération. L'analyse des spans montre que les résultats de `search_news` et `get_top_news` incluaient le contenu complet des articles (titres, résumés, sources, métadonnées), ce qui gonflait le prompt à chaque appel sans que le LLM n'utilise nécessairement tous les articles retournés.
 
 **Métrique mesurée (Phoenix) :** La progression du prompt au cours d'une même session de 3 échanges :
 
@@ -139,14 +140,16 @@ class Message(SQLModel, table=True):
 
 En moyenne sur les 10 traces : **4 563 tokens de prompt** pour seulement **738 tokens générés** par trace.
 
-**Exemple concret :** La trace du 25 juin montre que `search_news("intelligence artificielle")` injecte 10 articles avec titres, résumés et URLs dans le prompt (~1 200 tokens) — alors que le LLM n'en cite finalement que 2 dans sa réponse. Les 8 articles non utilisés représentent ~960 tokens injectés pour rien (84 % de gaspillage sur cet appel).
+**Exemple concret :** La trace du 25 juin montre que `search_news("intelligence artificielle")` injectait 10 articles avec titres, résumés et URLs dans le prompt (~1 200 tokens) — alors que le LLM n'en citait finalement que 2 dans sa réponse. Les 8 articles non utilisés représentaient ~960 tokens injectés pour rien (84 % de gaspillage sur cet appel).
 
-**Suggestion :** Tronquer les résultats d'outils avant injection dans le contexte LLM. Ne conserver que titre + date + URL (sans le corps de l'article), et laisser le LLM appeler un outil `get_article_content(url)` si il a besoin du contenu complet :
+**Solution implémentée :** Les retours des deux outils sont tronqués à **titre + date + URL uniquement** (`backend/src/core/agent/tools.py`). Les résumés et textes complets restent stockés dans `loaded_articles` pour la génération de revue de presse, mais ne sont plus injectés dans le contexte de conversation.
+
 ```python
-def format_article_for_context(article: dict) -> str:
-    """Retourne une représentation compacte pour le contexte LLM."""
-    return f"- {article['title']} ({article['publishedAt'][:10]}) — {article['url']}"
-    # Avant : ~120 tokens/article | Après : ~20 tokens/article
+# Avant — search_news (~120 tokens/article × 10 = ~1 200 tokens)
+f"**{i}. {article.title}**{date_str}\n> {article.summary}\nSource : {article.url}\n"
+
+# Après — (~20 tokens/article × 10 = ~200 tokens)
+f"**{i}. {article.title}**{date_str}\nSource : {article.url}\n"
 ```
 
-**Objectif mesurable :** Réduire le ratio prompt/completion de 86/14 à < 70/30, et faire passer la consommation moyenne de tokens par trace de 5 300 à < 3 500 (gain de 34 %), mesuré dans Phoenix sur les 10 prochaines traces enregistrées.
+**Gain attendu :** ~800 tokens économisés par appel `search_news`, réduction du ratio prompt/completion de 86/14 à < 70/30, et de la consommation moyenne par trace de 5 300 à < 3 500 tokens (−34 %). À mesurer dans Phoenix sur les 10 prochaines traces.
