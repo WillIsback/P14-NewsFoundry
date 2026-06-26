@@ -75,11 +75,10 @@ async def get_top_news(
     lines: list[str] = [f"## Top actualités — {effective_date}\n"]
     for i, cluster in enumerate(clusters, 1):
         title = cluster.titles[0] if cluster.titles else "Sans titre"
-        summary = cluster.summaries[0] if cluster.summaries else ""
-        summary_str = f"\n> {summary}" if summary else ""
 
         # Préférer le texte complet (text) au résumé court (summary) pour enrichir
         # le contexte disponible lors de la génération de la revue de presse.
+        summary = cluster.summaries[0] if cluster.summaries else ""
         rich_content = cluster.texts[0] if cluster.texts else summary
         ctx.context.loaded_articles.append(
             {
@@ -93,7 +92,7 @@ async def get_top_news(
         )
 
         lines.append(
-            f"**{i}. {title}** ({cluster.article_count} articles){summary_str}\n"
+            f"**{i}. {title}** ({cluster.article_count} articles)\n"
             f"Source : {cluster.top_url}\n"
         )
 
@@ -139,7 +138,6 @@ async def search_news(
     lines: list[str] = [f"## Résultats de recherche pour « {query} »\n"]
     for i, article in enumerate(articles, 1):
         date_str = f" — {article.publish_date}" if article.publish_date else ""
-        summary_str = f"\n> {article.summary}" if article.summary else ""
 
         # Préférer le texte complet (text) au résumé court (summary) pour enrichir
         # le contexte disponible lors de la génération de la revue de presse.
@@ -155,8 +153,6 @@ async def search_news(
             }
         )
 
-        lines.append(
-            f"**{i}. {article.title}**{date_str}{summary_str}\nSource : {article.url}\n"
-        )
+        lines.append(f"**{i}. {article.title}**{date_str}\nSource : {article.url}\n")
 
     return "\n---\n".join(lines)

@@ -236,3 +236,100 @@ class TestSearchNewsTool:
         assert ctx.context.loaded_articles[0]["url"] == "https://example.com/ia"
         assert ctx.context.loaded_articles[0]["title"] == "IA en France"
         assert "OpenAI" in ctx.context.loaded_articles[0]["summary"]
+
+    @pytest.mark.asyncio
+    async def test_search_news_output_excludes_summary(self):
+        """Le résumé ne doit PAS apparaître dans le retour injecté au LLM."""
+        from core.news.search import SearchArticle
+
+        mock_articles = [
+            SearchArticle(
+                title="IA en France",
+                url="https://example.com/ia",
+                summary="CONTENU_SUMMARY_A_EXCLURE",
+                publish_date="2026-06-14",
+            )
+        ]
+        with patch("core.agent.tools._search_news", return_value=mock_articles):
+            from core.agent.tools import search_news
+
+            result = await search_news.on_invoke_tool(
+                _make_run_ctx(), '{"query":"IA","language":"fr","max_results":5}'
+            )
+        assert "CONTENU_SUMMARY_A_EXCLURE" not in result
+
+    @pytest.mark.asyncio
+    async def test_search_news_output_contains_title_date_url(self):
+        """Le retour doit contenir titre, date et URL pour que le LLM puisse citer ses sources."""
+        from core.news.search import SearchArticle
+
+        mock_articles = [
+            SearchArticle(
+                title="IA en France",
+                url="https://example.com/ia",
+                summary="Résumé quelconque.",
+                publish_date="2026-06-14",
+            )
+        ]
+        with patch("core.agent.tools._search_news", return_value=mock_articles):
+            from core.agent.tools import search_news
+
+            result = await search_news.on_invoke_tool(
+                _make_run_ctx(), '{"query":"IA","language":"fr","max_results":5}'
+            )
+        assert "IA en France" in result
+        assert "2026-06-14" in result
+        assert "https://example.com/ia" in result
+
+
+# ── Tests troncature get_top_news ─────────────────────────────────────────────
+
+
+class TestGetTopNewsTruncation:
+    """Vérifie que le résumé des clusters n'est pas injecté dans le contexte LLM."""
+
+    @pytest.fixture
+    def mock_api_with_summary(self):
+        api = MagicMock()
+        articles = [
+            TopNews200ResponseTopNewsInnerNewsInner(
+                id=1,
+                title="Titre cluster",
+                url="https://example.com/article",
+                publish_date="2026-06-14 08:00:00",
+                summary="CONTENU_SUMMARY_A_EXCLURE",
+                text="Texte complet.",
+                author="Auteur",
+            )
+        ]
+        api.top_news.return_value = TopNews200Response(
+            top_news=[TopNews200ResponseTopNewsInner(news=articles)],
+            language="fr",
+            country="fr",
+        )
+        return api
+
+    @pytest.mark.asyncio
+    async def test_get_top_news_output_excludes_summary(self, mock_api_with_summary):
+        """Le résumé ne doit PAS apparaître dans le retour injecté au LLM."""
+        with patch("core.agent.tools.get_news_api", return_value=mock_api_with_summary):
+            from core.agent.tools import get_top_news
+
+            result = await get_top_news.on_invoke_tool(
+                _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
+            )
+        assert "CONTENU_SUMMARY_A_EXCLURE" not in result
+
+    @pytest.mark.asyncio
+    async def test_get_top_news_output_contains_title_and_url(
+        self, mock_api_with_summary
+    ):
+        """Le retour doit contenir le titre et l'URL."""
+        with patch("core.agent.tools.get_news_api", return_value=mock_api_with_summary):
+            from core.agent.tools import get_top_news
+
+            result = await get_top_news.on_invoke_tool(
+                _make_run_ctx(), '{"source_country":"fr","language":"fr"}'
+            )
+        assert "Titre cluster" in result
+        assert "https://example.com/article" in result
