@@ -9,14 +9,11 @@ def check_account_expiry(current_user: User) -> None:
     """Lève HTTP 403 si le compte demo est expiré."""
     if current_user.expires_at is None:
         return
-    # Comparaison naive vs naive pour cohérence avec le stockage DB
     expires = current_user.expires_at
-    now = (
-        datetime.now(tz=timezone.utc).replace(tzinfo=None)
-        if expires.tzinfo is None
-        else datetime.now(tz=timezone.utc)
-    )
-    if now > expires:
+    # Normalise en UTC-aware si le datetime stocké est naive (SQLite strip tzinfo)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(tz=timezone.utc) > expires:
         raise HTTPException(
             status_code=403,
             detail="Compte demo expiré. Contactez l'administrateur.",
