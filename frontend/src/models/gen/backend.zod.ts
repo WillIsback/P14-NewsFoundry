@@ -162,6 +162,12 @@ export const apiResponseSendMessageResponseSchema = z.object({
 export const userPublicSchema = z.object({
 	id: z.int(),
 	email: z.string(),
+	expires_at: z.optional(z.union([z.iso.datetime(), z.null()])),
+	worldnews_calls_used: z.optional(z.int().default(0)),
+	worldnews_calls_limit: z.optional(z.union([z.int(), z.null()])),
+	llm_tokens_in_used: z.optional(z.int().default(0)),
+	llm_tokens_out_used: z.optional(z.int().default(0)),
+	llm_tokens_limit: z.optional(z.union([z.int(), z.null()])),
 });
 
 export const apiResponseUserPublicSchema = z.object({
@@ -170,6 +176,27 @@ export const apiResponseUserPublicSchema = z.object({
 	message: z.string(),
 	get data() {
 		return z.union([userPublicSchema, z.null()]).optional();
+	},
+	get error() {
+		return z.union([apiErrorSchema, z.null()]).optional();
+	},
+});
+
+export const userUsageSchema = z.object({
+	expires_at: z.union([z.iso.datetime(), z.null()]),
+	worldnews_calls_used: z.int(),
+	worldnews_calls_limit: z.union([z.int(), z.null()]),
+	llm_tokens_in_used: z.int(),
+	llm_tokens_out_used: z.int(),
+	llm_tokens_limit: z.union([z.int(), z.null()]),
+});
+
+export const apiResponseUserUsageSchema = z.object({
+	success: z.boolean(),
+	status: z.int(),
+	message: z.string(),
+	get data() {
+		return z.union([userUsageSchema, z.null()]).optional();
 	},
 	get error() {
 		return z.union([apiErrorSchema, z.null()]).optional();
@@ -368,6 +395,17 @@ export const authenticationMe200Schema = z.lazy(
 
 export const authenticationMeQueryResponseSchema = z.lazy(
 	() => authenticationMe200Schema,
+);
+
+/**
+ * @description Successful Response
+ */
+export const authenticationMeUsage200Schema = z.lazy(
+	() => apiResponseUserUsageSchema,
+);
+
+export const authenticationMeUsageQueryResponseSchema = z.lazy(
+	() => authenticationMeUsage200Schema,
 );
 
 /**
