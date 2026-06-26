@@ -91,6 +91,8 @@ def build_authentication_router(db: Database) -> APIRouter:
         )
 
     @router.get("/users/me/usage")
+    # Intentionnellement sans get_verified_user : un compte demo expiré doit pouvoir
+    # consulter ses statistiques d'usage avant la fin de sa session.
     def me_usage(
         current_user: Annotated[User, Depends(verify_user)],
     ) -> ApiResponse[UserUsage]:
