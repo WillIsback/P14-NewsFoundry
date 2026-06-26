@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, BigInteger, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -45,9 +45,15 @@ class User(SQLModel, table=True):
     expires_at: Optional[datetime] = Field(default=None)
     worldnews_calls_used: int = Field(default=0)
     worldnews_calls_limit: Optional[int] = Field(default=None)
-    llm_tokens_in_used: int = Field(default=0)
-    llm_tokens_out_used: int = Field(default=0)
-    llm_tokens_limit: Optional[int] = Field(default=None)
+    llm_tokens_in_used: int = Field(
+        default=0, sa_column=Column(BigInteger, nullable=False, server_default="0")
+    )
+    llm_tokens_out_used: int = Field(
+        default=0, sa_column=Column(BigInteger, nullable=False, server_default="0")
+    )
+    llm_tokens_limit: Optional[int] = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True)
+    )
 
 
 class Message(SQLModel, table=True):
