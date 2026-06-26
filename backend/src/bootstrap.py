@@ -29,6 +29,7 @@ Exit Codes:
 import argparse
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 from sqlmodel import Session, create_engine, select
@@ -182,19 +183,18 @@ def bootstrap_demo_user(
     email: str,
     password: str,
     expires_days: int,
-    worldnews_limit,
-    llm_tokens_limit,
-    db,
+    worldnews_limit: int | None,
+    llm_tokens_limit: int,
+    db: Session,
 ) -> bool:
     """Crée le compte demo évaluateur avec limites. Retourne False si déjà existant."""
-    from datetime import datetime, timedelta
 
     existing = db.exec(select(User).where(User.email == email)).first()
     if existing:
         print(f"ℹ Compte demo {email} déjà existant, ignoré.")
         return False
 
-    expires_at = datetime.now() + timedelta(days=expires_days)
+    expires_at = datetime.now(tz=timezone.utc) + timedelta(days=expires_days)
     demo_user = User(
         email=email,
         hashed_password=hash_password(password),
