@@ -91,6 +91,14 @@ export async function decrypt(
  * @param userId - The user's email address (returned by the backend login endpoint).
  * @param accessToken - The backend-issued JWT access token.
  * @returns A promise that resolves when the session cookie has been set.
+ *
+ * @example
+ * ```typescript
+ * // In a server action after successful login
+ * const { email, access_token } = loginResponse.data;
+ * await createSession(email, access_token);
+ * redirect("/home");
+ * ```
  */
 export async function createSession(
 	userId: string,
@@ -148,6 +156,14 @@ export async function updateSession(): Promise<void> {
  * Returns the backend Bearer token from the current session cookie, or null if not authenticated.
  *
  * @returns The backend JWT access token, or null if no valid session exists.
+ *
+ * @example
+ * ```typescript
+ * const token = await getBearerToken();
+ * if (token) {
+ *   const headers = { Authorization: `Bearer ${token}` };
+ * }
+ * ```
  */
 export async function getBearerToken(): Promise<string | null> {
 	const session = (await cookies()).get("session")?.value;
@@ -159,6 +175,13 @@ export async function getBearerToken(): Promise<string | null> {
  * Deletes the current session by removing the session cookie.
  *
  * @returns A promise that resolves when the session cookie has been deleted.
+ *
+ * @example
+ * ```typescript
+ * // In a logout server action
+ * await deleteSession();
+ * redirect("/login");
+ * ```
  */
 export async function deleteSession(): Promise<void> {
 	const cookieStore = await cookies();

@@ -20,6 +20,16 @@ export type ServiceErrorKind =
  * @property message - The technical error message.
  * @property userMessage - A user-friendly error message suitable for display.
  * @property details - Optional additional error details.
+ *
+ * @example
+ * ```typescript
+ * const error: ServiceError = {
+ *   kind: "http",
+ *   code: "HTTP_401",
+ *   message: "Unauthorized",
+ *   userMessage: "Veuillez vous connecter",
+ * };
+ * ```
  */
 export type ServiceError = {
 	kind: ServiceErrorKind;
@@ -43,6 +53,17 @@ export type ServiceError = {
  * ```
  *
  * @typeParam T - The type of the data returned on success.
+ *
+ * @example
+ * ```typescript
+ * type User = { id: string; name: string };
+ * const result: ServiceResult<User> = await getUser(id);
+ * if (result.ok) {
+ *   console.log(result.data.name); // User
+ * } else {
+ *   console.error(result.error.userMessage);
+ * }
+ * ```
  */
 export type ServiceResult<T> =
 	| { ok: true; status: number; data: T }
@@ -93,6 +114,19 @@ export type NextFetchOptions = {
  * @property timeoutMs - Request timeout in milliseconds.
  * @property headers - Additional HTTP headers.
  * @property fetchOptions - Next.js caching and revalidation options.
+ *
+ * @example
+ * ```typescript
+ * type LoginRequest = { email: string; password: string };
+ * type LoginResponse = { access_token: string };
+ * const options: FetchJsonOptions<LoginRequest, LoginResponse> = {
+ *   method: "POST",
+ *   url: "/api/auth/login",
+ *   requestData: { email: "user@example.com", password: "secret" },
+ *   successSchema: loginResponseSchema,
+ *   timeoutMs: 10000,
+ * };
+ * ```
  */
 export type FetchJsonOptions<TReq, TOk> = {
 	url: string;

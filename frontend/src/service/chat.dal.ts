@@ -40,6 +40,15 @@ async function authHeaders(): Promise<HeadersInit> {
  * Fetches the list of chats for the authenticated user.
  *
  * @returns A ServiceResult containing the list of chats or an error.
+ *
+ * @example
+ * ```typescript
+ * const result = await getChats();
+ * if (result.ok) {
+ *   const chats = result.data.data;
+ *   chats.forEach(chat => console.log(chat.title));
+ * }
+ * ```
  */
 export async function getChats(): Promise<ServiceResult<GetChatsResponse>> {
 	return fetchJson({
@@ -56,6 +65,15 @@ export async function getChats(): Promise<ServiceResult<GetChatsResponse>> {
  *
  * @param chatId - The ID of the chat to retrieve messages for.
  * @returns A ServiceResult containing the chat messages or an error.
+ *
+ * @example
+ * ```typescript
+ * const result = await getMessages(123);
+ * if (result.ok) {
+ *   const messages = result.data.data;
+ *   messages.forEach(msg => console.log(msg.content));
+ * }
+ * ```
  */
 export async function getMessages(
 	chatId: number,
@@ -78,6 +96,15 @@ export async function getMessages(
  *
  * @param content - The message content to send.
  * @returns A ServiceResult containing the assistant's response or an error.
+ *
+ * @example
+ * ```typescript
+ * const result = await postNewChatMessage("Tell me about AI news");
+ * if (result.ok) {
+ *   const chatId = result.data.data.chat_id;
+ *   const firstMessage = result.data.data.messages[0];
+ * }
+ * ```
  */
 export async function postNewChatMessage(
 	content: string,
