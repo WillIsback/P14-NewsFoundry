@@ -26,11 +26,21 @@ type ContinueChatMessageResponse = z.infer<
 	typeof chatContinueChatMessage200Schema
 >;
 
+/**
+ * Builds authorization headers with the Bearer token from the current session.
+ *
+ * @returns An object with the Authorization header if a token exists, otherwise an empty object.
+ */
 async function authHeaders(): Promise<HeadersInit> {
 	const token = await getBearerToken();
 	return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * Fetches the list of chats for the authenticated user.
+ *
+ * @returns A ServiceResult containing the list of chats or an error.
+ */
 export async function getChats(): Promise<ServiceResult<GetChatsResponse>> {
 	return fetchJson({
 		url: `${BACKEND_URL}/chats`,
@@ -41,6 +51,12 @@ export async function getChats(): Promise<ServiceResult<GetChatsResponse>> {
 	});
 }
 
+/**
+ * Fetches the messages for a specific chat.
+ *
+ * @param chatId - The ID of the chat to retrieve messages for.
+ * @returns A ServiceResult containing the chat messages or an error.
+ */
 export async function getMessages(
 	chatId: number,
 ): Promise<ServiceResult<GetMessagesResponse>> {
@@ -54,6 +70,15 @@ export async function getMessages(
 	});
 }
 
+/**
+ * Sends a new message to start a new chat with the AI assistant.
+ *
+ * The assistant generates a response using the WorldNews tool and LLM calls.
+ * This operation has a longer timeout (120s by default) to accommodate LLM inference.
+ *
+ * @param content - The message content to send.
+ * @returns A ServiceResult containing the assistant's response or an error.
+ */
 export async function postNewChatMessage(
 	content: string,
 ): Promise<ServiceResult<NewChatMessageResponse>> {
@@ -71,6 +96,12 @@ export async function postNewChatMessage(
 	});
 }
 
+/**
+ * Fetches the source articles used by the assistant for a specific chat.
+ *
+ * @param chatId - The ID of the chat to retrieve articles for.
+ * @returns A ServiceResult containing the articles or an error.
+ */
 export async function getChatArticles(
 	chatId: number,
 ): Promise<ServiceResult<GetChatArticlesResponse>> {
@@ -83,6 +114,16 @@ export async function getChatArticles(
 	});
 }
 
+/**
+ * Sends a follow-up message to an existing chat conversation.
+ *
+ * The assistant generates a response using the WorldNews tool and LLM calls.
+ * This operation has a longer timeout (120s by default) to accommodate LLM inference.
+ *
+ * @param chatId - The ID of the chat to continue.
+ * @param content - The message content to send.
+ * @returns A ServiceResult containing the assistant's response or an error.
+ */
 export async function postContinueChatMessage(
 	chatId: number,
 	content: string,
