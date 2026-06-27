@@ -1,0 +1,375 @@
+---
+title: Lib
+description: Utilitaires fondamentaux — types partagés, client HTTP typé, session JWT, rate limiting, helpers CSS.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+---
+
+## Types fondamentaux (`type.lib.ts`)
+
+### `ServiceResult<T>`
+
+Union discriminée pour tous les résultats de la couche service. Évite les try/catch dans les composants.
+
+```typescript
+type ServiceResult<T> =
+  | { ok: true;  status: number; data: T }
+  | { ok: false; status: number; error: ServiceError };
+```
+
+```typescript
+import type { ServiceResult } from "@/src/lib/type.lib";
+
+function handleResult<T>(result: ServiceResult<T>) {
+  if (result.ok) {
+    return result.data;       // T — TypeScript infère le bon type
+  } else {
+    console.error(result.error.userMessage);
+    return null;
+  }
+}
+```
+
+---
+
+### `ServiceError`
+
+Erreur structurée retournée quand `result.ok === false`.
+
+```typescript
+type ServiceError = {
+  kind: ServiceErrorKind;  // catégorie
+  code: string;            // code technique ("HTTP_401", "TIMEOUT_10000"…)
+  message: string;         // message technique
+  userMessage: string;     // message lisible par l'utilisateur
+  details?: unknown;       // informations supplémentaires optionnelles
+};
+```
+
+---
+
+### `ServiceErrorKind`
+
+```typescript
+type ServiceErrorKind =
+  | "validation"  // données invalides côté client
+  | "http"        // réponse HTTP avec code d'erreur (4xx, 5xx)
+  | "network"     // pas de réseau / DNS
+  | "timeout"     // délai dépassé
+  | "parse"       // parsing JSON échoué
+  | "unknown";    // autre
+```
+
+---
+
+### `SessionTokenPayload`
+
+Payload décodé du JWT de session (stocké dans le cookie httpOnly).
+
+```typescript
+type SessionTokenPayload = JWTPayload & {
+  userId: string;      // email de l'utilisateur
+  expiresAt: string;   // ISO 8601 — date d'expiration
+  accessToken: string; // token Bearer à transmettre au backend
+};
+```
+
+---
+
+### `FetchJsonOptions<TReq, TOk>`
+
+Configuration pour `fetchJson`. Combine url, method, schemas Zod, timeout et options Next.js.
+
+```typescript
+type FetchJsonOptions<TReq, TOk> = {
+  url: string;
+  method: HttpMethod;                         // "GET" | "POST" | …
+  requestData?: TReq;                         // body (sérialisé en JSON)
+  successSchema: z.ZodType<TOk>;             // Zod schema de validation
+  errorSchemas?: Record<number, z.ZodTypeAny>; // schemas par code HTTP
+  timeoutMs?: number;                         // défaut: 10 000 ms
+  headers?: HeadersInit;
+  fetchOptions?: NextFetchOptions;            // cache Next.js
+};
+```
+
+---
+
+### `RetryOptions`
+
+```typescript
+type RetryOptions = {
+  attempts?: number;          // nb max tentatives (défaut: 3)
+  initialDelayMs?: number;    // délai initial (défaut: 100 ms)
+  maxDelayMs?: number;        // délai max (défaut: 5 000 ms)
+  retryOnStatuses?: number[]; // codes HTTP déclenchant un retry
+};
+```
+
+---
+
+### `HttpMethod`
+
+```typescript
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+```
+
+---
+
+## Client HTTP (`fetch.lib.ts`)
+
+### `fetchJson`
+
+Client HTTP typé avec validation Zod, retry exponentiel, timeout et mapping d'erreur vers `ServiceResult`.
+
+```typescript
+fetchJson<TReq, TOk>(
+  options: FetchJsonOptions<TReq, TOk>
+): Promise<ServiceResult<TOk>>
+```
+
+<Aside type="note">
+`fetchJson` est le seul point d'entrée réseau de l'application. Il gère automatiquement : sérialisation JSON, headers Content-Type, timeout via AbortController, retry avec backoff exponentiel, validation Zod de la réponse.
+</Aside>
+
+```typescript
+import { fetchJson } from "@/src/lib/fetch.lib";
+import { loginResponseSchema } from "@/src/models/gen";
+
+const result = await fetchJson<
+  { email: string; password: string },
+  { data: { access_token: string } }
+>({
+  url: `${BACKEND_URL}/auth/login`,
+  method: "POST",
+  requestData: { email, password },
+  successSchema: loginResponseSchema,
+  timeoutMs: 10_000,
+  fetchOptions: { cache: "no-store" },
+});
+
+if (result.ok) {
+  const token = result.data.data.access_token;
+}
+```
+
+---
+
+## Session JWT (`session.ts`)
+
+<Aside type="note">
+Les fonctions de session utilisent `jose` pour le chiffrement/déchiffrement AES-GCM. La clé est `SESSION_SECRET` (env var, min 32 chars). Le cookie `session` est httpOnly, Secure, SameSite=lax.
+</Aside>
+
+### `createSession`
+
+Chiffre un payload JWT et stocke le cookie de session.
+
+```typescript
+createSession(userId: string, accessToken: string): Promise<void>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `userId` | `string` | Email de l'utilisateur |
+| `accessToken` | `string` | Token Bearer backend |
+
+```typescript
+import { createSession } from "@/src/lib/session";
+
+// Après un login réussi
+await createSession("user@example.com", backendJwtToken);
+// → cookie "session" posé (7 jours)
+```
+
+---
+
+### `getBearerToken`
+
+Lit la session courante et retourne le token Bearer pour les appels backend.
+
+```typescript
+getBearerToken(): Promise<string | null>
+```
+
+```typescript
+import { getBearerToken } from "@/src/lib/session";
+
+const token = await getBearerToken();
+const headers = token ? { Authorization: `Bearer ${token}` } : {};
+```
+
+---
+
+### `updateSession`
+
+Renouvelle la durée de vie du cookie si le token n'est pas expiré (sliding session).
+
+```typescript
+updateSession(): Promise<void>
+```
+
+```typescript
+// Appelé dans le middleware Next.js sur chaque requête authentifiée
+await updateSession();
+```
+
+---
+
+### `deleteSession`
+
+Supprime le cookie de session (déconnexion).
+
+```typescript
+deleteSession(): Promise<void>
+```
+
+```typescript
+import { deleteSession } from "@/src/lib/session";
+
+await deleteSession();
+redirect("/login");
+```
+
+---
+
+### `encrypt` / `decrypt`
+
+Fonctions bas niveau — utilisées en interne par `createSession` et `updateSession`.
+
+```typescript
+encrypt(payload: SessionTokenPayload, expiresAt: Date): Promise<string>
+decrypt(token: string | undefined): Promise<SessionTokenPayload | null>
+```
+
+---
+
+## Auth Helpers (`auth-helpers.ts`)
+
+### `loginInputSchema`
+
+Schema Zod pour valider les données du formulaire de connexion.
+
+```typescript
+const loginInputSchema: ZodObject<{ email: ZodString; password: ZodString }>
+```
+
+```typescript
+import { loginInputSchema } from "@/src/lib/auth-helpers";
+
+const result = loginInputSchema.safeParse({
+  email: "  User@Example.com  ", // normalisé → "user@example.com"
+  password: "secret",
+});
+if (!result.success) {
+  console.error(result.error.issues);
+}
+```
+
+---
+
+### `LoginInput` / `LoginResponse`
+
+```typescript
+type LoginInput = z.infer<typeof loginInputSchema>;
+// { email: string; password: string }
+
+type LoginResponse = z.infer<typeof authenticationLogin200Schema>;
+// { data: { access_token: string } }
+```
+
+---
+
+### `getLoginPayload` / `validateLoginPayload`
+
+Utilitaires d'extraction du payload depuis la réponse de login.
+
+```typescript
+getLoginPayload(result: ServiceResult<LoginResponse>): JWTPayload | null
+validateLoginPayload(result: ServiceResult<LoginResponse>): string | null
+```
+
+```typescript
+import { validateLoginPayload } from "@/src/lib/auth-helpers";
+
+const email = validateLoginPayload(loginResult);
+if (!email) throw new Error("Payload invalide");
+```
+
+---
+
+## Utilitaires serveur (`server.lib.ts`)
+
+### `withTimeout`
+
+Wrappe une Promise avec un timeout. Lance une `ServiceError` de kind `"timeout"` si dépassé.
+
+```typescript
+withTimeout<T>(fn: () => Promise<T>, ms: number): Promise<T>
+```
+
+```typescript
+import { withTimeout } from "@/src/lib/server.lib";
+
+const result = await withTimeout(() => fetch(url), 5_000);
+```
+
+---
+
+### `getClientIp`
+
+Extrait l'IP cliente depuis les headers Next.js (`x-forwarded-for`, `x-real-ip`…).
+
+```typescript
+getClientIp(req: NextRequest): Promise<string>
+```
+
+```typescript
+import { getClientIp } from "@/src/lib/server.lib";
+// Dans un middleware ou route handler
+const ip = await getClientIp(request);
+```
+
+---
+
+### `isRateLimited`
+
+Vérifie si une IP est rate-limitée (fenêtre glissante en mémoire). Utilisé dans le middleware de login.
+
+```typescript
+isRateLimited(ip: string): Promise<boolean>
+```
+
+```typescript
+import { isRateLimited } from "@/src/lib/server.lib";
+
+const ip = await getClientIp(req);
+if (await isRateLimited(ip)) {
+  return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+}
+```
+
+---
+
+## CSS (`utils.ts`)
+
+### `cn`
+
+Fusionne des classes Tailwind avec `clsx` + `tailwind-merge` (résout les conflits de classes).
+
+```typescript
+cn(...inputs: ClassValue[]): string
+```
+
+```typescript
+import { cn } from "@/src/lib/utils";
+
+const cls = cn(
+  "px-4 py-2 rounded",
+  isActive && "bg-blue-600 text-white",
+  isPending && "opacity-50 cursor-not-allowed"
+);
+// Produit une chaîne Tailwind propre sans doublons
+```

@@ -1,7 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc';
 
 export default defineConfig({
   site: 'https://willisback.github.io',
@@ -17,30 +16,6 @@ export default defineConfig({
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/WillIsback/P14-NewsFoundry' },
       ],
-      plugins: [
-        starlightTypeDoc({
-          entryPoints: [
-            './typedoc-entrypoints/actions.ts',
-            './typedoc-entrypoints/components.ts',
-            './typedoc-entrypoints/lib.ts',
-            './typedoc-entrypoints/service.ts',
-          ],
-          tsconfig: './typedoc.tsconfig.json',
-          output: 'api',
-          typeDoc: {
-            entryPointStrategy: 'resolve',
-            excludePrivate: true,
-            excludeInternal: false,
-            excludeExternals: true,
-            skipErrorChecking: true,
-            readme: 'none',
-          },
-          sidebar: {
-            label: 'Référence API',
-            collapsed: false,
-          },
-        }),
-      ],
       sidebar: [
         {
           label: 'Guides',
@@ -54,7 +29,16 @@ export default defineConfig({
             { label: 'Performance', link: '/guides/performance/' },
           ],
         },
-        typeDocSidebarGroup,
+        {
+          label: 'Référence API',
+          items: [
+            { label: 'Vue d\'ensemble', link: '/api/' },
+            { label: 'Actions', link: '/api/actions/' },
+            { label: 'Composants', link: '/api/components/' },
+            { label: 'Lib', link: '/api/lib/' },
+            { label: 'Service (DAL)', link: '/api/service/' },
+          ],
+        },
       ],
       customCss: [],
     }),

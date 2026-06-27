@@ -1,0 +1,295 @@
+---
+title: Service (DAL)
+description: Couche d'accès aux données — toutes les fonctions d'appel au backend FastAPI. Retournent toujours un ServiceResult<T>.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="note">
+Tous les fichiers DAL portent `import "server-only"` — ils ne s'exécutent **jamais** côté client.
+Chaque fonction retourne un [`ServiceResult<T>`](lib/#serviceresult) : une union discriminée sur `ok` qui remplace les try/catch.
+</Aside>
+
+Le backend est adressé via `BACKEND_URL` (env var, défaut `http://localhost:8000/api/v1`).
+Les headers `Authorization: Bearer <token>` sont automatiquement injectés depuis la session JWT.
+
+---
+
+## Auth DAL
+
+### `postLogin`
+
+Envoie les credentials au backend et retourne un access token JWT.
+Mappe les erreurs HTTP en messages utilisateur lisibles (401 → "Identifiants invalides", 429 → "Trop de tentatives"…).
+
+```typescript
+postLogin(
+  email: string,
+  password: string
+): Promise<ServiceResult<LoginResponse>>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `email` | `string` | Email de l'utilisateur |
+| `password` | `string` | Mot de passe |
+
+**Retourne** — `ServiceResult<LoginResponse>` où `LoginResponse.data.access_token` est le JWT.
+
+```typescript
+import { postLogin } from "@/src/service/auth.dal";
+import { createSession } from "@/src/lib/session";
+
+const result = await postLogin("user@example.com", "password123");
+if (result.ok) {
+  const { access_token } = result.data.data;
+  await createSession("user@example.com", access_token);
+} else {
+  console.error(result.error.userMessage); // "Identifiants invalides"
+}
+```
+
+---
+
+### `getUserUsage`
+
+Récupère les statistiques d'utilisation du compte démo (messages utilisés vs limite).
+
+```typescript
+getUserUsage(): Promise<ServiceResult<UserUsageResponse>>
+```
+
+**Retourne** — `ServiceResult<{ data: { messages_used: number; messages_limit: number } }>`
+
+```typescript
+import { getUserUsage } from "@/src/service/auth.dal";
+
+const result = await getUserUsage();
+if (result.ok) {
+  const { messages_used, messages_limit } = result.data.data;
+  const pct = Math.round((messages_used / messages_limit) * 100);
+  console.log(`Quota utilisé : ${pct}%`);
+}
+```
+
+---
+
+## Chat DAL
+
+<Aside type="caution">
+`postNewChatMessage` et `postContinueChatMessage` ont un **timeout de 120 s** (configurable via `FETCH_CHAT_TIMEOUT_MS`). L'agent RAG exécute 2 appels LLM + 1 recherche WorldNews.
+</Aside>
+
+### `getChats`
+
+Récupère toutes les conversations de l'utilisateur authentifié.
+
+```typescript
+getChats(): Promise<ServiceResult<GetChatsResponse>>
+```
+
+```typescript
+import { getChats } from "@/src/service/chat.dal";
+
+const result = await getChats();
+if (result.ok) {
+  const chats = result.data.data; // Chat[]
+  chats.forEach(chat => {
+    console.log(`[${chat.id}] ${chat.title}`);
+  });
+}
+```
+
+---
+
+### `getMessages`
+
+Récupère tous les messages d'une conversation.
+
+```typescript
+getMessages(chatId: number): Promise<ServiceResult<GetMessagesResponse>>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `chatId` | `number` | ID de la conversation |
+
+```typescript
+const result = await getMessages(42);
+if (result.ok) {
+  const messages = result.data.data; // Message[]
+  messages.forEach(({ type, content }) => {
+    console.log(`[${type}] ${content.slice(0, 80)}…`);
+  });
+}
+```
+
+---
+
+### `postNewChatMessage`
+
+Envoie le premier message et crée une nouvelle conversation. L'agent RAG recherche des articles d'actualité via WorldNews et génère une réponse.
+
+```typescript
+postNewChatMessage(content: string): Promise<ServiceResult<NewChatMessageResponse>>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `content` | `string` | Texte du premier message utilisateur |
+
+**Retourne** — `ServiceResult<{ data: { chat_id: number; messages: Message[] } }>`
+
+```typescript
+const result = await postNewChatMessage("Quelles sont les dernières nouvelles en IA ?");
+if (result.ok) {
+  const { chat_id, messages } = result.data.data;
+  console.log(`Nouveau chat créé : #${chat_id}`);
+  console.log(`Réponse : ${messages[1].content}`); // réponse IA
+}
+```
+
+---
+
+### `postContinueChatMessage`
+
+Envoie un message de suivi dans une conversation existante.
+
+```typescript
+postContinueChatMessage(
+  chatId: number,
+  content: string
+): Promise<ServiceResult<ContinueChatMessageResponse>>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `chatId` | `number` | ID de la conversation à continuer |
+| `content` | `string` | Texte du message de suivi |
+
+```typescript
+const result = await postContinueChatMessage(42, "Peux-tu approfondir ce point ?");
+if (result.ok) {
+  const response = result.data.data;
+  console.log(response.content);
+}
+```
+
+---
+
+### `getChatArticles`
+
+Récupère les articles sources utilisés par l'assistant pour un chat.
+
+```typescript
+getChatArticles(chatId: number): Promise<ServiceResult<GetChatArticlesResponse>>
+```
+
+```typescript
+const result = await getChatArticles(42);
+if (result.ok) {
+  const articles = result.data.data; // { title: string; url: string }[]
+  articles.forEach(({ title, url }) => {
+    console.log(`${title} — ${url}`);
+  });
+}
+```
+
+---
+
+## Review DAL
+
+<Aside type="caution">
+`postCreateReview` et `postGenerateReview` ont un **timeout de 60 s** — génération LLM.
+</Aside>
+
+### `getReviews`
+
+Récupère toutes les revues de presse sauvegardées de l'utilisateur.
+
+```typescript
+getReviews(): Promise<ServiceResult<GetReviewsResponse>>
+```
+
+```typescript
+const result = await getReviews();
+if (result.ok) {
+  const reviews = result.data.data;
+  console.log(`${reviews.length} revues disponibles`);
+}
+```
+
+---
+
+### `postCreateReview`
+
+Crée une revue de presse structurée (analyse, pour/contre, note) à partir d'articles fournis.
+
+```typescript
+postCreateReview(articles: string): Promise<ServiceResult<CreateReviewResponse>>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `articles` | `string` | Contenu des articles — typiquement JSON stringifié |
+
+```typescript
+const articleJson = JSON.stringify([
+  { title: "AI breaks record", body: "OpenAI announced…" },
+]);
+const result = await postCreateReview(articleJson);
+if (result.ok) {
+  const { analysis, pros, cons, rating } = result.data.data.review;
+  console.log(`Note : ${rating}/10`);
+  console.log(`Analyse : ${analysis}`);
+}
+```
+
+---
+
+### `postGenerateReview`
+
+Génère une revue à partir des articles discutés dans un chat. Peut cibler un article spécifique via son URL.
+
+```typescript
+postGenerateReview(
+  chatId: number,
+  articleUrl?: string
+): Promise<ServiceResult<ChatReviewGenerateResponse>>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `chatId` | `number` | ID du chat contenant les articles |
+| `articleUrl` | `string?` | URL d'un article spécifique à cibler (optionnel) |
+
+```typescript
+// Revue sur tous les articles du chat
+const result = await postGenerateReview(42);
+
+// Revue focalisée sur un article précis
+const result = await postGenerateReview(42, "https://techcrunch.com/article");
+
+if (result.ok) {
+  const review = result.data.data;
+  console.log(review.review.analysis);
+}
+```
+
+---
+
+### `getChatReviews`
+
+Récupère toutes les revues générées depuis des conversations (vs revues manuelles).
+
+```typescript
+getChatReviews(): Promise<ServiceResult<GetReviewsResponse>>
+```
+
+```typescript
+const result = await getChatReviews();
+if (result.ok) {
+  const chatReviews = result.data.data;
+  // Même structure que getReviews()
+}
+```
