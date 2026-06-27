@@ -120,15 +120,16 @@ export async function createSession(
  * Updates the current session by refreshing the cookie expiration time.
  *
  * Extends the session lifetime by 7 days if the current session is valid.
+ * Has no effect if the current session is missing or invalid.
  *
- * @returns The updated session payload if successful, otherwise null.
+ * @returns A promise that resolves when the session cookie has been refreshed.
  */
-export async function updateSession(): Promise<SessionTokenPayload | null> {
+export async function updateSession(): Promise<void> {
 	const session = (await cookies()).get("session")?.value;
 	const payload = await decrypt(session);
 
 	if (!session || !payload) {
-		return null;
+		return;
 	}
 
 	const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
