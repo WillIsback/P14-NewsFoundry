@@ -18,14 +18,5 @@
       "@/*": ["./*"]
     }
   },
-  "include": [
-    "../frontend/src/**/*.ts",
-    "../frontend/src/**/*.tsx"
-  ],
-  "exclude": [
-    "../frontend/node_modules",
-    "../frontend/src/**/__tests__/**",
-    "../frontend/src/test/**",
-    "../frontend/src/models/gen/**"
-  ]
+  "files": []
 }
