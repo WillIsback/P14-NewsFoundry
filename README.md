@@ -2,6 +2,10 @@
 
 Outil de revue de presse automatique par IA.
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue?logo=astro)](https://willisback.github.io/P14-NewsFoundry/)
+[![Frontend](https://img.shields.io/badge/frontend-Vercel-black?logo=vercel)](https://news-foundry-lime.vercel.app/)
+[![Docs Build](https://github.com/WillIsback/P14-NewsFoundry/actions/workflows/docs-build.yml/badge.svg)](https://github.com/WillIsback/P14-NewsFoundry/actions/workflows/docs-build.yml)
+
 **Frontend :** [https://news-foundry-lime.vercel.app/](https://news-foundry-lime.vercel.app/)
 **Backend :** [https://p14-newsfoundry-production.up.railway.app](https://p14-newsfoundry-production.up.railway.app)
 **Documentation :** [https://willisback.github.io/P14-NewsFoundry/](https://willisback.github.io/P14-NewsFoundry/)
