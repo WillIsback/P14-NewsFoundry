@@ -1,8 +1,19 @@
+/**
+ * Props for the Icon component.
+ *
+ * @property type - The icon type: `"user"` for a user avatar, `"ai"` for an AI assistant icon.
+ */
 interface IconProps {
-	// Define any props if needed
 	type: "user" | "ai";
 }
 
+/**
+ * Displays a circular avatar icon — user or AI assistant.
+ *
+ * User icons show a person silhouette on dark background, AI icons show a chat interface on light background.
+ *
+ * @param type - The icon type: `"user"` or `"ai"`.
+ */
 export default function Icon({ type }: Readonly<IconProps>) {
 	return (
 		<div

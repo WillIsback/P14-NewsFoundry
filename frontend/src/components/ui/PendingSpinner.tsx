@@ -1,6 +1,11 @@
 import { Loader2 } from "lucide-react";
 import Icon from "./Icon";
 
+/**
+ * Displays a loading spinner with the AI icon while awaiting an assistant response.
+ *
+ * Used to indicate that the assistant is processing a user's message.
+ */
 export default function PendingSpinner() {
 	return (
 		<div className="flex gap-2.5 justify-start">

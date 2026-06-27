@@ -4,6 +4,9 @@ import type * as React from "react";
 
 import { cn } from "@/src/lib/utils";
 
+/**
+ * An SVG send icon component.
+ */
 function SendIcon() {
 	return (
 		<svg
@@ -76,6 +79,18 @@ const buttonVariants = cva(
 	},
 );
 
+/**
+ * A send button with customizable variants and sizes.
+ *
+ * Displays a send icon by default, or custom children if provided.
+ * Supports polymorphic composition via the `asChild` prop.
+ *
+ * @param className - Additional CSS classes.
+ * @param variant - Button style variant (default, outline, secondary, ghost, destructive, link).
+ * @param size - Button size (default, xs, sm, lg, icon, icon-xs, icon-sm, icon-lg).
+ * @param asChild - If true, renders as a polymorphic component.
+ * @param children - Content to render inside the button (defaults to SendIcon).
+ */
 function ButtonSend({
 	className,
 	variant = "default",

@@ -1,3 +1,9 @@
+/**
+ * A textarea input field for composing chat messages.
+ *
+ * The label is visually hidden and the placeholder serves as the visual hint.
+ * The textarea is set to expand as needed with a minimum height.
+ */
 export default function TextArea() {
 	return (
 		<>

@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { generateReview } from "@/src/actions/review.action";
 
+/**
+ * An SVG review/document icon component.
+ */
 function ReviewIcon() {
 	return (
 		<svg
@@ -22,16 +25,30 @@ function ReviewIcon() {
 	);
 }
 
+/**
+ * An article with title and URL.
+ */
 interface Article {
 	title: string;
 	url: string;
 }
 
+/**
+ * Props for the ButtonReview component.
+ *
+ * @property chatId - The ID of the chat to generate a review from.
+ * @property articles - Optional list of articles from the chat.
+ */
 interface ButtonReviewProps {
 	chatId?: number;
 	articles?: Article[];
 }
 
+/**
+ * A button to generate a review from a chat conversation.
+ *
+ * Opens a form to select articles or generate a review using all articles in the chat.
+ */
 function ButtonReview({ chatId, articles = [] }: Readonly<ButtonReviewProps>) {
 	const router = useRouter();
 	const [step, setStep] = useState<"idle" | "form" | "loading">("idle");
