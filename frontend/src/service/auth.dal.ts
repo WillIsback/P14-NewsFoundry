@@ -30,6 +30,14 @@ async function authHeaders(): Promise<HeadersInit> {
  * Fetches the usage stats for the currently authenticated user.
  *
  * @returns A promise resolving to the ServiceResult containing the user usage data or error details.
+ *
+ * @example
+ * ```typescript
+ * const result = await getUserUsage();
+ * if (result.ok) {
+ *   console.log(`Usage: ${result.data.data.messages_used}/${result.data.data.messages_limit}`);
+ * }
+ * ```
  */
 export async function getUserUsage(): Promise<
 	ServiceResult<UserUsageResponse>
@@ -99,6 +107,15 @@ function mapLoginError(
  * @param email - The user's email address.
  * @param password - The user's password.
  * @returns A promise resolving to the ServiceResult containing the login response or error details.
+ *
+ * @example
+ * ```typescript
+ * const result = await postLogin("user@example.com", "password123");
+ * if (result.ok) {
+ *   const { access_token } = result.data.data;
+ *   await createSession("user@example.com", access_token);
+ * }
+ * ```
  */
 export async function postLogin(
 	email: string,

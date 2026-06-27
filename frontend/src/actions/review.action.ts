@@ -26,6 +26,14 @@ type ChatGenerateReviewResponse = z.infer<
  * Fetches all saved reviews for the current user.
  *
  * @returns An object with either the reviews list or an error message.
+ *
+ * @example
+ * ```typescript
+ * const { error, data } = await fetchReviews();
+ * if (!error && data) {
+ *   console.log(`Found ${data.data.length} reviews`);
+ * }
+ * ```
  */
 export async function fetchReviews() {
 	const result = await getReviews();
@@ -41,6 +49,15 @@ export async function fetchReviews() {
  * @param _initialState - The previous action state (ignored in initial calls).
  * @param formData - Form data containing the `articles` field with the articles to review.
  * @returns The action state with error or the generated review.
+ *
+ * @example
+ * ```typescript
+ * const [state, formAction] = useActionState(createReview, { error: null });
+ * // <form action={formAction}>
+ * //   <textarea name="articles" placeholder="Coller le contenu des articles..."></textarea>
+ * //   <button type="submit">Créer une revue</button>
+ * // </form>
+ * ```
  */
 export async function createReview(
 	_initialState: ReviewActionState,
@@ -64,6 +81,16 @@ export async function createReview(
  * @param chatId - The ID of the chat to generate a review from.
  * @param articleUrl - Optional URL of a specific article to focus the review on.
  * @returns An object with error or the generated review.
+ *
+ * @example
+ * ```typescript
+ * const { error, data } = await generateReview(chatId);
+ * if (error) {
+ *   console.error(error);
+ * } else {
+ *   console.log(data.analysis);
+ * }
+ * ```
  */
 export async function generateReview(
 	chatId: number,

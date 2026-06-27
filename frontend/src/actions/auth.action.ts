@@ -28,6 +28,18 @@ export type LoginActionState = {
  * @param _initialState - The initial state of the login action, not used internally.
  * @param formData - The form data submitted by the user, containing email and password.
  * @returns A Promise resolving to the `LoginActionState` after processing.
+ *
+ * @example
+ * ```typescript
+ * // In a React component with useActionState
+ * const [state, formAction] = useActionState(loginUser, { error: null, errors: null });
+ * // In the form:
+ * // <form action={formAction}>
+ * //   <input name="email" type="email" />
+ * //   <input name="password" type="password" />
+ * //   <button type="submit">Connexion</button>
+ * // </form>
+ * ```
  */
 export async function loginUser(
 	_initialState: LoginActionState,
@@ -78,6 +90,14 @@ export async function loginUser(
  * Fetches the usage stats for the currently authenticated demo user.
  *
  * @returns A promise resolving to the usage data, or null on error.
+ *
+ * @example
+ * ```typescript
+ * const usage = await fetchUserUsage();
+ * if (usage) {
+ *   console.log(`Messages: ${usage.messages_used}/${usage.messages_limit}`);
+ * }
+ * ```
  */
 export async function fetchUserUsage() {
 	const result = await getUserUsage();
@@ -92,6 +112,14 @@ export async function fetchUserUsage() {
  * login page.
  *
  * @returns A Promise resolving once the session is deleted and the redirect is issued.
+ *
+ * @example
+ * ```typescript
+ * // In a logout button click handler (server action)
+ * <form action={logout}>
+ *   <button type="submit">Se déconnecter</button>
+ * </form>
+ * ```
  */
 export async function logout() {
 	await deleteSession();

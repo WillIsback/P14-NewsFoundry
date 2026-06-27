@@ -20,6 +20,15 @@ export type ChatActionState = {
  * Fetches the list of chats for the current user.
  *
  * @returns An object with either the chat list or an error message.
+ *
+ * @example
+ * ```typescript
+ * const { error, data } = await fetchChats();
+ * if (!error && data) {
+ *   const chats = data.data;
+ *   chats.forEach(chat => console.log(chat.title));
+ * }
+ * ```
  */
 export async function fetchChats() {
 	const result = await getChats();
@@ -69,6 +78,15 @@ export async function fetchMessages(chatId: number) {
  * @param _initialState - The previous action state (ignored in initial calls).
  * @param formData - Form data containing the `content` field with the message text.
  * @returns The action state with error or success, or redirects on successful chat creation.
+ *
+ * @example
+ * ```typescript
+ * const [state, formAction] = useActionState(sendNewMessage, { error: null });
+ * // <form action={formAction}>
+ * //   <textarea name="content" placeholder="Votre message..."></textarea>
+ * //   <button type="submit">Envoyer</button>
+ * // </form>
+ * ```
  */
 export async function sendNewMessage(
 	_initialState: ChatActionState,
@@ -99,6 +117,13 @@ export async function sendNewMessage(
  * @param _initialState - The previous action state (ignored in initial calls).
  * @param formData - Form data containing the `content` field with the message text.
  * @returns The action state with error or success message.
+ *
+ * @example
+ * ```typescript
+ * const boundAction = continueChat.bind(null, chatId);
+ * const [state, formAction] = useActionState(boundAction, { error: null });
+ * // <form action={formAction}> ... </form>
+ * ```
  */
 export async function continueChat(
 	chatId: number,

@@ -35,6 +35,15 @@ async function authHeaders(): Promise<HeadersInit> {
  * Fetches all saved reviews for the authenticated user.
  *
  * @returns A ServiceResult containing the list of reviews or an error.
+ *
+ * @example
+ * ```typescript
+ * const result = await getReviews();
+ * if (result.ok) {
+ *   const reviews = result.data.data;
+ *   reviews.forEach(review => console.log(review.title));
+ * }
+ * ```
  */
 export async function getReviews(): Promise<ServiceResult<GetReviewsResponse>> {
 	return fetchJson({
@@ -53,6 +62,15 @@ export async function getReviews(): Promise<ServiceResult<GetReviewsResponse>> {
  *
  * @param articles - A string containing the articles to review (typically in JSON format).
  * @returns A ServiceResult containing the generated review or an error.
+ *
+ * @example
+ * ```typescript
+ * const articleJson = JSON.stringify([{ title: "Article 1", body: "..." }]);
+ * const result = await postCreateReview(articleJson);
+ * if (result.ok) {
+ *   console.log(result.data.data.review.analysis);
+ * }
+ * ```
  */
 export async function postCreateReview(
 	articles: string,
@@ -77,6 +95,15 @@ export async function postCreateReview(
  * @param chatId - The ID of the chat containing the articles to review.
  * @param articleUrl - Optional URL of a specific article to focus the review on.
  * @returns A ServiceResult containing the generated review or an error.
+ *
+ * @example
+ * ```typescript
+ * const result = await postGenerateReview(123);
+ * if (result.ok) {
+ *   const review = result.data.data;
+ *   console.log(review.review.analysis);
+ * }
+ * ```
  */
 export async function postGenerateReview(
 	chatId: number,
