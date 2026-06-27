@@ -41,5 +41,4 @@ docs/specs/
 # Docs site — generated output
 docs-site/dist/
 docs-site/.astro/
-docs-site/src/content/docs/api/
 docs-site/node_modules/

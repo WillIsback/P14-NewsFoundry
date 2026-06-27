@@ -1,0 +1,53 @@
+---
+title: Référence API
+description: Vue d'ensemble de l'API frontend NewsFoundry — actions, composants, lib, service.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+L'API frontend est organisée en **4 modules** suivant l'architecture Next.js App Router.
+Chaque module est documenté sur une page scrollable unique.
+
+<CardGrid>
+  <Card title="Actions" icon="rocket">
+    **Server Actions** Next.js — formulaires, redirections, revalidation cache.
+
+    Auth · Chat · Review
+
+    [Voir les actions →](actions/)
+  </Card>
+  <Card title="Composants" icon="puzzle">
+    **Composants React** — UI atoms et composants de page.
+
+    ChatWindow · Message · PressReview · 26 composants
+
+    [Voir les composants →](components/)
+  </Card>
+  <Card title="Lib" icon="setting">
+    **Utilitaires** — types partagés, client HTTP, session JWT, rate limiting.
+
+    ServiceResult · fetchJson · createSession · 12 exports
+
+    [Voir la lib →](lib/)
+  </Card>
+  <Card title="Service" icon="seti:db">
+    **Couche d'accès aux données** — appels API backend (DAL).
+
+    Auth · Chat · Review — retournent toujours un `ServiceResult`
+
+    [Voir le service →](service/)
+  </Card>
+</CardGrid>
+
+## Architecture des données
+
+```
+Composant React
+  └─► Server Action (actions/)
+        └─► DAL / Service (service/)
+              └─► fetchJson (lib/fetch.lib)
+                    └─► Backend FastAPI
+                          └─► ServiceResult<T>  ◄── type central (lib/type.lib)
+```
+
+Toutes les fonctions DAL retournent `ServiceResult<T>` — une union discriminée sur `ok` qui évite les `try/catch` dans les composants.

@@ -1,0 +1,588 @@
+---
+title: Composants
+description: Composants React — composants de page, composants de contenu et UI atoms. Tous typés avec des interfaces de Props explicites.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="note">
+Les composants de page utilisent `"use client"` et gèrent l'état local + les server actions.
+Les composants de contenu sont souvent des Server Components qui reçoivent des Promises en props (React Suspense).
+Les UI atoms sont des composants sans état, purement présentationnels.
+</Aside>
+
+---
+
+## Composants de page
+
+### `ChatWindow`
+
+Interface chat principale — affiche les messages, gère la soumission via server action, scroll automatique et mises à jour optimistes.
+
+```typescript
+ChatWindow(props: {
+  chatId: number;    // ID de la conversation courante
+  messages: {        // messages initiaux (rendu serveur)
+    id: number;
+    type: string;    // "user" | "ai"
+    content: string;
+    timestamp: string;
+  }[];
+}): JSX.Element
+```
+
+```typescript
+// Dans /app/chat/[id]/page.tsx (Server Component)
+import ChatWindow from "@/src/components/ChatWindow";
+import { fetchMessages } from "@/src/actions/chat.action";
+
+const { data } = await fetchMessages(chatId);
+const messages = data?.data ?? [];
+
+return <ChatWindow chatId={chatId} messages={messages} />;
+```
+
+**Comportement** — binds `continueChat.bind(null, chatId)` en interne, gère `useOptimistic` pour l'affichage immédiat du message utilisateur avant la réponse du serveur.
+
+---
+
+### `ChatForm`
+
+Formulaire de saisie de message — textarea + bouton d'envoi avec états pending et erreur.
+
+```typescript
+ChatForm(props: {
+  formAction: (payload: FormData) => void; // server action bindée
+  isPending: boolean;                       // désactive le bouton pendant l'envoi
+  error: string | null;                     // message d'erreur à afficher
+}): JSX.Element
+```
+
+```typescript
+// Usage dans ChatWindow (pattern interne)
+<ChatForm
+  formAction={serverFormAction}
+  isPending={isPending}
+  error={state.error}
+/>
+```
+
+---
+
+### `ChatHeader`
+
+Barre de titre d'une page de chat — bouton retour + bouton de génération de revue.
+
+```typescript
+ChatHeader(props: {
+  chatId: number;
+  articles: { title: string; url: string }[];
+}): JSX.Element
+```
+
+```typescript
+import { ChatHeader } from "@/src/components/ChatHeader";
+
+<ChatHeader chatId={42} articles={chatArticles} />
+```
+
+---
+
+### `ChatBackButton`
+
+Bouton de navigation retour vers la page d'accueil. Sans props.
+
+```typescript
+ChatBackButton(): JSX.Element
+```
+
+```typescript
+import { ChatBackButton } from "@/src/components/ChatBackButton";
+
+<ChatBackButton />
+// → Lien vers /home avec icône flèche
+```
+
+---
+
+### `HomeChatWrapper`
+
+Wrapper de la page d'accueil — binds `sendNewMessage` et compose `ChatForm` + `AssistantCard`.
+
+```typescript
+HomeChatWrapper(): JSX.Element
+```
+
+```typescript
+// Dans /app/home/page.tsx
+import HomeChatWrapper from "@/src/components/HomeChatWrapper";
+
+export default function HomePage() {
+  return <HomeChatWrapper />;
+}
+```
+
+---
+
+### `Menu`
+
+Sidebar de navigation principale — logo, historique de chats, bouton de déconnexion.
+
+```typescript
+Menu(props: {
+  chatsPromise: Promise<{ data: ChatItem[] }>;
+  isDrawer?: boolean; // true = rendu dans MenuDrawer (mobile)
+}): JSX.Element
+```
+
+```typescript
+// Dans un layout Server Component
+import Menu from "@/src/components/Menu";
+import { fetchChats } from "@/src/actions/chat.action";
+
+const chatsData = fetchChats(); // Promise intentionnellement non-awaited
+
+<Menu chatsPromise={chatsData.then(r => r.data ?? { data: [] })} />
+```
+
+---
+
+### `MenuDrawer`
+
+Drawer slide-out pour mobile — masqué sur tablette+, affiche un hamburger icon.
+
+```typescript
+MenuDrawer(props: {
+  chatsPromise: Promise<{ data: ChatItem[] }>;
+}): JSX.Element
+```
+
+```typescript
+import { MenuDrawer } from "@/src/components/MenuDrawer";
+
+<MenuDrawer chatsPromise={chatsPromise} />
+// Visible uniquement sur mobile (lg:hidden)
+```
+
+---
+
+### `SubMenuNav`
+
+Onglets de navigation entre les modes "Chat" et "Revue de presse".
+
+```typescript
+SubMenuNav(props: {
+  defaultMode?: "chat" | "review"; // défaut: "chat"
+}): JSX.Element
+```
+
+```typescript
+import { SubMenuNav } from "@/src/components/SubMenuNav";
+
+<SubMenuNav defaultMode="chat" />
+// Génère deux ButtonSubMenu : "chat" et "review"
+```
+
+---
+
+## Composants de contenu
+
+### `AssistantCard`
+
+Affiche les messages du chat en fonction du variant. Trois modes : messages, welcome, pending.
+
+```typescript
+AssistantCard(props: {
+  variant?: "default" | "welcome" | "pending";
+  messages?: {
+    id: number;
+    type: string;    // "user" | "ai"
+    content: string;
+    timestamp: string;
+  }[];
+}): JSX.Element
+```
+
+```typescript
+import AssistantCard from "@/src/components/AssistantCard";
+
+// État d'accueil (page vide)
+<AssistantCard variant="welcome" />
+
+// En attente de la réponse du LLM
+<AssistantCard variant="pending" />
+
+// Affichage des messages
+<AssistantCard variant="default" messages={messages} />
+```
+
+---
+
+### `PressReview`
+
+Affiche une revue de presse formatée en Markdown avec date et bouton de collapse.
+
+```typescript
+PressReview(props: {
+  id?: string | number;
+  title: string;
+  description: string;
+  content: string;      // Markdown
+  date?: string;        // ISO 8601
+}): JSX.Element
+```
+
+```typescript
+import PressReview from "@/src/components/PressReview";
+
+<PressReview
+  id="review-42"
+  title="Revue IA — Juin 2025"
+  description="Synthèse des dernières avancées en intelligence artificielle"
+  content={markdownContent}
+  date="2025-06-15T10:30:00Z"
+/>
+```
+
+---
+
+### `DisplayReviews`
+
+Liste toutes les revues (manuelles + générées depuis chats) via React `use()` et Suspense.
+
+```typescript
+DisplayReviews(props: {
+  reviewsPromise: Promise<ReviewItem[]>;
+  chatReviewsPromise: Promise<ReviewItem[]>;
+}): JSX.Element
+```
+
+```typescript
+import DisplayReviews from "@/src/components/DisplayReviews";
+
+// Dans un Server Component
+const reviewsPromise = fetchReviews().then(r => r.data?.data ?? []);
+const chatReviewsPromise = fetchChatReviews().then(r => r.data?.data ?? []);
+
+<Suspense fallback={<Spinner />}>
+  <DisplayReviews
+    reviewsPromise={reviewsPromise}
+    chatReviewsPromise={chatReviewsPromise}
+  />
+</Suspense>
+```
+
+---
+
+### `DemoAccountBanner`
+
+Bannière affichant le quota d'utilisation du compte démo (messages restants, progression).
+
+```typescript
+DemoAccountBanner(): JSX.Element
+// Pas de props — fetche fetchUserUsage() en interne
+```
+
+```typescript
+import { DemoAccountBanner } from "@/src/components/DemoAccountBanner";
+
+// À placer dans le layout des pages authentifiées
+<DemoAccountBanner />
+```
+
+---
+
+### `ErrorBoundary`
+
+Error boundary React (class component) — intercepte les erreurs de rendu enfant et affiche un fallback.
+
+```typescript
+class ErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error: Error | null }
+>
+```
+
+```typescript
+import { ErrorBoundary } from "@/src/components/ErrorBoundary";
+
+<ErrorBoundary fallback={<p>Une erreur est survenue.</p>}>
+  <ChatWindow chatId={id} messages={messages} />
+</ErrorBoundary>
+```
+
+---
+
+## UI Atoms
+
+### `Message`
+
+Bulle de message individuelle — rendu Markdown pour les réponses IA, texte brut pour l'utilisateur.
+
+```typescript
+Message(props: {
+  type: "user" | "ai";
+  content: string;
+  timestamp: string; // ISO 8601
+}): JSX.Element
+```
+
+```typescript
+import Message from "@/src/components/ui/Message";
+
+<Message type="user" content="Quelles sont les news IA ?" timestamp="2025-06-15T10:00:00Z" />
+<Message type="ai" content="**OpenAI** a annoncé…" timestamp="2025-06-15T10:00:05Z" />
+// Les messages "ai" sont rendus en Markdown
+```
+
+---
+
+### `Icon`
+
+Avatar circulaire — silhouette utilisateur (fond sombre) ou icône IA (fond clair).
+
+```typescript
+Icon(props: { type: "user" | "ai" }): JSX.Element
+```
+
+```typescript
+import Icon from "@/src/components/ui/Icon";
+
+<Icon type="user" />  // avatar utilisateur
+<Icon type="ai" />    // avatar assistant IA
+```
+
+---
+
+### `Input`
+
+Champ de saisie texte stylé (Tailwind), transmet toutes les props HTML natives.
+
+```typescript
+Input(props: React.InputHTMLAttributes<HTMLInputElement>): JSX.Element
+```
+
+```typescript
+import Input from "@/src/components/ui/Input";
+
+<Input
+  type="email"
+  name="email"
+  placeholder="votre@email.com"
+  required
+  autoComplete="email"
+/>
+```
+
+---
+
+### `TextArea`
+
+Zone de texte multi-ligne pour la saisie de messages. Hauteur fixe, resize désactivé.
+
+```typescript
+TextArea(): JSX.Element
+// name="content" hardcodé — pour usage avec ChatForm
+```
+
+```typescript
+import TextArea from "@/src/components/ui/TextArea";
+
+// Uniquement dans ChatForm — le champ est nommé "content"
+<form action={formAction}>
+  <TextArea />
+  <ButtonSend type="submit" />
+</form>
+```
+
+---
+
+### `ButtonSend`
+
+Bouton d'envoi animé avec icône flèche. Étend `React.ComponentProps<"button">`.
+
+```typescript
+ButtonSend(props: React.ComponentProps<"button"> & {
+  // hérite de disabled, aria-busy, type, etc.
+}): JSX.Element
+```
+
+```typescript
+import { ButtonSend } from "@/src/components/ui/ButtonSend";
+
+<ButtonSend
+  type="submit"
+  disabled={isPending}
+  aria-busy={isPending}
+/>
+```
+
+---
+
+### `ButtonReview`
+
+Bouton déclencheur de génération de revue — ouvre un modal de sélection d'article.
+
+```typescript
+ButtonReview(props: {
+  chatId: number;
+  articles?: { title: string; url: string; published_at?: string }[];
+}): JSX.Element
+```
+
+```typescript
+import { ButtonReview } from "@/src/components/ui/ButtonReview";
+
+<ButtonReview chatId={42} articles={chatArticles} />
+// → Ouvre un modal pour choisir l'article cible
+// → Appelle generateReview(chatId, articleUrl?) via form action
+```
+
+---
+
+### `ButtonSubMenu`
+
+Bouton de navigation onglet — "chat" ou "review" avec état actif.
+
+```typescript
+ButtonSubMenu(props: {
+  type_: "chat" | "review";
+  active: boolean;
+}): JSX.Element
+```
+
+```typescript
+import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
+
+<ButtonSubMenu type_="chat" active={true} />
+<ButtonSubMenu type_="review" active={false} />
+```
+
+---
+
+### `Button`
+
+Bouton générique de shadcn/ui avec variantes (`default`, `destructive`, `outline`, `ghost`, `link`).
+
+```typescript
+Button(props: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants>): JSX.Element
+```
+
+```typescript
+import { Button } from "@/src/components/ui/button";
+
+<Button variant="outline" size="sm" onClick={handleClick}>
+  Annuler
+</Button>
+<Button variant="default" type="submit">
+  Confirmer
+</Button>
+```
+
+---
+
+### `Chips`
+
+Tag de catégorie cliquable.
+
+```typescript
+Chips(props: {
+  categorie: string;
+  variant?: string;
+}): JSX.Element
+```
+
+```typescript
+import Chips from "@/src/components/ui/Chips";
+
+<Chips categorie="Intelligence Artificielle" />
+<Chips categorie="Tech" variant="active" />
+```
+
+---
+
+### `Logo`
+
+Logo NewsFoundry avec lien optionnel.
+
+```typescript
+Logo(props: { href?: string; size?: "sm" | "md" | "lg" }): JSX.Element
+```
+
+```typescript
+import Logo from "@/src/components/ui/Logo";
+
+<Logo href="/home" size="md" />
+```
+
+---
+
+### `PendingSpinner`
+
+Spinner de chargement animé. Affiché pendant les opérations asynchrones.
+
+```typescript
+PendingSpinner(): JSX.Element  // pas de props
+```
+
+```typescript
+import PendingSpinner from "@/src/components/ui/PendingSpinner";
+
+{isPending && <PendingSpinner />}
+```
+
+---
+
+### `AssistantWelcome`
+
+Message d'accueil de l'assistant — affiché quand aucun chat n'est actif.
+
+```typescript
+AssistantWelcome(): JSX.Element  // pas de props
+```
+
+---
+
+### `AssistantPendingContent`
+
+Animation de "chargement" affichée pendant la génération de la réponse IA.
+
+```typescript
+AssistantPendingContent(): JSX.Element  // pas de props
+```
+
+---
+
+### `Robot`
+
+Illustration SVG du robot mascotte, avec variants de pose.
+
+```typescript
+Robot(props: { variant?: "default" | "thinking" | "happy" }): JSX.Element
+```
+
+---
+
+### `Toaster`
+
+Provider de notifications toast (sonner). À placer une seule fois dans le layout racine.
+
+```typescript
+Toaster(): JSX.Element  // pas de props
+```
+
+```typescript
+import { Toaster } from "@/src/components/ui/sonner";
+
+// Dans /app/layout.tsx
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+```

@@ -1,0 +1,364 @@
+---
+title: Actions
+description: Server Actions Next.js — auth, chat, review. Utilisées directement dans les formulaires React via useActionState.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Aside type="note">
+Les server actions portent la directive `"use server"` et s'exécutent exclusivement côté serveur. Elles sont passées à `useActionState()` ou directement à l'attribut `action` d'un `<form>`.
+</Aside>
+
+---
+
+## Auth
+
+### `LoginActionState`
+
+État partagé par les actions d'authentification.
+
+```typescript
+type LoginActionState = {
+  error: string | null;   // message d'erreur lisible par l'utilisateur
+  errors: unknown;        // erreurs de validation Zod détaillées
+};
+```
+
+---
+
+### `loginUser`
+
+Valide email/password, appelle le backend, crée la session JWT, et redirige vers `/home`.
+
+```typescript
+loginUser(
+  _initialState: LoginActionState,
+  formData: FormData
+): Promise<LoginActionState>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `_initialState` | `LoginActionState` | État précédent (ignoré) |
+| `formData` | `FormData` | Doit contenir les champs `email` et `password` |
+
+**Retourne** — `Promise<LoginActionState>` ou redirige vers `/home` si succès.
+
+<Tabs>
+  <TabItem label="Usage composant">
+```typescript
+"use client";
+import { useActionState } from "react";
+import { loginUser } from "@/src/actions/auth.action";
+
+export function LoginForm() {
+  const [state, formAction, isPending] = useActionState(
+    loginUser,
+    { error: null, errors: null }
+  );
+
+  return (
+    <form action={formAction}>
+      {state.error && <p role="alert">{state.error}</p>}
+      <input name="email" type="email" required />
+      <input name="password" type="password" required />
+      <button type="submit" disabled={isPending}>
+        {isPending ? "Connexion…" : "Se connecter"}
+      </button>
+    </form>
+  );
+}
+```
+  </TabItem>
+  <TabItem label="Flux interne">
+```
+formData → loginInputSchema.safeParse()
+         → postLogin(email, password)   [service/auth.dal]
+         → createSession(email, token)  [lib/session]
+         → redirect("/home")
+```
+  </TabItem>
+</Tabs>
+
+---
+
+### `logout`
+
+Supprime la session JWT et redirige vers `/login`.
+
+```typescript
+logout(): Promise<void>
+```
+
+```typescript
+// Bouton de déconnexion (server action directe)
+import { logout } from "@/src/actions/auth.action";
+
+<form action={logout}>
+  <button type="submit">Se déconnecter</button>
+</form>
+```
+
+---
+
+### `fetchUserUsage`
+
+Récupère les statistiques d'utilisation de l'utilisateur connecté (démo).
+
+```typescript
+fetchUserUsage(): Promise<UsageData | null>
+```
+
+**Retourne** — données d'usage `{ messages_used, messages_limit }` ou `null` si erreur.
+
+```typescript
+// Dans un composant serveur
+const usage = await fetchUserUsage();
+if (usage) {
+  console.log(`${usage.messages_used} / ${usage.messages_limit} messages`);
+}
+```
+
+---
+
+## Chat
+
+### `ChatActionState`
+
+```typescript
+type ChatActionState = {
+  error: string | null;
+};
+```
+
+---
+
+### `fetchChats`
+
+Récupère la liste de toutes les conversations de l'utilisateur.
+
+```typescript
+fetchChats(): Promise<{ error: string | null; data: GetChatsResponse | null }>
+```
+
+```typescript
+// Composant serveur
+const { error, data } = await fetchChats();
+if (!error && data) {
+  const chats = data.data; // Chat[]
+  chats.forEach(chat => console.log(chat.title));
+}
+```
+
+---
+
+### `fetchMessages`
+
+Récupère tous les messages d'une conversation.
+
+```typescript
+fetchMessages(chatId: number): Promise<{ error: string | null; data: GetMessagesResponse | null }>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `chatId` | `number` | ID de la conversation |
+
+```typescript
+const { data } = await fetchMessages(42);
+const messages = data?.data ?? [];
+```
+
+---
+
+### `fetchChatArticles`
+
+Récupère les articles sources utilisés par l'assistant pour un chat.
+
+```typescript
+fetchChatArticles(chatId: number): Promise<{
+  error: string | null;
+  data: { title: string; url: string }[]
+}>
+```
+
+```typescript
+const { data } = await fetchChatArticles(42);
+data.forEach(({ title, url }) => console.log(title, url));
+```
+
+---
+
+### `sendNewMessage`
+
+Envoie le premier message et crée une nouvelle conversation. Redirige vers `/chat/{chatId}` si succès.
+
+```typescript
+sendNewMessage(
+  _initialState: ChatActionState,
+  formData: FormData
+): Promise<ChatActionState>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `_initialState` | `ChatActionState` | État précédent |
+| `formData` | `FormData` | Doit contenir le champ `content` |
+
+<Aside type="caution">
+Cette action a un timeout de **120 s** côté service — l'agent RAG effectue 2 appels LLM + 1 appel WorldNews.
+</Aside>
+
+```typescript
+"use client";
+import { useActionState } from "react";
+import { sendNewMessage } from "@/src/actions/chat.action";
+
+const [state, formAction, isPending] = useActionState(
+  sendNewMessage,
+  { error: null }
+);
+
+// <form action={formAction}>
+//   <textarea name="content" placeholder="Votre question…" />
+//   <button type="submit" disabled={isPending}>Envoyer</button>
+// </form>
+```
+
+---
+
+### `continueChat`
+
+Envoie un message de suivi dans une conversation existante. Revalide la page après réponse.
+
+```typescript
+continueChat(
+  chatId: number,
+  _initialState: ChatActionState,
+  formData: FormData
+): Promise<ChatActionState & { data?: unknown }>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `chatId` | `number` | ID de la conversation à continuer |
+| `_initialState` | `ChatActionState` | État précédent |
+| `formData` | `FormData` | Doit contenir le champ `content` |
+
+```typescript
+// Bind du chatId avant de passer l'action à useActionState
+const boundAction = continueChat.bind(null, chatId);
+const [state, formAction, isPending] = useActionState(boundAction, { error: null });
+```
+
+---
+
+## Review
+
+### `ReviewActionState`
+
+```typescript
+type ReviewActionState = {
+  error: string | null;
+  data?: unknown;
+};
+```
+
+---
+
+### `fetchReviews`
+
+Récupère toutes les revues de presse sauvegardées de l'utilisateur.
+
+```typescript
+fetchReviews(): Promise<{ error: string | null; data: GetReviewsResponse | null }>
+```
+
+```typescript
+const { error, data } = await fetchReviews();
+if (!error && data) {
+  const reviews = data.data;
+  console.log(`${reviews.length} revues trouvées`);
+}
+```
+
+---
+
+### `fetchChatReviews`
+
+Récupère les revues générées depuis des conversations.
+
+```typescript
+fetchChatReviews(): Promise<{ error: string | null; data: GetReviewsResponse | null }>
+```
+
+```typescript
+const { data } = await fetchChatReviews();
+const chatReviews = data?.data ?? [];
+```
+
+---
+
+### `createReview`
+
+Crée une revue de presse à partir d'articles fournis via formulaire.
+
+```typescript
+createReview(
+  _initialState: ReviewActionState,
+  formData: FormData
+): Promise<ReviewActionState>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `_initialState` | `ReviewActionState` | État précédent |
+| `formData` | `FormData` | Champ `articles` — contenu textuel ou JSON des articles |
+
+```typescript
+const [state, formAction] = useActionState(createReview, { error: null });
+
+// <form action={formAction}>
+//   <textarea name="articles" placeholder="Collez le contenu des articles…" />
+//   <button type="submit">Créer une revue</button>
+// </form>
+
+if (state.data) {
+  console.log(state.data); // revue générée par le LLM
+}
+```
+
+---
+
+### `generateReview`
+
+Génère une revue à partir des articles discutés dans un chat. Optionnellement ciblée sur une URL d'article.
+
+```typescript
+generateReview(
+  chatId: number,
+  articleUrl?: string
+): Promise<{ error: string | null; data: ChatGenerateReviewResponse | null }>
+```
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `chatId` | `number` | ID du chat source |
+| `articleUrl` | `string?` | URL d'un article spécifique à cibler (optionnel) |
+
+<Aside type="caution">
+Timeout de **60 s** — génération LLM côté backend.
+</Aside>
+
+```typescript
+// Depuis un composant serveur ou un bouton client
+const { error, data } = await generateReview(42);
+if (error) {
+  console.error(error);
+} else {
+  const { analysis, pros, cons, rating } = data.data.review;
+}
+
+// Avec focus sur un article spécifique
+const { data } = await generateReview(42, "https://example.com/article");
+```
