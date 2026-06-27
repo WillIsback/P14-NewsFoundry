@@ -15,6 +15,7 @@ const encodedKey = new TextEncoder().encode(secretKey);
  * Encrypts the given payload into a JWT token.
  *
  * @param payload - The session token payload to encrypt.
+ * @param expiresAt - The expiration time for the JWT.
  * @returns A signed JWT string.
  */
 export async function encrypt(payload: SessionTokenPayload, expiresAt: Date) {
@@ -26,13 +27,17 @@ export async function encrypt(payload: SessionTokenPayload, expiresAt: Date) {
 }
 
 /**
- * Derives the session expiry from the backend access token's `exp` claim, so the
- * frontend session lifetime stays in sync with the backend token. This avoids a
- * valid frontend cookie wrapping an already-expired backend token (which caused
- * silent 401s after the backend token lapsed).
+ * Derives the session expiry from the backend access token's `exp` claim.
  *
- * Falls back to 30 minutes (the backend ACCESS_TOKEN_EXPIRE_MINUTES default) if
- * the token cannot be decoded or has no `exp` claim.
+ * Ensures the frontend session lifetime stays in sync with the backend token,
+ * avoiding a valid frontend cookie wrapping an already-expired backend token
+ * (which would cause silent 401s).
+ *
+ * Falls back to 30 minutes (the backend ACCESS_TOKEN_EXPIRE_MINUTES default)
+ * if the token cannot be decoded or has no `exp` claim.
+ *
+ * @param accessToken - The backend-issued JWT access token.
+ * @returns The expiration date for the session.
  */
 function getAccessTokenExpiry(accessToken: string): Date {
 	try {
@@ -81,10 +86,16 @@ export async function decrypt(
 /**
  * Creates a new session by generating a JWT and setting it in an HTTP-only cookie.
  *
+ * The session expiration is synchronized with the backend access token's `exp` claim.
+ *
  * @param userId - The user's email address (returned by the backend login endpoint).
  * @param accessToken - The backend-issued JWT access token.
+ * @returns A promise that resolves when the session cookie has been set.
  */
-export async function createSession(userId: string, accessToken: string) {
+export async function createSession(
+	userId: string,
+	accessToken: string,
+): Promise<void> {
 	const expiresAt = getAccessTokenExpiry(accessToken);
 	const session = await encrypt(
 		{
@@ -108,9 +119,11 @@ export async function createSession(userId: string, accessToken: string) {
 /**
  * Updates the current session by refreshing the cookie expiration time.
  *
+ * Extends the session lifetime by 7 days if the current session is valid.
+ *
  * @returns The updated session payload if successful, otherwise null.
  */
-export async function updateSession() {
+export async function updateSession(): Promise<SessionTokenPayload | null> {
 	const session = (await cookies()).get("session")?.value;
 	const payload = await decrypt(session);
 
@@ -132,6 +145,8 @@ export async function updateSession() {
 
 /**
  * Returns the backend Bearer token from the current session cookie, or null if not authenticated.
+ *
+ * @returns The backend JWT access token, or null if no valid session exists.
  */
 export async function getBearerToken(): Promise<string | null> {
 	const session = (await cookies()).get("session")?.value;
@@ -141,8 +156,10 @@ export async function getBearerToken(): Promise<string | null> {
 
 /**
  * Deletes the current session by removing the session cookie.
+ *
+ * @returns A promise that resolves when the session cookie has been deleted.
  */
-export async function deleteSession() {
+export async function deleteSession(): Promise<void> {
 	const cookieStore = await cookies();
 	cookieStore.delete("session");
 }
