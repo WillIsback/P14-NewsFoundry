@@ -105,11 +105,10 @@ async function handleResponse<TOk>(
 }
 
 /**
- * Fetches a JSON endpoint and maps the response to a typed ServiceResult.
+ * Logs a service error with structured output (kind, code, status, URL, message, timestamp).
  *
- * Handles: AbortController timeout, JSON parsing, Zod response validation,
- * and Next.js extended fetch options (cache, revalidate, tags).
- * Input validation and retry are the caller responsibility.
+ * @param url - The URL that was requested.
+ * @param result - The error result object containing error details and HTTP status.
  */
 function logError(
 	url: string,
@@ -131,6 +130,33 @@ function logError(
 	);
 }
 
+/**
+ * Fetches a JSON endpoint and maps the response to a typed ServiceResult.
+ *
+ * Handles: AbortController timeout, JSON parsing, Zod response validation,
+ * and Next.js extended fetch options (cache, revalidate, tags).
+ * Input validation and retry are the caller responsibility.
+ *
+ * @typeParam TReq - The type of the request body (optional).
+ * @typeParam TOk - The type of the successful response.
+ *
+ * @param options - Fetch options including URL, method, schema, headers, and Next.js cache settings.
+ * @returns A ServiceResult containing typed response data or error information.
+ *
+ * @example
+ * ```ts
+ * const result = await fetchJson({
+ *   url: "/api/chats",
+ *   method: "GET",
+ *   successSchema: chatsSchema,
+ * });
+ * if (result.ok) {
+ *   console.log(result.data);
+ * } else {
+ *   console.error(result.error.userMessage);
+ * }
+ * ```
+ */
 export async function fetchJson<TReq, TOk>(
 	options: FetchJsonOptions<TReq, TOk>,
 ): Promise<ServiceResult<TOk>> {

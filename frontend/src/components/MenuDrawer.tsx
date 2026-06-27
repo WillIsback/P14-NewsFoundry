@@ -9,10 +9,20 @@ import {
 	SheetTrigger,
 } from "@/src/components/ui/sheet";
 
+/**
+ * Props for the MenuDrawer component.
+ *
+ * @property chatsPromise - A promise that resolves to the user's chat history.
+ */
 interface MenuDrawerProps {
 	chatsPromise: Promise<{ id: number; date: string }[]>;
 }
 
+/**
+ * A slide-out drawer menu for mobile devices containing the navigation menu.
+ *
+ * Hidden on tablet and above, shows a hamburger menu icon on mobile.
+ */
 export function MenuDrawer({ chatsPromise }: Readonly<MenuDrawerProps>) {
 	return (
 		<Sheet>

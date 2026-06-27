@@ -10,6 +10,11 @@ import ChatForm from "./ChatForm";
 
 const initialState: ChatActionState = { error: null };
 
+/**
+ * The chat interface component for the home page.
+ *
+ * Handles sending a new message to start a chat and displays the welcome screen.
+ */
 export default function HomeChatWrapper() {
 	const [state, formAction, isPending] = useActionState<
 		ChatActionState & { data?: unknown },

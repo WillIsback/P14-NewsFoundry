@@ -16,6 +16,11 @@ const BACKEND_URL = (
 type LoginResponse = z.infer<typeof authenticationLogin200Schema>;
 type UserUsageResponse = z.infer<typeof apiResponseUserUsageSchema>;
 
+/**
+ * Builds authorization headers with the Bearer token from the current session.
+ *
+ * @returns An object with the Authorization header if a token exists, otherwise an empty object.
+ */
 async function authHeaders(): Promise<HeadersInit> {
 	const token = await getBearerToken();
 	return token ? { Authorization: `Bearer ${token}` } : {};

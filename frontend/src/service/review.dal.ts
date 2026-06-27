@@ -21,11 +21,21 @@ type ChatReviewGenerateResponse = z.infer<
 	typeof chatGenerateChatReview201Schema
 >;
 
+/**
+ * Builds authorization headers with the Bearer token from the current session.
+ *
+ * @returns An object with the Authorization header if a token exists, otherwise an empty object.
+ */
 async function authHeaders(): Promise<HeadersInit> {
 	const token = await getBearerToken();
 	return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * Fetches all saved reviews for the authenticated user.
+ *
+ * @returns A ServiceResult containing the list of reviews or an error.
+ */
 export async function getReviews(): Promise<ServiceResult<GetReviewsResponse>> {
 	return fetchJson({
 		url: `${BACKEND_URL}/reviews`,
@@ -36,6 +46,14 @@ export async function getReviews(): Promise<ServiceResult<GetReviewsResponse>> {
 	});
 }
 
+/**
+ * Creates a new review for the provided articles.
+ *
+ * The LLM generates a structured critique with analysis, pros, cons, and rating.
+ *
+ * @param articles - A string containing the articles to review (typically in JSON format).
+ * @returns A ServiceResult containing the generated review or an error.
+ */
 export async function postCreateReview(
 	articles: string,
 ): Promise<ServiceResult<CreateReviewResponse>> {
@@ -51,6 +69,15 @@ export async function postCreateReview(
 	});
 }
 
+/**
+ * Generates a review for articles discussed in a chat conversation.
+ *
+ * Optionally can focus on a specific article URL if provided.
+ *
+ * @param chatId - The ID of the chat containing the articles to review.
+ * @param articleUrl - Optional URL of a specific article to focus the review on.
+ * @returns A ServiceResult containing the generated review or an error.
+ */
 export async function postGenerateReview(
 	chatId: number,
 	articleUrl?: string,
@@ -66,6 +93,11 @@ export async function postGenerateReview(
 	});
 }
 
+/**
+ * Fetches all reviews generated from chat conversations for the authenticated user.
+ *
+ * @returns A ServiceResult containing the list of chat-based reviews or an error.
+ */
 export async function getChatReviews(): Promise<
 	ServiceResult<GetReviewsResponse>
 > {

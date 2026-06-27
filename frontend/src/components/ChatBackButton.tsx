@@ -3,6 +3,9 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+/**
+ * A button to navigate back from the current chat to the home/chat list page.
+ */
 export function ChatBackButton() {
 	const router = useRouter();
 

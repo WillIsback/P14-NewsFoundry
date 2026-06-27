@@ -4,10 +4,18 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ButtonSubMenu } from "@/src/components/ui/ButtonSubMenu";
 
+/**
+ * Props for SubMenuNav.
+ *
+ * @property defaultMode - The default active mode ("chat" or "review").
+ */
 interface SubMenuNavProps {
 	defaultMode?: "chat" | "review";
 }
 
+/**
+ * Navigation tabs to switch between chat and review modes.
+ */
 export function SubMenuNav({
 	defaultMode = "chat",
 }: Readonly<SubMenuNavProps>) {

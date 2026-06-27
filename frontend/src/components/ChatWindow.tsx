@@ -13,6 +13,9 @@ import AssistantCard from "./AssistantCard";
 import ChatForm from "./ChatForm";
 import PendingSpinner from "./ui/PendingSpinner";
 
+/**
+ * A chat message object.
+ */
 type Message = {
 	id: number;
 	type: string;
@@ -20,11 +23,23 @@ type Message = {
 	timestamp: string;
 };
 
+/**
+ * Props for the ChatWindow component.
+ *
+ * @property chatId - The ID of the current chat conversation.
+ * @property messages - Initial list of messages in the chat.
+ */
 type ChatWindowProps = {
 	chatId: number;
 	messages: Message[];
 };
 
+/**
+ * The main chat interface displaying messages and a message input form.
+ *
+ * Handles message submission via server action, optimistic updates,
+ * and auto-scrolling to the latest message.
+ */
 export default function ChatWindow({
 	chatId,
 	messages,

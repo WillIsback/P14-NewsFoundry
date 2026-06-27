@@ -11,13 +11,29 @@ const markdownComponents: Components = {
 	),
 };
 
+/**
+ * Props for the Message component.
+ *
+ * @property type - The message source: `"user"` for user messages, `"ai"` for assistant responses.
+ * @property content - The message text content. Rendered as plain text for users, Markdown for AI.
+ * @property timestamp - ISO 8601 timestamp. Displayed formatted as `HH:mm` in French locale.
+ */
 interface MessageProps {
-	// Define any props if needed
 	type: "user" | "ai";
 	content?: string;
 	timestamp?: string;
 }
 
+/**
+ * Displays a chat message — user or AI — with formatted timestamp.
+ *
+ * User messages appear on the right (dark background), AI messages on the left (light background).
+ * AI messages support Markdown rendering with custom list styles.
+ *
+ * @param type - The message source: `"user"` or `"ai"`.
+ * @param content - The message text. Markdown is rendered for AI messages only.
+ * @param timestamp - ISO 8601 timestamp, formatted as `HH:mm` in French locale.
+ */
 export default function Message({
 	type,
 	content,

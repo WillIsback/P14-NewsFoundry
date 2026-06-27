@@ -6,11 +6,20 @@ import { logout } from "@/src/actions/auth.action";
 import Chat from "./ui/chat";
 import Logo from "./ui/Logo";
 
+/**
+ * A chat history item with ID and date.
+ */
 interface ChatItem {
 	id: number;
 	date: string;
 }
 
+/**
+ * The main navigation sidebar displaying the logo, chat history, and logout button.
+ *
+ * Resolves the chats promise and renders a list of past conversations.
+ * Can be displayed as a fixed sidebar or within a drawer menu.
+ */
 export default function Menu({
 	chatsPromise,
 	inDrawer = false,

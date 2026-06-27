@@ -3,6 +3,9 @@
 import { use, useEffect } from "react";
 import PressReview from "./PressReview";
 
+/**
+ * A review item with title, description, and content.
+ */
 interface ReviewItem {
 	id: number;
 	title: string;
@@ -11,6 +14,9 @@ interface ReviewItem {
 	date?: string;
 }
 
+/**
+ * Displays a list of press reviews from two sources: manual reviews and chat-generated reviews.
+ */
 export default function DisplayReviews({
 	reviewsPromise,
 	chatReviewsPromise,

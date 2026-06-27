@@ -15,6 +15,15 @@ const markdownComponents: Components = {
 	),
 };
 
+/**
+ * Props for the PressReview component.
+ *
+ * @property id - Optional unique identifier for the review.
+ * @property title - The review title.
+ * @property description - A brief description or summary.
+ * @property content - The review body in Markdown format.
+ * @property date - Optional publication date (ISO 8601 format).
+ */
 interface PressReviewProps {
 	id?: string | number;
 	title: string;
@@ -23,6 +32,11 @@ interface PressReviewProps {
 	date?: string;
 }
 
+/**
+ * Displays a press review card with expandable content and formatted date.
+ *
+ * Renders Markdown content with custom list styles and a copy-to-clipboard button.
+ */
 export default function PressReview({
 	id,
 	title,
