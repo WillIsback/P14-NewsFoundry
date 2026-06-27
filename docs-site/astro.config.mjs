@@ -4,6 +4,8 @@ import starlight from '@astrojs/starlight';
 import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc';
 
 export default defineConfig({
+  site: 'https://willisback.github.io',
+  base: '/P14-NewsFoundry',
   integrations: [
     starlight({
       title: 'NewsFoundry Docs',
@@ -13,7 +15,7 @@ export default defineConfig({
         root: { label: 'Français', lang: 'fr' },
       },
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/WillIsback/NewsFoundry' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/WillIsback/P14-NewsFoundry' },
       ],
       plugins: [
         starlightTypeDoc({
