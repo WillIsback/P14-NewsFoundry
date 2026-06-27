@@ -19,6 +19,7 @@
     }
   },
   "include": [
+    "./typedoc-entrypoints/**/*.ts",
     "../frontend/src/**/*.ts",
     "../frontend/src/**/*.tsx"
   ],

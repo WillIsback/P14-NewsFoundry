@@ -20,15 +20,15 @@ export default defineConfig({
       plugins: [
         starlightTypeDoc({
           entryPoints: [
-            '../frontend/src/components',
-            '../frontend/src/actions',
-            '../frontend/src/service',
-            '../frontend/src/lib',
+            './typedoc-entrypoints/actions.ts',
+            './typedoc-entrypoints/components.ts',
+            './typedoc-entrypoints/lib.ts',
+            './typedoc-entrypoints/service.ts',
           ],
           tsconfig: './typedoc.tsconfig.json',
           output: 'api',
           typeDoc: {
-            entryPointStrategy: 'expand',
+            entryPointStrategy: 'resolve',
             excludePrivate: true,
             excludeInternal: false,
             excludeExternals: true,
