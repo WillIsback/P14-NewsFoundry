@@ -4,10 +4,15 @@ Outil de revue de presse automatique par IA.
 
 **Frontend :** [https://news-foundry-lime.vercel.app/](https://news-foundry-lime.vercel.app/)
 **Backend :** [https://p14-newsfoundry-production.up.railway.app](https://p14-newsfoundry-production.up.railway.app)
+**Documentation :** [https://willisback.github.io/P14-NewsFoundry/](https://willisback.github.io/P14-NewsFoundry/)
 
 ## Documentation
 
-La documentation complète du projet se trouve dans le dossier [`docs/`](docs/index.md).
+La documentation technique (Starlight + TypeDoc) est disponible en ligne : **[https://willisback.github.io/P14-NewsFoundry/](https://willisback.github.io/P14-NewsFoundry/)**
+
+Elle est auto-générée depuis les JSDoc/TSDoc du frontend et déployée sur GitHub Pages à chaque push sur `main`.
+
+La documentation Markdown du projet se trouve dans le dossier [`docs/`](docs/index.md).
 
 | Document | Description |
 |----------|-------------|
