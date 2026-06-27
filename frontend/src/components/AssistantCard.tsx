@@ -5,6 +5,12 @@ import AssistantWelcome from "./ui/AssistantWelcome";
 import Icon from "./ui/Icon";
 import Message from "./ui/Message";
 
+/**
+ * Props for the AssistantCard component.
+ *
+ * @property variant - The display variant: `"welcome"` for greeting, `"pending"` for loading, `"default"` for messages.
+ * @property messages - Array of chat messages (user and AI) to display.
+ */
 interface AssistantCardProps {
 	variant?: "default" | "welcome" | "pending";
 	messages?: {
@@ -15,6 +21,12 @@ interface AssistantCardProps {
 	}[];
 }
 
+/**
+ * Displays chat messages with user and AI icons, or welcome/pending states.
+ *
+ * Renders messages in a scrollable list with appropriate styling and icons,
+ * or shows welcome greeting or loading state based on the variant.
+ */
 export default function AssistantCard({
 	variant,
 	messages,

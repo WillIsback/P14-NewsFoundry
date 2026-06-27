@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { fetchUserUsage } from "@/src/actions/auth.action";
 
+/**
+ * Usage statistics for a demo user account.
+ */
 type Usage = {
 	expires_at: string | null;
 	worldnews_calls_used: number;
@@ -12,6 +15,9 @@ type Usage = {
 	llm_tokens_limit: number | null;
 };
 
+/**
+ * Displays a banner showing the demo account usage limits and remaining quotas.
+ */
 export function DemoAccountBanner() {
 	const [usage, setUsage] = useState<Usage | null>(null);
 
