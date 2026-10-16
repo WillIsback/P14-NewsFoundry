@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: AI Code Review
-        uses: WillIsback/code-review@5cee9703d96586b08ece272d6753d612f712ede5 # v0.4.0
+        uses: WillIsback/code-review@629ce71d98059ec4b70b7d3ab93094fa39483591 # v0.7.0
         with:
           vllm-url: ${{ secrets.VLLM_URL }}
           vllm-api-key: ${{ secrets.VLLM_API_KEY }}
